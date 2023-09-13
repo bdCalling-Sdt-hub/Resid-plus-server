@@ -1,6 +1,8 @@
 const app = require('./app');
-const port = process.env.PORT || 3000
+require('dotenv').config();
 
-app.listen(port, () => {
+const port = process.env.PORT || 3001;
+
+app.listen(port, '103.161.9.43',() => {
   console.log(`Resid+ is listening on port ${port}`)
 })
