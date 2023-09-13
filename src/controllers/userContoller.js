@@ -130,4 +130,44 @@ const processForgetPassword = async (req, res) => {
   }
 };
 
-module.exports = { signUp, signIn, processForgetPassword }
+//Verify the oneTimeCode
+const verifyOneTimeCode = async (req, res) => {
+  try {
+    const { oneTimeCode, email } = req.body;
+    console.log(req.body.oneTimeCode);
+    console.log(email);
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(40).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
+    } else if (user.oneTimeCode === oneTimeCode) {
+      res.status(200).json(response({ message: 'Verified', status: "OK", statusCode: 200 }));
+    } else {
+      res.status(400).json(response({ message: 'Invalid OTC', status: "OK", statusCode: 200 }));
+    }
+  } catch (error) {
+    res.status(500).json(response({ message: 'Error verifying OTC', status: "OK", statusCode: 200 }));
+  }
+};
+
+//Update password without login
+const updatePassword = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log(req.body.password);
+    console.log(email);
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
+    } else {
+      user.password = password;
+      await user.save();
+      res.status(200).json(response({ message: 'Password updated successfully', status: "OK", statusCode: 200 }));
+    }
+  } catch (error) {
+    res.status(500).json(response({ message: 'Error updating password', status: "OK", statusCode: 200 }));
+  }
+};
+
+
+
+module.exports = { signUp, signIn, processForgetPassword, verifyOneTimeCode, updatePassword }
