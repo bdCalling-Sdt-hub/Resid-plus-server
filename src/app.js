@@ -1,6 +1,7 @@
 const express = require('express')
 const cors = require('cors');
 const userRouter = require('./routes/userRouter');
+const residenceRouter = require('./routes/residenceRouter');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const app = express();
@@ -26,6 +27,7 @@ app.use(cors(
 ));
 
 app.use('/api/users', userRouter);
+app.use('/api/residence', residenceRouter);
 
 
 
