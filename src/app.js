@@ -3,6 +3,7 @@ const cors = require('cors');
 const userRouter = require('./routes/userRouter');
 const residenceRouter = require('./routes/residenceRouter');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 require('dotenv').config();
 const app = express();
 
@@ -12,13 +13,16 @@ mongoose.connect(process.env.MONGODB_CONNECTION, {
   useUnifiedTopology: true,
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// For handling form data
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Enable CORS
 app.use(cors(
   // {
   //   origin: [process.env.ALLOWED_CLIENT_URLS, process.env.ALLOWED_CLIENT_URLS_2],

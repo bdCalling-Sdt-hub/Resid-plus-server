@@ -33,7 +33,6 @@ const signUp = async (req, res) => {
       statusCode: 201,
       type: "user",
       data: user,
-      token: "kjtqtlgjertgjhergkjherktgjhergih"
     }));
 
   } catch (error) {

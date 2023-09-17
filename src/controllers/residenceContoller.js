@@ -141,4 +141,6 @@ const allResidences = async (req, res) => {
 };
 
 
+
+
 module.exports = { addResidence, allResidences };
