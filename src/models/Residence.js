@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  photo: { type: String, required: false },
+  photo: { type: Object, required: false },
   capacity: { type: Number, required: [true, 'Capacity is must be given'] },
   beds: { type: Number, required: false },
   baths: { type: Number, required: false },

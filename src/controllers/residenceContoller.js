@@ -6,7 +6,6 @@ const User = require("../models/User");
 const addResidence = async (req, res) => {
     try {
         const { 
-            photo, 
             capacity, 
             beds, 
             baths, 
@@ -23,6 +22,7 @@ const addResidence = async (req, res) => {
         } = req.body;
 
         const checkHost = await User.findById(req.body.userId);
+        console.log("oigfhg",req.body.userId)
 
         if (!checkHost) {
             return res.status(404).json(response({status: 'Error', statusCode: '404', message: 'User not found'}));
@@ -30,7 +30,7 @@ const addResidence = async (req, res) => {
 
         if (checkHost.role === 'host') {
             const residence = new Residence({
-                photo, 
+                photo: req.file, 
                 capacity, 
                 beds, 
                 baths, 
@@ -61,7 +61,7 @@ const addResidence = async (req, res) => {
 };
 
 //All residences
-const allResidences = async (req, res) => {
+const allResidence = async (req, res) => {
     try {
       const checkUser = await User.findOne({_id: req.body.userId});
   
@@ -143,4 +143,4 @@ const allResidences = async (req, res) => {
 
 
 
-module.exports = { addResidence, allResidences };
+module.exports = { addResidence, allResidence };

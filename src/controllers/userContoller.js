@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const emailWithNodemailer = require("../helpers/email");
 require('dotenv').config();
 
+//Sign up
 const signUp = async (req, res) => {
   try {
     const { fullName, email, phoneNumber, address, dateOfBirth, password, role } = req.body;
@@ -41,6 +42,7 @@ const signUp = async (req, res) => {
   }
 };
 
+//Sign in
 const signIn = async (req, res) => {
   try {
     //Get email password from req.body
@@ -77,6 +79,7 @@ const signIn = async (req, res) => {
   }
 };
 
+//Process forgot password
 const processForgetPassword = async (req, res) => {
   try {
     const { email } = req.body;
