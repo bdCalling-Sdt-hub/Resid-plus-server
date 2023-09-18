@@ -7,7 +7,7 @@ const UPLOADS_FOLDER_USERS = "./public/uploads/users";
 const uploadUsers = userFileUploadMiddleware(UPLOADS_FOLDER_USERS);
 
 //Sign-up user
-router.post('/signup', [uploadUsers.single("image")], signUp);
+router.post('/signup',[uploadUsers.single("image")],signUp);
 router.post('/signin', signIn);
 router.post('/forget/password', processForgetPassword);
 router.post('/verify', verifyOneTimeCode);

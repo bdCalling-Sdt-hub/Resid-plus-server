@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 
 const isValidUser = async (req, res, next) => {
     try {
+        console.log(req.body)
         const { authorization } = req.headers;
         console.log(authorization);
         let token;

@@ -2,8 +2,11 @@ const User = require("../models/User");
 const bcrypt = require('bcryptjs');
 const response = require("../helpers/response");
 const jwt = require('jsonwebtoken');
+const fs = require("fs");
 const emailWithNodemailer = require("../helpers/email");
 require('dotenv').config();
+//defining unlinking image function 
+const unlinkImages = require('../common/image/unlinkImage')
 
 //Sign up
 const signUp = async (req, res) => {
@@ -13,6 +16,8 @@ const signUp = async (req, res) => {
     // Check if the user already exists
     const userExist = await User.findOne({ email });
     if (userExist) {
+      //providing the image path saved in the server
+      unlinkImages(req.file.path)
       return res.status(409).json(response({ statusCode: 200, message: 'User already exists', status: "OK" }));
     }
 
@@ -37,6 +42,8 @@ const signUp = async (req, res) => {
     }));
 
   } catch (error) {
+    //providing the image path saved in the server
+    unlinkImages(req.file.path)
     console.error(error);
     res.status(500).json({ message: 'Error creating user', error });
   }
@@ -126,9 +133,9 @@ const processForgetPassword = async (req, res) => {
       }
     }, 180000); // 3 minute in milliseconds
 
-    res.status(201).json(response({message: 'Thanks! Please check your email to reset password', status: "OK", statusCode: 200}));
+    res.status(201).json(response({ message: 'Thanks! Please check your email to reset password', status: "OK", statusCode: 200 }));
   } catch (error) {
-    res.status(500).json(response({ message: 'Error processing forget password', statusCode: 200, status: "OK"}));
+    res.status(500).json(response({ message: 'Error processing forget password', statusCode: 200, status: "OK" }));
   }
 };
 
