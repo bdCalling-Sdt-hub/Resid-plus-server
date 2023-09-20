@@ -16,10 +16,13 @@ const signUp = async (req, res) => {
     // Check if the user already exists
     const userExist = await User.findOne({ email });
     if (userExist) {
-      //providing the image path saved in the server
-      unlinkImages(req.file.path)
       return res.status(409).json(response({ statusCode: 200, message: 'User already exists', status: "OK" }));
     }
+
+    //role as admin is not allowed to be signed-up
+    // if(role==='admin'){
+    //   return res.status(409).json(response({ statusCode: 200, message: 'You are not authorized to sign-up', status: "OK" }));
+    // }
 
     // Create the user in the database
     const user = await User.create({
@@ -29,8 +32,7 @@ const signUp = async (req, res) => {
       address,
       dateOfBirth,
       password,
-      role,
-      image: req.file
+      role
     });
 
     res.status(201).json(response({
@@ -42,8 +44,6 @@ const signUp = async (req, res) => {
     }));
 
   } catch (error) {
-    //providing the image path saved in the server
-    unlinkImages(req.file.path)
     console.error(error);
     res.status(500).json({ message: 'Error creating user', error });
   }
@@ -98,7 +98,7 @@ const processForgetPassword = async (req, res) => {
     }
 
     // Generate OTC (One-Time Code)
-    const oneTimeCode = Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
+    const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
     // Store the OTC and its expiration time in the database
     user.oneTimeCode = oneTimeCode;
@@ -162,7 +162,6 @@ const verifyOneTimeCode = async (req, res) => {
 const updatePassword = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(req.body.password);
     console.log(email);
     const user = await User.findOne({ email });
     if (!user) {
@@ -177,6 +176,94 @@ const updatePassword = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const { fullName, email, phoneNumber, address } = req.body;
+
+    // Check if the user already exists
+    const checkUser = await User.findOne({ _id: req.body.userId });
+    if (checkUser.role === 'admin') {
+      //providing the image path saved in the server
+      if (req.file.path) {
+        unlinkImages(req.file.path)
+      }
+      return res.status(409).json(response({ statusCode: 200, message: 'You are not authorised to update profile', status: "OK" }));
+    }
+    const user = {
+      fullName,
+      email,
+      phoneNumber,
+      address,
+    };
+
+    //checking if user has provided any photo
+    if (req.file) {
+      //checking if user has any photo link in the database
+      if (checkUser.image) {
+        //deleting the image from the server
+        console.log(checkUser.image.path)
+        unlinkImages(checkUser.image.path)
+      }
+      user.image = req.file
+    }
+    const options = { new: true };
+    const result = await User.findByIdAndUpdate(checkUser._id, user, options);
+    console.log(result)
+    return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'user', message: 'User profile edited successfully.', data: result }));
+  } 
+  catch (error) {
+    //providing the image path saved in the server
+    if(req.file){
+      unlinkImages(req.file.path)
+    }
+    console.error(error);
+    res.status(500).json({ message: 'Error creating user', error });
+  }
+};
+
+const userDetails = async (req, res) => {
+  try {
+    const checkUser = await User.findOne({ _id: req.body.userId });
+    const id = req.params.id
+    if (!checkUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+
+    const user = await User.findById(id)
+    .select('fullName email phoneNumber address image dateOfBirth');
+
+    if(checkUser.role==='admin'){
+      return res.status(409).json(response({ statusCode: 200, message: 'You are not authorised to get profile details', status: "OK" }));
+    }
+
+    return res.status(200).json(
+      response({
+        status: 'OK',
+        statusCode: '200',
+        type: 'user',
+        message: 'User details retrieved successfully',
+        data: {
+          user
+        },
+      })
+    );
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json(
+      response({
+        status: 'Error',
+        statusCode: '500',
+        message: 'Error getting residences',
+      })
+    );
+  }
+};
 
 
-module.exports = { signUp, signIn, processForgetPassword, verifyOneTimeCode, updatePassword }
+module.exports = { signUp, signIn, processForgetPassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails }

@@ -89,25 +89,25 @@ const allResidence = async (req, res) => {
     const searchRegExp = new RegExp('.*' + search + '.*', 'i');
     const filter = {
       $or: [
-        { residenceName: { $regex: searchRegExp }},
+        { residenceName: { $regex: searchRegExp } },
         { address: { $regex: searchRegExp } },
         { city: { $regex: searchRegExp } },
         //   { beds: { $regex: searchRegExp } },
         { municipality: { $regex: searchRegExp } },
       ],
     };
-    if(minPrice && maxPrice){
+    if (minPrice && maxPrice) {
       //applting price range filter on dailyAmount
       console.log('------enterend price-----------')
       filter.$and = filter.$and || [];
-      filter.$and.push({dailyAmount:{ $gte: minPrice, $lte: maxPrice }})
+      filter.$and.push({ dailyAmount: { $gte: minPrice, $lte: maxPrice } })
     }
     if (category) {
       console.log('------enterend category-----------')
       filter.$and = filter.$and || [];
       filter.$and.push({ category: category });
     }
-    
+
     if (numberOfBeds) {
       console.log('------enterend no..beds-----------')
       filter.$and = filter.$and || [];
@@ -127,23 +127,42 @@ const allResidence = async (req, res) => {
     let residences = [];
     let count = 0;
 
-    if (checkUser.role === 'user' || checkUser.role === 'admin') {
-      residences = await Residence.find(filter)
-        .limit(limit)
-        .skip((page - 1) * limit);
-      count = await Residence.countDocuments(filter);
+    if (checkUser.role === 'user') {
+      const requestType = req.query.requestType || 'all'
+      if (requestType === 'all') {
+        residences = await Residence.find(filter)
+          .limit(limit)
+          .skip((page - 1) * limit);
+        count = await Residence.countDocuments(filter);
+      }
+      else if(requestType==='new'){
+        residences = await Residence.find(filter)
+          .limit(limit)
+          .skip((page - 1) * limit)
+          .sort({createdAt:-1});
+        count = await Residence.countDocuments(filter);
+      }
+      else if(requestType==='popular'){
+        //code to be done
+      }
     }
     else if (checkUser.role === 'host') {
       residences = await Residence.find({
         hostId: req.body.userId,
-        ...filter, // Apply the same filtering criteria as for user and admin
+        //...filter, 
       })
         .limit(limit)
         .skip((page - 1) * limit);
       count = await Residence.countDocuments({
         hostId: req.body.userId,
-        ...filter, // Apply the same filtering criteria as for user and admin
+        //...filter,
       });
+    }
+    else if (checkUser.role === 'admin') {
+      residences = await Residence.find()
+        .limit(limit)
+        .skip((page - 1) * limit);
+      count = await Residence.countDocuments();
     }
 
     return res.status(200).json(

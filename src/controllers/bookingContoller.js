@@ -16,8 +16,18 @@ const addBooking = async (req, res) => {
       checkInTime,
       checkOutTime,
     } = req.body;
-    console.log(req.body)
+    
     const checkUser = await User.findById(req.body.userId);
+    if (!checkUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+
     const residence_details = await Residence.findById(residenceId)
     //checking there a booking reques exists in the date
     const existingBookings = await Booking.find({
@@ -40,10 +50,10 @@ const addBooking = async (req, res) => {
     });
 
     if (existingBookings.length > 0) {
-      return res.status(400).json({ error: 'Residence is already booked for the requested time.' });
+      return res.status(409).json({ error: 'Residence is already booked for the requested time.' });
     }
 
-    const old_request = await Booking.find({
+    const old_request = await Booking.findOne({
       $and: [
         { residenceId: residenceId },
         { userId: req.body.userId },
@@ -57,8 +67,8 @@ const addBooking = async (req, res) => {
     });
 
     console.log(old_request)
-    if (old_request.length > 0) {
-      return res.status(400).json({ error: 'The request already exists, wait for confirmation' });
+    if (old_request) {
+      return res.status(409).json({ error: 'The request already exists, wait for confirmation' });
     }
 
     //****
@@ -66,9 +76,6 @@ const addBooking = async (req, res) => {
     //****
     //calculating total hours -> amount
     const amount = calculateTotalHoursBetween(checkInTime, checkOutTime) * residence_details.hourlyAmount
-    if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
-    };
 
     if (checkUser.role === 'user') {
       const booking = new Booking({
@@ -81,6 +88,7 @@ const addBooking = async (req, res) => {
         totalAmount: amount,
         userContactNumber: checkUser.phoneNumber,
       });
+      await booking.save();
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
     } 
     else {
