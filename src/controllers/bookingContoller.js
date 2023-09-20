@@ -5,6 +5,7 @@ const Residence = require("../models/Residence");
 //a helper function to calculate hours between two date-time
 const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
 const User = require("../models/User");
+const options = { new: true };
 
 //Add booking
 const addBooking = async (req, res) => {
@@ -15,19 +16,61 @@ const addBooking = async (req, res) => {
       checkInTime,
       checkOutTime,
     } = req.body;
-
-    const checkHost = await User.findById(req.body.userId);
+    console.log(req.body)
+    const checkUser = await User.findById(req.body.userId);
     const residence_details = await Residence.findById(residenceId)
+    //checking there a booking reques exists in the date
+    const existingBookings = await Booking.find({
+      residenceId: residenceId,
+      status: 'reserved',
+      $or: [
+        {
+          $and: [
+            { checkInTime: { $lte: checkInTime } },
+            { checkOutTime: { $gte: checkInTime } },
+          ]
+        },
+        {
+          $and: [
+            { checkInTime: { $lte: checkOutTime } },
+            { checkOutTime: { $gte: checkOutTime } },
+          ]
+        }
+      ]
+    });
+
+    if (existingBookings.length > 0) {
+      return res.status(400).json({ error: 'Residence is already booked for the requested time.' });
+    }
+
+    const old_request = await Booking.find({
+      $and: [
+        { residenceId: residenceId },
+        { userId: req.body.userId },
+        {
+          $and: [
+            { checkInTime: { $lte: checkInTime } },
+            { checkOutTime: { $gt: checkInTime } }
+          ]
+        }
+      ]
+    });
+
+    console.log(old_request)
+    if (old_request.length > 0) {
+      return res.status(400).json({ error: 'The request already exists, wait for confirmation' });
+    }
+
     //****
     //checkInTime and checkOutTime format = 2023-09-18T14:30:00
     //****
     //calculating total hours -> amount
     const amount = calculateTotalHoursBetween(checkInTime, checkOutTime) * residence_details.hourlyAmount
-    if (!checkHost) {
+    if (!checkUser) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
 
-    if (checkHost.role === 'user') {
+    if (checkUser.role === 'user') {
       const booking = new Booking({
         residenceId,
         totalPerson,
@@ -36,16 +79,13 @@ const addBooking = async (req, res) => {
         userId: req.body.userId,
         hostId: residence_details.hostId,
         totalAmount: amount,
-        userContactNumber: checkHost.phoneNumber,
+        userContactNumber: checkUser.phoneNumber,
       });
-
-      await booking.save();
-
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
-    } else {
+    } 
+    else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
     }
-
   } catch (error) {
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added booking' }));
@@ -150,16 +190,33 @@ const allBooking = async (req, res) => {
 const updateBooking = async (req, res) => {
   console.log(req.body)
   try {
-    const checkHost = await User.findById(req.body.userId);
+    const checkUser = await User.findById(req.body.userId);
     //extracting the booking id from param that is going to be edited
     const id = req.params.id
     const { status } = req.body;
-    if (!checkHost) {
+    if (!checkUser) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
-    if (checkHost.role === 'host') {
+    if (checkUser.role === 'host') {
       const booking = { status }
-      const options = { new: true };
+
+      //changing residence status to reserved
+      //----->start
+      const booking_details = await Booking.findById(id)
+      if (status === 'reserved') {
+        const updated_residence = {
+          status
+        }
+        await Residence.findByIdAndUpdate(booking_details.residenceId, updated_residence, options);
+      }
+      else {
+        const updated_residence = {
+          status: 'active'
+        }
+        await Residence.findByIdAndUpdate(booking_details.residenceId, updated_residence, options);
+      }
+      //----->end
+
       const result = await Booking.findByIdAndUpdate(id, booking, options);
       console.log(result)
       return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: result }));
@@ -219,6 +276,5 @@ const bookingDetails = async (req, res) => {
     );
   }
 };
-
 
 module.exports = { addBooking, allBooking, updateBooking, bookingDetails };
