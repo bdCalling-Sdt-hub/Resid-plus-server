@@ -16,7 +16,7 @@ const addBooking = async (req, res) => {
       checkInTime,
       checkOutTime,
     } = req.body;
-    
+
     const checkUser = await User.findById(req.body.userId);
     if (!checkUser) {
       return res.status(404).json(
@@ -30,7 +30,7 @@ const addBooking = async (req, res) => {
 
     const residence_details = await Residence.findById(residenceId)
     //checking there a booking reques exists in the date
-    const existingBookings = await Booking.find({
+    const existingBookings = await Booking.findOne({
       residenceId: residenceId,
       status: 'reserved',
       $or: [
@@ -49,7 +49,7 @@ const addBooking = async (req, res) => {
       ]
     });
 
-    if (existingBookings.length > 0) {
+    if (existingBookings) {
       return res.status(409).json({ error: 'Residence is already booked for the requested time.' });
     }
 
@@ -59,8 +59,8 @@ const addBooking = async (req, res) => {
         { userId: req.body.userId },
         {
           $and: [
-            { checkInTime: { $lte: checkInTime } },
-            { checkOutTime: { $gt: checkInTime } }
+            { checkInTime: { $eq: checkInTime } },
+            { checkOutTime: { $eq: checkOutTime } }
           ]
         }
       ]
@@ -89,8 +89,16 @@ const addBooking = async (req, res) => {
         userContactNumber: checkUser.phoneNumber,
       });
       await booking.save();
+      let popularity = residence_details.popularity
+      popularity++
+      const residence = {
+        popularity
+      }
+      console.log(popularity, residence)
+      await Residence.findByIdAndUpdate(residence_details._id, residence, options)
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
-    } 
+
+    }
     else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
     }
@@ -104,7 +112,6 @@ const addBooking = async (req, res) => {
 const allBooking = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    //particular id
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');

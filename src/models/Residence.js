@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   quirtier: { type: String, reqiured: false },
   aboutResidence: { type: String, reqiured: false },
   hourlyAmount: { type: Number, reqiured: false },
+  popularity: { type: Number, default:0 },
   dailyAmount: { type: Number, reqiured: false },
   amenities: {
     type: Array,

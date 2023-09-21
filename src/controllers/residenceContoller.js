@@ -92,12 +92,10 @@ const allResidence = async (req, res) => {
         { residenceName: { $regex: searchRegExp } },
         { address: { $regex: searchRegExp } },
         { city: { $regex: searchRegExp } },
-        //   { beds: { $regex: searchRegExp } },
         { municipality: { $regex: searchRegExp } },
       ],
     };
     if (minPrice && maxPrice) {
-      //applting price range filter on dailyAmount
       console.log('------enterend price-----------')
       filter.$and = filter.$and || [];
       filter.$and.push({ dailyAmount: { $gte: minPrice, $lte: maxPrice } })
@@ -143,7 +141,11 @@ const allResidence = async (req, res) => {
         count = await Residence.countDocuments(filter);
       }
       else if(requestType==='popular'){
-        //code to be done
+        residences = await Residence.find(filter)
+          .limit(limit)
+          .skip((page - 1) * limit)
+          .sort({popularity:-1});
+        count = await Residence.countDocuments(filter);
       }
     }
     else if (checkUser.role === 'host') {
