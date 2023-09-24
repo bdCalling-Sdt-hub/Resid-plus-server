@@ -1,5 +1,5 @@
 const express = require('express');
-const { addBooking, allBooking, updateBooking, bookingDetails } = require('../controllers/bookingContoller');
+const { addBooking, allBooking, updateBooking, bookingDetails, bookingDashboardCount, bookingDashboardRatio } = require('../controllers/bookingContoller');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 
@@ -9,6 +9,8 @@ router.post('/',isValidUser, addBooking);
 router.get('/', isValidUser, allBooking);
 router.put('/:id',isValidUser, updateBooking);
 router.get('/:id', isValidUser, bookingDetails);
+router.get('/dashboard/status', isValidUser, bookingDashboardCount);
+router.get('/dashboard/ratio', isValidUser, bookingDashboardRatio);
 
 
 module.exports = router;

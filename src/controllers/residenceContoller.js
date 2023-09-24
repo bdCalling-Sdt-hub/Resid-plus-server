@@ -33,9 +33,22 @@ const addResidence = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
 
+    //extracting file names and path for static display with link
+    const files = [];
+    if (req.files) {
+      req.files.forEach((file) => {
+        const publicFileUrl = `${req.protocol}://${req.get('host')}/uploads/residences/${file.filename}`;
+        files.push({
+          publicFileUrl,
+          path: file.path
+        });
+        console.log(files)
+      });
+    }
+
     if (checkHost.role === 'host') {
       const residence = new Residence({
-        photo: req.files,
+        photo: files,
         residenceName,
         capacity,
         beds,
@@ -133,18 +146,18 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit);
         count = await Residence.countDocuments(filter);
       }
-      else if(requestType==='new'){
+      else if (requestType === 'new') {
         residences = await Residence.find(filter)
           .limit(limit)
           .skip((page - 1) * limit)
-          .sort({createdAt:-1});
+          .sort({ createdAt: -1 });
         count = await Residence.countDocuments(filter);
       }
-      else if(requestType==='popular'){
+      else if (requestType === 'popular') {
         residences = await Residence.find(filter)
           .limit(limit)
           .skip((page - 1) * limit)
-          .sort({popularity:-1});
+          .sort({ popularity: -1 });
         count = await Residence.countDocuments(filter);
       }
     }
@@ -282,7 +295,17 @@ const updateResidence = async (req, res) => {
         ).flat();
         unlinkImages(paths)
         console.log(paths);
-        residence.photo = req.files;
+
+        const files = [];
+        req.files.forEach((file) => {
+          const publicFileUrl = `${req.protocol}://${req.get('host')}/uploads/residences/${file.filename}`;
+          files.push({
+            publicFileUrl,
+            path: file.path
+          });
+          console.log(files)
+        });
+        residence.photo = files;
       }
       const options = { new: true };
       const result = await Residence.findByIdAndUpdate(id, residence, options);
@@ -342,5 +365,35 @@ const residenceDetails = async (req, res) => {
   }
 };
 
+const residenceDashboard = async (req, res) => {
+  try {
+    const checkUser = await User.findById(req.body.userId);
+    if (!checkUser) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    };
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails };
+    if (checkUser.role === 'admin') {
+      const totalResidence = await Residence.countDocuments({});
+      const active = await Residence.countDocuments({ status: 'active' });
+      const reserved = await Residence.countDocuments({ status: 'reserved' });
+      console.log(totalResidence, active, reserved)
+      const count_data = {
+        totalResidence,
+        active,
+        reserved
+      };
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'residence', message: 'Residence count is successfully retrieved', data: count_data }));
+    }
+
+    else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get all counts' }));
+    }
+  }
+  catch (error) {
+    console.log(error)
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server not responding' }));
+  }
+}
+
+
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard };

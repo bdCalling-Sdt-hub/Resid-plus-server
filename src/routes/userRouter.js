@@ -1,5 +1,5 @@
 const express = require('express');
-const { signUp, signIn, processForgetPassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails } = require('../controllers/userContoller');
+const { signUp, signIn, processForgetPassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser } = require('../controllers/userContoller');
 const router = express.Router();
 const userFileUploadMiddleware = require("../middlewares/fileUpload");
 
@@ -15,6 +15,7 @@ router.post('/verify', verifyOneTimeCode);
 router.post('/reset/password', updatePassword);
 router.put('/',[uploadUsers.single("image")],isValidUser,updateProfile);
 router.get('/:id',isValidUser,userDetails);
+router.get('/',isValidUser,allUser);
 
 
 module.exports = router;

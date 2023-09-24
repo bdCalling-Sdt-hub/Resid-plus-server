@@ -39,8 +39,7 @@ app.use('/api/booking', bookingRouter);
 app.use('/api/payments', paymentRouter)
 app.use('/api/favourites', favouriteRouter)
 
-
-
+app.use(express.static('public'));
 
 app.get('/test', (req, res) => {
   res.send('I am responding!!')
