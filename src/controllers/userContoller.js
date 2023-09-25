@@ -179,7 +179,7 @@ const updatePassword = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { fullName, email, phoneNumber, address } = req.body;
+    const { fullName, phoneNumber, address, dateOfBirth } = req.body;
 
     // Check if the user already exists
     const checkUser = await User.findOne({ _id: req.body.userId });
@@ -188,9 +188,9 @@ const updateProfile = async (req, res) => {
     };
     const user = {
       fullName,
-      email,
       phoneNumber,
       address,
+      dateOfBirth
     };
 
     //checking if user has provided any photo
@@ -198,7 +198,7 @@ const updateProfile = async (req, res) => {
       //checking if user has any photo link in the database
       if (checkUser.image && checkUser.image.path!=='public\\uploads\\users\\user-1695552693976.jpg') {
         //deleting the image from the server
-        console.log(checkUser.image.path)
+        //console.log('unlinking image---------------------------->',checkUser.image.path)
         unlinkImages(checkUser.image.path)
       }
       const publicFileUrl = `${req.protocol}://${req.get('host')}/uploads/users/${req.file.filename}`;
@@ -211,7 +211,8 @@ const updateProfile = async (req, res) => {
     }
     const options = { new: true };
     const result = await User.findByIdAndUpdate(checkUser._id, user, options);
-    console.log(result)
+
+    //console.log('result---------------------------->',result)
     return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'user', message: 'User profile edited successfully.', data: result }));
   }
   catch (error) {
@@ -359,8 +360,8 @@ const allUser = async (req, res) => {
 
 // Change Password
 const changePassword = async (req, res) => {
-  const { email, currentPassword, newPassword, reTypedPassword } = req.body;
   try {
+    const { email, currentPassword, newPassword, reTypedPassword } = req.body;
     const user = await User.findOne({ email })
 
     if (!user) {
@@ -416,4 +417,4 @@ const changePassword = async (req, res) => {
 }
 
 
-module.exports = { signUp, signIn, processForgetPassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser }
+module.exports = { signUp, signIn, processForgetPassword, changePassword,verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser }

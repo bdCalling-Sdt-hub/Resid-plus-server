@@ -173,12 +173,14 @@ const allResidence = async (req, res) => {
         //...filter,
       });
     }
-    else if (checkUser.role === 'admin') {
-      residences = await Residence.find()
-        .limit(limit)
-        .skip((page - 1) * limit);
-      count = await Residence.countDocuments();
-    }
+
+    // //-> placed to residence dashboard API
+    // else if (checkUser.role === 'admin') {
+    //   residences = await Residence.find()
+    //     .limit(limit)
+    //     .skip((page - 1) * limit);
+    //   count = await Residence.countDocuments();
+    // }
 
     return res.status(200).json(
       response({
@@ -373,18 +375,41 @@ const residenceDashboard = async (req, res) => {
     };
 
     if (checkUser.role === 'admin') {
-      const totalResidence = await Residence.countDocuments({});
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const residences = await Residence.find()
+        .limit(limit)
+        .skip((page - 1) * limit);
+      count = await Residence.countDocuments();
+
       const active = await Residence.countDocuments({ status: 'active' });
       const reserved = await Residence.countDocuments({ status: 'reserved' });
-      console.log(totalResidence, active, reserved)
+      console.log(active, reserved)
       const count_data = {
-        totalResidence,
         active,
         reserved
       };
-      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'residence', message: 'Residence count is successfully retrieved', data: count_data }));
+      return res.status(200).json(
+        response({
+          status: 'OK',
+          statusCode: '200',
+          type: 'residence',
+          message: 'Residence count and details retrieved successfully',
+          data: {
+            residences,
+            status: count_data,
+            pagination: {
+              totalDocuments: count,
+              totalPage: Math.ceil(count / limit),
+              currentPage: page,
+              previousPage: page > 1 ? page - 1 : null,
+              nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
+            },
+          },
+          
+        })
+      );
     }
-
     else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get all counts' }));
     }

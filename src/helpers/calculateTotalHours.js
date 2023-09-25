@@ -1,5 +1,5 @@
 function calculateTotalHoursBetween(startDateTimeStr, endDateTimeStr) {
-  //format = 2023-09-18T14:30:00
+  //format = 2023-09-26T18:00:00.000Z
   const startDateTime = new Date(startDateTimeStr);
   const endDateTime = new Date(endDateTimeStr);
 

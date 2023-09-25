@@ -2,6 +2,7 @@ const response = require("../helpers/response");
 const mongoose = require('mongoose')
 const Booking = require("../models/Booking");
 const Residence = require("../models/Residence");
+const generateCustomID = require('../helpers/generateCustomId');
 //a helper function to calculate hours between two date-time
 const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
 const User = require("../models/User");
@@ -75,10 +76,13 @@ const addBooking = async (req, res) => {
     //checkInTime and checkOutTime format = 2023-09-18T14:30:00
     //****
     //calculating total hours -> amount
-    const amount = calculateTotalHoursBetween(checkInTime, checkOutTime) * residence_details.hourlyAmount
+    const totalTime = calculateTotalHoursBetween(checkInTime, checkOutTime)
+    const amount = totalTime * residence_details.hourlyAmount
+    console.log(amount)
 
     if (checkUser.role === 'user') {
       const booking = new Booking({
+        bookingId: await generateCustomID(),
         residenceId,
         totalPerson,
         checkInTime,
@@ -125,21 +129,23 @@ const allBooking = async (req, res) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    let bookings = [];
+    var bookings;
     let count = 0;
 
     if (checkUser.role === 'admin') {
+      var data = {}
+      data.status = await bookingDashboardCount()
       //format: 2023-09
       const checkingMonth = !req.query.checkingMonth ? '' : new Date(req.query.checkingMonth)
       var filter
       if (checkingMonth) {
-      const year = checkingMonth.getFullYear();
-      const month = String(checkingMonth.getMonth() + 1).padStart(2, '0');
-      const nextMonth = String(checkingMonth.getMonth() + 2).padStart(2, '0');
+        const year = checkingMonth.getFullYear();
+        const month = String(checkingMonth.getMonth() + 1).padStart(2, '0');
+        const nextMonth = String(checkingMonth.getMonth() + 2).padStart(2, '0');
 
-      const startDate = `${year}-${month}-01T00:00:00`;
-      const endDate = `${year}-${nextMonth}-01T00:00:00`;
-      console.log(startDate, endDate)
+        const startDate = `${year}-${month}-01T00:00:00`;
+        const endDate = `${year}-${nextMonth}-01T00:00:00`;
+        console.log(startDate, endDate)
         filter = {
           checkInTime: {
             $gte: startDate,
@@ -147,11 +153,13 @@ const allBooking = async (req, res) => {
           }
         };
       }
-      bookings = await Booking.find(filter)
+      data.bookings = await Booking.find(filter)
         .limit(limit)
         .skip((page - 1) * limit)
         .populate('userId hostId residenceId');
       count = await Booking.countDocuments(filter);
+
+      bookings = data
     }
     else if (checkUser.role === 'host') {
       bookings = await Booking.find({
@@ -170,6 +178,7 @@ const allBooking = async (req, res) => {
       count = await Booking.countDocuments();
     }
 
+    console.log(bookings)
     return res.status(200).json(
       response({
         status: 'OK',
@@ -250,7 +259,6 @@ const updateBooking = async (req, res) => {
 const bookingDetails = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    const id = req.params.id
     if (!checkUser) {
       return res.status(404).json(
         response({
@@ -260,6 +268,8 @@ const bookingDetails = async (req, res) => {
         })
       );
     }
+
+    const id = req.params.id
 
     var booking
     if (checkUser.role === 'admin') {
@@ -291,61 +301,59 @@ const bookingDetails = async (req, res) => {
   }
 };
 
-const bookingDashboardCount = async (req, res) => {
+async function bookingDashboardCount() {
   try {
-    const checkUser = await User.findById(req.body.userId);
-    if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    const completed = await Booking.countDocuments({ status: 'completed' });
+    const cancelled = await Booking.countDocuments({ status: 'cancelled' });
+    const reserved = await Booking.countDocuments({ status: 'reserved' });
+    const count_data = {
+      completed,
+      cancelled,
+      reserved
     };
-
-    if (checkUser.role === 'admin') {
-      const completed = await Booking.countDocuments({ status: 'completed' });
-      const cancelled = await Booking.countDocuments({ status: 'cancelled' });
-      const reserved = await Booking.countDocuments({ status: 'reserved' });
-      const count_data = {
-        completed,
-        cancelled,
-        reserved
-      };
-      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'booking', message: 'Booking count is successfully retrieved', data: count_data }));
-    }
-
-    else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get all counts' }));
-    }
+    return count_data;
   }
   catch (error) {
     console.log(error)
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server not responding' }));
   }
 }
 const bookingDashboardRatio = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    const year = new Date(req.query.year) || new Date()
+    const year = !req.query.year ? new Date() : new Date(req.query.year)
     const conditionalYear = year.getFullYear()
     if (!checkUser) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
 
     if (checkUser.role === 'admin') {
-      const bookings = await Booking.find({ status: 'completed' })
-      let monthlyCounts = {};
-      for (let i = 0; i < 12; i++) {
-        const key = `${i}`;
-        monthlyCounts[key] = 0;
-      }
+      const status = await bookingDashboardCount();
+      const bookings = await Booking.find({ status: 'completed' });
+
+      // Initialize an array to hold objects for each month
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+
+      const monthlyCounts = monthNames.map((month) => ({ month: month, bookingCounts: 0 }));
+
       bookings.forEach(booking => {
         const updatedAt = new Date(booking.updatedAt);
         const month = updatedAt.getMonth(); // Month is 0-indexed and will get 0-11
         const gettingYear = updatedAt.getFullYear();
+        console.log('month ------------------------------>', month, booking)
+        // Check if the booking is in the specified year
         if (conditionalYear === gettingYear) {
-          const key = `${month}`;
-          monthlyCounts[key]++;
+          monthlyCounts[month].bookingCounts += 1;
         }
       });
 
-      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'booking', message: 'Booking ratio is successfully retrieved', data: monthlyCounts }));
+      const data = {
+        status,
+        monthlyCounts
+      };
+
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'booking', message: 'Booking ratio is successfully retrieved', data: data }));
     }
     else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get monthly ratio' }));
