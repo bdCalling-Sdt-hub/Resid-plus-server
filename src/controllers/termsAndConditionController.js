@@ -1,11 +1,10 @@
 const TermsAndCondition = require("../models/TermsAndCondition");
 const User = require("../models/User");
+const response = require("../helpers/response");
 
 const createTermsAndCondition = async (req, res) => {
-  const { content } = req.body;
-
   try {
-
+    const { content } = req.body;
     const user = await User.findById(req.body.userId);
 
     if (!user) {
@@ -22,7 +21,7 @@ const createTermsAndCondition = async (req, res) => {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'terms-and-conditions', message: 'You are not Authorization' }));
     }
 
-    // Check if an Privacy Policy entry already exists
+    // Check if an Terms and conditions entry already exists
     let termsAndCondition = await TermsAndCondition.findOne();
 
     if (!termsAndCondition) {
@@ -35,10 +34,10 @@ const createTermsAndCondition = async (req, res) => {
     // If an entry exists, update its content
     termsAndCondition.content = content;
     await termsAndCondition.save();
-    return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'terms-and-conditions', message: 'Privacy Policy content updated successfully', data: termsAndCondition }));
+    return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'terms-and-conditions', message: 'Terms and conditions content updated successfully', data: termsAndCondition }));
   } catch (error) {
     console.error(error.message);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'terms-and-conditions', message: 'Server error'}));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'terms-and-conditions', message: 'Server error' }));
   }
 };
 
@@ -56,18 +55,14 @@ const getAll = async (req, res) => {
       );
     }
 
-    if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '404', type: 'terms-and-conditions', message: 'You are not Authorization' }));
-    }
-
     const termsAndCondition = await TermsAndCondition.findOne();
 
     if (!termsAndCondition) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'terms-and-conditions', message: 'Privacy Policy content not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'terms-and-conditions', message: 'Terms and conditions content not found' }));
     }
 
-    const termsAndConditionContentWithoutTags = termsAndCondition.content.replace(/<\/?[^>]+(>|$)/g, "");
-    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'terms-and-conditions', message: 'Privacy Policy content retrieved successfully', data: termsAndConditionContentWithoutTags }));
+    //const termsAndConditionContentWithoutTags = termsAndCondition.content.replace(/<\/?[^>]+(>|$)/g, "");
+    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'terms-and-conditions', message: 'Terms and conditions content retrieved successfully', data: termsAndCondition }));
   } catch (error) {
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'terms-and-conditions', message: 'Server Error' }));

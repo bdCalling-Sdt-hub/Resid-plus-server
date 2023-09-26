@@ -341,7 +341,6 @@ const bookingDashboardRatio = async (req, res) => {
         const updatedAt = new Date(booking.updatedAt);
         const month = updatedAt.getMonth(); // Month is 0-indexed and will get 0-11
         const gettingYear = updatedAt.getFullYear();
-        console.log('month ------------------------------>', month, booking)
         // Check if the booking is in the specified year
         if (conditionalYear === gettingYear) {
           monthlyCounts[month].bookingCounts += 1;

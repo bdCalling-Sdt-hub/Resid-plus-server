@@ -8,6 +8,7 @@ const paymentRouter = require('./routes/paymentRouter');
 const termsAndConditionRouter = require('./routes/termsAndConditionRouter')
 const privacyPolicyRouter = require('./routes/privacyPolicyRouter')
 const aboutUsRouter = require('./routes/aboutUsRouter')
+const reviewRouter = require('./routes/reviewRouter')
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 require('dotenv').config();
@@ -44,9 +45,10 @@ app.use('/api/residence', residenceRouter);
 app.use('/api/booking', bookingRouter);
 app.use('/api/payments', paymentRouter)
 app.use('/api/favourites', favouriteRouter)
-app.use('/api/termsAndConditions', termsAndConditionRouter)
-app.use('/api/privacyPolicys', privacyPolicyRouter)
-app.use('/api/aboutUs', aboutUsRouter)
+app.use('/api/terms-and-conditions', termsAndConditionRouter)
+app.use('/api/privacy-policys', privacyPolicyRouter)
+app.use('/api/about-us', aboutUsRouter)
+app.use('/api/reviews', reviewRouter)
 
 
 app.get('/test', (req, res) => {

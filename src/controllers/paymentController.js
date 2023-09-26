@@ -4,7 +4,7 @@ const Payment = require('../models/Payment');
 const Residence = require('../models/Residence');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
-
+const response = require("../helpers/response");
 
 const payment = async (req, res) => {
   try {

@@ -1,10 +1,10 @@
 const PrivacyPolicy = require("../models/PrivacyPolicy");
 const User = require("../models/User");
+const response = require("../helpers/response");
 
 const createPrivacyPolicy = async (req, res) => {
-  const { content } = req.body;
-
   try {
+    const { content } = req.body;
     const user = await User.findById(req.body.userId);
     if (!user) {
       return res.status(404).json(
@@ -54,18 +54,14 @@ const getAll = async (req, res) => {
       );
     }
 
-    if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '404', type: 'privacy-policy', message: 'You are not Authorization' }));
-    }
-
     const privacyPolicy = await PrivacyPolicy.findOne();
 
     if (!privacyPolicy) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'privacy-policy', message: 'Privacy Policy content not found' }));
     }
 
-    const privacyPolicyContentWithoutTags = privacyPolicy.content.replace(/<\/?[^>]+(>|$)/g, "");
-    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'privacy-policy', message: 'Privacy Policy content retrieved successfully', data: privacyPolicyContentWithoutTags }));
+    //const privacyPolicyContentWithoutTags = privacyPolicy.content.replace(/<\/?[^>]+(>|$)/g, "");
+    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'privacy-policy', message: 'Privacy Policy content retrieved successfully', data: privacyPolicy }));
   } catch (error) {
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'privacy-policy', message: 'Server Error' }));

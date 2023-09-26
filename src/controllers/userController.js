@@ -169,10 +169,14 @@ const updatePassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
-    } else if (user.oneTimeCode === 'verified'){
+    } else if (user.oneTimeCode === 'verified') {
       user.password = password;
+      user.oneTimeCode = null;
       await user.save();
       res.status(200).json(response({ message: 'Password updated successfully', status: "OK", statusCode: 200 }));
+    }
+    else {
+      res.status(200).json(response({ message: 'Something went wrong, try forget password again', status: "OK", statusCode: 200 }));
     }
   } catch (error) {
     res.status(500).json(response({ message: 'Error updating password', status: "OK", statusCode: 200 }));
@@ -198,7 +202,7 @@ const updateProfile = async (req, res) => {
     //checking if user has provided any photo
     if (req.file) {
       //checking if user has any photo link in the database
-      if (checkUser.image && checkUser.image.path!=='public\\uploads\\users\\user-1695552693976.jpg') {
+      if (checkUser.image && checkUser.image.path !== 'public\\uploads\\users\\user-1695552693976.jpg') {
         //deleting the image from the server
         //console.log('unlinking image---------------------------->',checkUser.image.path)
         unlinkImages(checkUser.image.path)
@@ -362,23 +366,23 @@ const allUser = async (req, res) => {
 
 // Change Password
 const changePassword = async (req, res) => {
+  console.log(req.body.userId)
   try {
-    const { email, currentPassword, newPassword, reTypedPassword } = req.body;
-    const user = await User.findOne({ email })
+    const { currentPassword, newPassword } = req.body;
+    const checkUser = await User.findOne({ _id: req.body.userId });
 
-    if (!user) {
-      if (!checkUser) {
-        return res.status(404).json(
-          response({
-            status: 'Error',
-            statusCode: '404',
-            message: 'User not found',
-          })
-        );
-      }
+    if (!checkUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
     }
 
-    const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+
+    const passwordMatch = await bcrypt.compare(currentPassword, checkUser.password);
 
     if (!passwordMatch) {
       return res.status(401).json(
@@ -390,26 +394,16 @@ const changePassword = async (req, res) => {
       );
     }
 
-    if (newPassword !== reTypedPassword) {
-      return res.status(400).json(
-        response({
-          status: 'Error',
-          statusCode: '400',
-          message: 'New password and re-typed password do not match',
-        })
-      );
-    }
+    checkUser.password = newPassword;
+    await checkUser.save()
 
-    user.password = newPassword;
-    await user.save()
-
-    console.log(user)
+    console.log(checkUser)
     return res.status(200).json(
       response({
         status: 'Success',
         statusCode: '200',
         message: 'Password changed successfully',
-        data: user
+        data: checkUser
       })
     );
   } catch (error) {
@@ -419,4 +413,4 @@ const changePassword = async (req, res) => {
 }
 
 
-module.exports = { signUp, signIn, processForgetPassword, changePassword,verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser }
+module.exports = { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser }

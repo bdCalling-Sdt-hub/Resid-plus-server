@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   aboutResidence: { type: String, reqiured: false },
   hourlyAmount: { type: Number, reqiured: false },
   popularity: { type: Number, default:0 },
+  ratings: { type: Number, default:0 },
   dailyAmount: { type: Number, reqiured: false },
   amenities: {
     type: Array,
@@ -27,7 +28,7 @@ const userSchema = new mongoose.Schema({
   ownerName: { type: String, required: false },
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   aboutOwner: { type: String, required: false },
-  status: { type: String, enum: ['reserved', 'active'], default: 'active' },
+  status: { type: String, enum: ['reserved', 'active', 'unknown'], default: 'active' },
   category:{ type: String, enum: ['hotel','residence', 'personal-house'], default: 'residence', required:false }
 }, { timestamps: true });
 
