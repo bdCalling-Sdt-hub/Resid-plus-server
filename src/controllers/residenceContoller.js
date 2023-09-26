@@ -33,9 +33,22 @@ const addResidence = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
 
+    //extracting file names and path for static display with link
+    const files = [];
+    if (req.files) {
+      req.files.forEach((file) => {
+        const publicFileUrl = `${req.protocol}://${req.get('host')}/uploads/residences/${file.filename}`;
+        files.push({
+          publicFileUrl,
+          path: file.path
+        });
+        console.log(files)
+      });
+    }
+
     if (checkHost.role === 'host') {
       const residence = new Residence({
-        photo: req.files,
+        photo: files,
         residenceName,
         capacity,
         beds,
@@ -89,25 +102,23 @@ const allResidence = async (req, res) => {
     const searchRegExp = new RegExp('.*' + search + '.*', 'i');
     const filter = {
       $or: [
-        { residenceName: { $regex: searchRegExp }},
+        { residenceName: { $regex: searchRegExp } },
         { address: { $regex: searchRegExp } },
         { city: { $regex: searchRegExp } },
-        //   { beds: { $regex: searchRegExp } },
         { municipality: { $regex: searchRegExp } },
       ],
     };
-    if(minPrice && maxPrice){
-      //applting price range filter on dailyAmount
+    if (minPrice && maxPrice) {
       console.log('------enterend price-----------')
       filter.$and = filter.$and || [];
-      filter.$and.push({dailyAmount:{ $gte: minPrice, $lte: maxPrice }})
+      filter.$and.push({ dailyAmount: { $gte: minPrice, $lte: maxPrice } })
     }
     if (category) {
       console.log('------enterend category-----------')
       filter.$and = filter.$and || [];
       filter.$and.push({ category: category });
     }
-    
+
     if (numberOfBeds) {
       console.log('------enterend no..beds-----------')
       filter.$and = filter.$and || [];
@@ -127,24 +138,49 @@ const allResidence = async (req, res) => {
     let residences = [];
     let count = 0;
 
-    if (checkUser.role === 'user' || checkUser.role === 'admin') {
-      residences = await Residence.find(filter)
-        .limit(limit)
-        .skip((page - 1) * limit);
-      count = await Residence.countDocuments(filter);
+    if (checkUser.role === 'user') {
+      const requestType = req.query.requestType || 'all'
+      if (requestType === 'all') {
+        residences = await Residence.find(filter)
+          .limit(limit)
+          .skip((page - 1) * limit);
+        count = await Residence.countDocuments(filter);
+      }
+      else if (requestType === 'new') {
+        residences = await Residence.find(filter)
+          .limit(limit)
+          .skip((page - 1) * limit)
+          .sort({ createdAt: -1 });
+        count = await Residence.countDocuments(filter);
+      }
+      else if (requestType === 'popular') {
+        residences = await Residence.find(filter)
+          .limit(limit)
+          .skip((page - 1) * limit)
+          .sort({ popularity: -1 });
+        count = await Residence.countDocuments(filter);
+      }
     }
     else if (checkUser.role === 'host') {
       residences = await Residence.find({
         hostId: req.body.userId,
-        ...filter, // Apply the same filtering criteria as for user and admin
+        //...filter, 
       })
         .limit(limit)
         .skip((page - 1) * limit);
       count = await Residence.countDocuments({
         hostId: req.body.userId,
-        ...filter, // Apply the same filtering criteria as for user and admin
+        //...filter,
       });
     }
+
+    // //-> placed to residence dashboard API
+    // else if (checkUser.role === 'admin') {
+    //   residences = await Residence.find()
+    //     .limit(limit)
+    //     .skip((page - 1) * limit);
+    //   count = await Residence.countDocuments();
+    // }
 
     return res.status(200).json(
       response({
@@ -261,7 +297,17 @@ const updateResidence = async (req, res) => {
         ).flat();
         unlinkImages(paths)
         console.log(paths);
-        residence.photo = req.files;
+
+        const files = [];
+        req.files.forEach((file) => {
+          const publicFileUrl = `${req.protocol}://${req.get('host')}/uploads/residences/${file.filename}`;
+          files.push({
+            publicFileUrl,
+            path: file.path
+          });
+          console.log(files)
+        });
+        residence.photo = files;
       }
       const options = { new: true };
       const result = await Residence.findByIdAndUpdate(id, residence, options);
@@ -321,5 +367,58 @@ const residenceDetails = async (req, res) => {
   }
 };
 
+const residenceDashboard = async (req, res) => {
+  try {
+    const checkUser = await User.findById(req.body.userId);
+    if (!checkUser) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    };
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails };
+    if (checkUser.role === 'admin') {
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const residences = await Residence.find()
+        .limit(limit)
+        .skip((page - 1) * limit);
+      count = await Residence.countDocuments();
+
+      const active = await Residence.countDocuments({ status: 'active' });
+      const reserved = await Residence.countDocuments({ status: 'reserved' });
+      console.log(active, reserved)
+      const count_data = {
+        active,
+        reserved
+      };
+      return res.status(200).json(
+        response({
+          status: 'OK',
+          statusCode: '200',
+          type: 'residence',
+          message: 'Residence count and details retrieved successfully',
+          data: {
+            residences,
+            status: count_data,
+            pagination: {
+              totalDocuments: count,
+              totalPage: Math.ceil(count / limit),
+              currentPage: page,
+              previousPage: page > 1 ? page - 1 : null,
+              nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
+            },
+          },
+          
+        })
+      );
+    }
+    else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get all counts' }));
+    }
+  }
+  catch (error) {
+    console.log(error)
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server not responding' }));
+  }
+}
+
+
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard };

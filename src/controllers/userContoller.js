@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Booking = require("../models/Booking")
 const bcrypt = require('bcryptjs');
 const response = require("../helpers/response");
 const jwt = require('jsonwebtoken');
@@ -16,10 +17,13 @@ const signUp = async (req, res) => {
     // Check if the user already exists
     const userExist = await User.findOne({ email });
     if (userExist) {
-      //providing the image path saved in the server
-      unlinkImages(req.file.path)
       return res.status(409).json(response({ statusCode: 200, message: 'User already exists', status: "OK" }));
     }
+
+    //role as admin is not allowed to be signed-up
+    // if(role==='admin'){
+    //   return res.status(409).json(response({ statusCode: 200, message: 'You are not authorized to sign-up', status: "OK" }));
+    // }
 
     // Create the user in the database
     const user = await User.create({
@@ -29,8 +33,7 @@ const signUp = async (req, res) => {
       address,
       dateOfBirth,
       password,
-      role,
-      image: req.file
+      role
     });
 
     res.status(201).json(response({
@@ -42,10 +45,8 @@ const signUp = async (req, res) => {
     }));
 
   } catch (error) {
-    //providing the image path saved in the server
-    unlinkImages(req.file.path)
     console.error(error);
-    res.status(500).json({ message: 'Error creating user', error });
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'user', message: 'Error creating user' }));
   }
 };
 
@@ -98,7 +99,7 @@ const processForgetPassword = async (req, res) => {
     }
 
     // Generate OTC (One-Time Code)
-    const oneTimeCode = Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
+    const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
     // Store the OTC and its expiration time in the database
     user.oneTimeCode = oneTimeCode;
@@ -164,7 +165,6 @@ const verifyOneTimeCode = async (req, res) => {
 const updatePassword = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(req.body.password);
     console.log(email);
     const user = await User.findOne({ email });
     if (!user) {
@@ -179,6 +179,244 @@ const updatePassword = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const { fullName, phoneNumber, address, dateOfBirth } = req.body;
+
+    // Check if the user already exists
+    const checkUser = await User.findOne({ _id: req.body.userId });
+    if (!checkUser) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    };
+    const user = {
+      fullName,
+      phoneNumber,
+      address,
+      dateOfBirth
+    };
+
+    //checking if user has provided any photo
+    if (req.file) {
+      //checking if user has any photo link in the database
+      if (checkUser.image && checkUser.image.path!=='public\\uploads\\users\\user-1695552693976.jpg') {
+        //deleting the image from the server
+        //console.log('unlinking image---------------------------->',checkUser.image.path)
+        unlinkImages(checkUser.image.path)
+      }
+      const publicFileUrl = `${req.protocol}://${req.get('host')}/uploads/users/${req.file.filename}`;
+      const fileInfo = {
+        publicFileUrl,
+        path: req.file.path
+      };
+
+      user.image = fileInfo
+    }
+    const options = { new: true };
+    const result = await User.findByIdAndUpdate(checkUser._id, user, options);
+
+    //console.log('result---------------------------->',result)
+    return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'user', message: 'User profile edited successfully.', data: result }));
+  }
+  catch (error) {
+    //providing the image path saved in the server
+    if (req.file) {
+      unlinkImages(req.file.path)
+    }
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'user', message: 'Error in updating user' }));
+  }
+};
+
+const userDetails = async (req, res) => {
+  try {
+    const checkUser = await User.findOne({ _id: req.body.userId });
+    const id = req.params.id
+    if (!checkUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+
+    const user = await User.findById(id)
+      .select('fullName email phoneNumber address image dateOfBirth');
+
+    if (checkUser.role === 'admin') {
+      return res.status(409).json(response({ statusCode: 200, message: 'You are not authorised to get profile details', status: "OK" }));
+    }
+
+    return res.status(200).json(
+      response({
+        status: 'OK',
+        statusCode: '200',
+        type: 'user',
+        message: 'User details retrieved successfully',
+        data: {
+          user
+        },
+      })
+    );
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json(
+      response({
+        status: 'Error',
+        statusCode: '500',
+        message: 'Error getting residences',
+      })
+    );
+  }
+};
+
+const allUser = async (req, res) => {
+  try {
+    const checkUser = await User.findOne({ _id: req.body.userId });
+    if (!checkUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+    const search = req.query.search || '';
+    const userType = req.query.userType || 'user'
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const searchRegExp = new RegExp('.*' + search + '.*', 'i');
+    const filter = {
+      $or: [
+        { email: { $regex: searchRegExp } },
+        { fullName: { $regex: searchRegExp } },
+        { phoneNumber: { $regex: searchRegExp } },
+      ],
+    };
+    if (userType) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ role: userType })
+    }
+
+    let users = [];
+    let completed = {}
+    let count = 0;
+
+    if (checkUser.role === 'admin') {
+      users = await User.find(filter)
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .sort({ popularity: -1 });
+
+      console.log(users)
+      for (const user of users) {
+        const uid = user._id
+
+        if (userType === 'user') {
+          completed[uid] = await Booking.countDocuments({ status: 'completed', userId: uid });
+        }
+        else {
+          completed[uid] = await Booking.countDocuments({ status: 'completed', hostId: uid });
+        }
+        // }
+      }
+
+      count = await User.countDocuments(filter);
+    }
+    else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'user', message: 'You are not authorised to get all user details', data: null }));
+    }
+
+    return res.status(200).json(
+      response({
+        status: 'OK',
+        statusCode: '200',
+        type: 'user',
+        message: 'Users retrieved successfully',
+        data: {
+          users,
+          completeHistory: completed,
+          pagination: {
+            totalDocuments: count,
+            totalPage: Math.ceil(count / limit),
+            currentPage: page,
+            previousPage: page > 1 ? page - 1 : null,
+            nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
+          },
+        },
+      })
+    );
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json(
+      response({
+        status: 'Error',
+        statusCode: '500',
+        message: 'Error getting users',
+      })
+    );
+  }
+};
+
+// Change Password
+const changePassword = async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword, reTypedPassword } = req.body;
+    const user = await User.findOne({ email })
+
+    if (!user) {
+      if (!checkUser) {
+        return res.status(404).json(
+          response({
+            status: 'Error',
+            statusCode: '404',
+            message: 'User not found',
+          })
+        );
+      }
+    }
+
+    const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json(
+        response({
+          status: 'Error',
+          statusCode: '401',
+          message: 'Current password is incorrect',
+        })
+      );
+    }
+
+    if (newPassword !== reTypedPassword) {
+      return res.status(400).json(
+        response({
+          status: 'Error',
+          statusCode: '400',
+          message: 'New password and re-typed password do not match',
+        })
+      );
+    }
+
+    user.password = newPassword;
+    await user.save()
+
+    console.log(user)
+    return res.status(200).json(
+      response({
+        status: 'Success',
+        statusCode: '200',
+        message: 'Password changed successfully',
+        data: user
+      })
+    );
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json(response({ status: 'Edited', statusCode: '500', type: 'user', message: 'An error occurred while changing password' }));
+  }
+}
 
 
-module.exports = { signUp, signIn, processForgetPassword, verifyOneTimeCode, updatePassword }
+module.exports = { signUp, signIn, processForgetPassword, changePassword,verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser }

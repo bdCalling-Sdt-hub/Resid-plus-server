@@ -3,6 +3,11 @@ const cors = require('cors');
 const userRouter = require('./routes/userRouter');
 const residenceRouter = require('./routes/residenceRouter');
 const bookingRouter = require('./routes/bookingRouter');
+const favouriteRouter = require('./routes/favouriteRouter');
+const paymentRouter = require('./routes/paymentRouter');
+const termsAndConditionRouter = require('./routes/termsAndConditionRouter')
+const privacyPolicyRouter = require('./routes/privacyPolicyRouter')
+const aboutUsRouter = require('./routes/aboutUsRouter')
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 require('dotenv').config();
@@ -13,6 +18,9 @@ mongoose.connect(process.env.MONGODB_CONNECTION, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
+
+//making public folder static for publicly access
+app.use(express.static('public'));
 
 // For handling form data
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -34,7 +42,11 @@ app.use(cors(
 app.use('/api/users', userRouter);
 app.use('/api/residence', residenceRouter);
 app.use('/api/booking', bookingRouter);
-
+app.use('/api/payments', paymentRouter)
+app.use('/api/favourites', favouriteRouter)
+app.use('/api/termsAndConditions', termsAndConditionRouter)
+app.use('/api/privacyPolicys', privacyPolicyRouter)
+app.use('/api/aboutUs', aboutUsRouter)
 
 
 app.get('/test', (req, res) => {
