@@ -150,6 +150,8 @@ const verifyOneTimeCode = async (req, res) => {
       return res.status(40).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
     } else if (user.oneTimeCode === oneTimeCode) {
       res.status(200).json(response({ message: 'Verified', status: "OK", statusCode: 200 }));
+      user.oneTimeCode = 'verified';
+      await user.save();
     } else {
       res.status(400).json(response({ message: 'Invalid OTC', status: "OK", statusCode: 200 }));
     }
@@ -167,7 +169,7 @@ const updatePassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
-    } else {
+    } else if (user.oneTimeCode === 'verified'){
       user.password = password;
       await user.save();
       res.status(200).json(response({ message: 'Password updated successfully', status: "OK", statusCode: 200 }));

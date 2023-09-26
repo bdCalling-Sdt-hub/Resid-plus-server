@@ -230,7 +230,7 @@ const updateBooking = async (req, res) => {
 
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added booking' }));
   }
-}
+};
 
 //booking details
 const bookingDetails = async (req, res) => {
