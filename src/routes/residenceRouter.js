@@ -1,5 +1,5 @@
 const express = require('express');
-const { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard } = require('../controllers/residenceContoller');
+const { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard } = require('../controllers/residenceController');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 const userFileUploadMiddleware = require("../middlewares/fileUpload");

@@ -1,5 +1,5 @@
 const express = require('express');
-const { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser } = require('../controllers/userContoller');
+const { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser } = require('../controllers/userController');
 const router = express.Router();
 const userFileUploadMiddleware = require("../middlewares/fileUpload");
 
