@@ -21,6 +21,6 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.5",
     "nodemon": "^3.0.1",
-    "stripe": "^13.6.0"
+    "stripe": "^13.7.0"
   }
 }
