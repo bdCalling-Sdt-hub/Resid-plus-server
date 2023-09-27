@@ -40,6 +40,24 @@ app.use(cors(
   // }
 ));
 
+//initilizing socketIO
+const http = require('http');
+const socketIo = require('socket.io');
+const server = http.createServer(app);
+const io = socketIo(server, {cors: {
+  origin: "*"
+}});
+
+const socketIO = require("./helpers/socketIO");
+socketIO(io);
+
+global.io = io
+
+const socketIOPort = process.env.SOCKET_IO_PORT
+server.listen(socketIOPort, () => {
+  console.log(`Server is listening on port: ${socketIOPort}`);
+});
+//initilizing API routes
 app.use('/api/users', userRouter);
 app.use('/api/residence', residenceRouter);
 app.use('/api/booking', bookingRouter);
@@ -50,7 +68,7 @@ app.use('/api/privacy-policys', privacyPolicyRouter)
 app.use('/api/about-us', aboutUsRouter)
 app.use('/api/reviews', reviewRouter)
 
-
+//testing API is alive
 app.get('/test', (req, res) => {
   res.send('I am responding!!')
 })

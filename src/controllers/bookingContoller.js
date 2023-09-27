@@ -2,11 +2,14 @@ const response = require("../helpers/response");
 const mongoose = require('mongoose')
 const Booking = require("../models/Booking");
 const Residence = require("../models/Residence");
+const Notification = require('../models/Notification')
 const generateCustomID = require('../helpers/generateCustomId');
 //a helper function to calculate hours between two date-time
 const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
 const User = require("../models/User");
+const { addNotification } = require("./notificationController");
 const options = { new: true };
+
 
 //Add booking
 const addBooking = async (req, res) => {
@@ -225,18 +228,27 @@ const updateBooking = async (req, res) => {
 
       //changing residence status to reserved
       //----->start
-      const booking_details = await Booking.findById(id)
-      if (status === 'reserved') {
+      const bookingDetails = await Booking.findById(id).populate('residenceId userId')
+      if (status === 'reserved' && bookingDetails.status === 'pending') {
         const updated_residence = {
           status
         }
-        await Residence.findByIdAndUpdate(booking_details.residenceId, updated_residence, options);
+        await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
+        const message = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
+
+        const newNotification = {
+          message: message,
+          linkId: bookingDetails._id,
+          type: 'admin'
+        }
+        const notification = await addNotification(newNotification)
+        io.emit('admin-notification', notification);
       }
       else {
         const updated_residence = {
           status: 'active'
         }
-        await Residence.findByIdAndUpdate(booking_details.residenceId, updated_residence, options);
+        await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
       }
       //----->end
 
