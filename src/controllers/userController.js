@@ -72,19 +72,58 @@ const signIn = async (req, res) => {
       return res.status(401).json(response({ statusCode: 200, message: 'Invalid password', status: "OK" }));
     }
 
-    var accessToken
+    let activityId = null
     if (user.role === 'admin') {
+      function extractDeviceModel(userAgent) {
+        const regex = /\(([^)]+)\)/;
+        const matches = userAgent.match(regex);
+
+        if (matches && matches.length >= 2) {
+          return matches[1];
+        } else {
+          return 'Unknown';
+        }
+      }
+
+      const userA = req.headers['user-agent'];
+
+      const deviceModel = extractDeviceModel(userA);
+
+
+      function getBrowserInfo(userAgent) {
+        const ua = userAgent.toLowerCase();
+
+        if (ua.includes('firefox')) {
+          return 'Firefox';
+        } else if (ua.includes('edg')) {
+          return 'Edge';
+        } else if (ua.includes('safari') && !ua.includes('chrome')) {
+          return 'Safari';
+        } else if (ua.includes('opr') || ua.includes('opera')) {
+          return 'Opera';
+        } else if (ua.includes('chrome')) {
+          return 'Chrome';
+        } else {
+          return 'Unknown';
+        }
+      }
+
+
+      const os = req.headers['user-agent'];
+      // const deviceNameOrModel = req.headers['user-agent'];
+      const userAgent = req.get('user-agent');
+      const browser = getBrowserInfo(userAgent);
       const activity = await Activity.create({
         operatingSystem: deviceModel,
         browser,
         userId: user._id
       });
       console.log(activity)
-      accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activity._id }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
+      activityId= activity._id
     }
 
     //Token, set the Cokkie
-    accessToken = jwt.sign({ _id: user._id, email: user.email }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
+    const accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activityId}, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
 
     //Success response
     res.status(200).json(response({ statusCode: 200, message: 'User logged in successfully', status: "OK", type: "user", data: user, token: accessToken }));

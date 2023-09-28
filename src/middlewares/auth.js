@@ -14,18 +14,18 @@ const isValidUser = async (req, res, next) => {
             console.log(token);
             decodedData = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
             console.log(decodedData);
-            if (decodedData.role === 'admin') {
+            if (decodedData.role === 'admin' && decodedData.activityId!==null) {
                 activity = await Activity.findById(decodedData.activityId)
             }
+        }
+        if (decodedData.role === 'admin' && activity === null) {
+            return res.status(403).json({ error: 'You are not authorized to sign in now' });
         }
         else if (!authorization) {
             return res.status(403).json({ error: 'Unauthorized' });
         }
         else if (!decodedData) {
             return res.status(403).json({ error: 'Unauthorized' });
-        }
-        else if (!activity) {
-            return res.status(403).json({ error: 'You are not authorized to sign in' });
         }
         req.body.userId = decodedData._id;
         next();
