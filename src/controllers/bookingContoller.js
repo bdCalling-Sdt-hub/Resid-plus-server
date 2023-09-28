@@ -238,17 +238,21 @@ const updateBooking = async (req, res) => {
 
         const newNotification = {
           message: message,
+          image: bookingDetails.userId.image,
           linkId: bookingDetails._id,
           type: 'admin'
         }
         const notification = await addNotification(newNotification)
         io.emit('admin-notification', notification);
       }
+      // else {
+      //   const updated_residence = {
+      //     status: 'active'
+      //   }
+      //   await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
+      // }
       else {
-        const updated_residence = {
-          status: 'active'
-        }
-        await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Cant update notifications' }));
       }
       //----->end
 

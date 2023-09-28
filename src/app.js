@@ -9,6 +9,7 @@ const termsAndConditionRouter = require('./routes/termsAndConditionRouter')
 const privacyPolicyRouter = require('./routes/privacyPolicyRouter')
 const aboutUsRouter = require('./routes/aboutUsRouter')
 const reviewRouter = require('./routes/reviewRouter')
+const notificationRouter = require('./routes/notificationRouter')
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 require('dotenv').config();
@@ -67,6 +68,7 @@ app.use('/api/terms-and-conditions', termsAndConditionRouter)
 app.use('/api/privacy-policys', privacyPolicyRouter)
 app.use('/api/about-us', aboutUsRouter)
 app.use('/api/reviews', reviewRouter)
+app.use('/api/notifications', notificationRouter)
 
 //testing API is alive
 app.get('/test', (req, res) => {

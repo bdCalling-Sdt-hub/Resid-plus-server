@@ -8,6 +8,7 @@ const emailWithNodemailer = require("../helpers/email");
 require('dotenv').config();
 //defining unlinking image function 
 const unlinkImages = require('../common/image/unlinkImage')
+const Activity = require('../models/Activity')
 
 //Sign up
 const signUp = async (req, res) => {
@@ -71,13 +72,19 @@ const signIn = async (req, res) => {
       return res.status(401).json(response({ statusCode: 200, message: 'Invalid password', status: "OK" }));
     }
 
-    //Checking banned user
-    if (user.isBanned) {
-      return res.status(403).json(response({ statusCode: 200, message: 'User is banned', status: "OK" }));
+    var accessToken
+    if (user.role === 'admin') {
+      const activity = await Activity.create({
+        operatingSystem: deviceModel,
+        browser,
+        userId: user._id
+      });
+      console.log(activity)
+      accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activity._id }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
     }
 
     //Token, set the Cokkie
-    const accessToken = jwt.sign({ _id: user._id, email: user.email }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
+    accessToken = jwt.sign({ _id: user._id, email: user.email }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
 
     //Success response
     res.status(200).json(response({ statusCode: 200, message: 'User logged in successfully', status: "OK", type: "user", data: user, token: accessToken }));

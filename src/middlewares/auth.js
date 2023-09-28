@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const Activity = require('../models/Activity')
 
 const isValidUser = async (req, res, next) => {
     try {
@@ -7,15 +8,24 @@ const isValidUser = async (req, res, next) => {
         console.log(authorization);
         let token;
         let decodedData;
+        let activity;
         if (authorization && authorization.startsWith("Bearer")) {
             token = authorization.split(" ")[1];
             console.log(token);
             decodedData = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
             console.log(decodedData);
-        } else if (!authorization) {
+            if (decodedData.role === 'admin') {
+                activity = await Activity.findById(decodedData.activityId)
+            }
+        }
+        else if (!authorization) {
             return res.status(403).json({ error: 'Unauthorized' });
-        } else if (!decodedData) {
+        }
+        else if (!decodedData) {
             return res.status(403).json({ error: 'Unauthorized' });
+        }
+        else if (!activity) {
+            return res.status(403).json({ error: 'You are not authorized to sign in' });
         }
         req.body.userId = decodedData._id;
         next();
