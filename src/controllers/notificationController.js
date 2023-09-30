@@ -50,7 +50,7 @@ async function getAllNotification(type, limit = 10, page = 1) {
 }
 
 const allNotifications = async (req, res) => {
-  console.log('-----------------------------------------------called-----------------------------------------')
+  
   try {
     const checkUser = await User.findById(req.body.userId);
     //extracting the notification id from param that is going to be edited

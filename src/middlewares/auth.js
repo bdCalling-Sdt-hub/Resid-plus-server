@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Activity = require('../models/Activity')
+const response = require("../helpers/response");
+
 
 const isValidUser = async (req, res, next) => {
     try {
@@ -19,19 +21,19 @@ const isValidUser = async (req, res, next) => {
             }
         }
         if (decodedData.role === 'admin' && activity === null) {
-            return res.status(403).json({ error: 'You are not authorized to sign in now' });
+            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: 'You are not authorised to sign in now' }));
         }
         else if (!authorization) {
-            return res.status(403).json({ error: 'Unauthorized' });
+            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: 'Unauthorised' }));
         }
         else if (!decodedData) {
-            return res.status(403).json({ error: 'Unauthorized' });
+            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: 'Unauthorised' }));
         }
         req.body.userId = decodedData._id;
         next();
     } catch (error) {
         console.log("Middleware Error", error.message)
-        return res.status(500).json({ message: "Error authorization" });
+        return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: 'Error authorization' }));
     }
 };
 

@@ -107,9 +107,6 @@ const signIn = async (req, res) => {
           return 'Unknown';
         }
       }
-
-
-      const os = req.headers['user-agent'];
       // const deviceNameOrModel = req.headers['user-agent'];
       const userAgent = req.get('user-agent');
       const browser = getBrowserInfo(userAgent);
@@ -119,11 +116,11 @@ const signIn = async (req, res) => {
         userId: user._id
       });
       console.log(activity)
-      activityId= activity._id
+      activityId = activity._id
     }
 
     //Token, set the Cokkie
-    const accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activityId}, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
+    const accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activityId }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
 
     //Success response
     res.status(200).json(response({ statusCode: 200, message: 'User logged in successfully', status: "OK", type: "user", data: user, token: accessToken }));
