@@ -80,7 +80,7 @@ const addResidence = async (req, res) => {
     console.error(error);
     //deleting the images if something went wrong
     unlinkImages(req.files.map(file => file.path))
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added residence' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
   }
 };
 
@@ -109,18 +109,18 @@ const allResidence = async (req, res) => {
       ],
     };
     if (minPrice && maxPrice) {
-      console.log('------enterend price-----------')
+      console.log('------enterend price------')
       filter.$and = filter.$and || [];
       filter.$and.push({ dailyAmount: { $gte: minPrice, $lte: maxPrice } })
     }
     if (category) {
-      console.log('------enterend category-----------')
+      console.log('------enterend category------')
       filter.$and = filter.$and || [];
       filter.$and.push({ category: category });
     }
 
     if (numberOfBeds) {
-      console.log('------enterend no..beds-----------')
+      console.log('------enterend no..beds------')
       filter.$and = filter.$and || [];
       filter.$and.push({ beds: numberOfBeds });
     }
@@ -140,6 +140,8 @@ const allResidence = async (req, res) => {
 
     if (checkUser.role === 'user') {
       const requestType = req.query.requestType || 'all'
+      filter.$and = filter.$and || [];
+      filter.$and.push({ status: 'active' });
       if (requestType === 'all') {
         residences = await Residence.find(filter)
           .limit(limit)
@@ -265,7 +267,8 @@ const updateResidence = async (req, res) => {
       dailyAmount,
       amenities,
       ownerName,
-      aboutOwner
+      aboutOwner,
+      status
     } = req.body;
     if (!checkHost) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
@@ -287,6 +290,15 @@ const updateResidence = async (req, res) => {
         ownerName,
         aboutOwner,
         hostId: req.body.userId,
+      }
+      if(status){
+        const existingResidence = await Residence.findById(id);
+        if(existingResidence.status === 'reserved'){
+          return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'You cant change staus while residence is reserved' }));
+        }
+        else{
+          residence.status = status;
+        }
       }
       if (req.files.length > 0) {
         const images = await Residence.find({ _id: id })

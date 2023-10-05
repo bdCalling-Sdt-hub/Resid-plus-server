@@ -23,15 +23,22 @@ module.exports = function (UPLOADS_FOLDER) {
 
   const upload = multer({
     storage: storage,
+    limits: {
+      fileSize: 100000, // 100 KB
+    },
     fileFilter: (req, file, cb) => {
       if (
         file.mimetype == "image/jpg" ||
         file.mimetype == "image/png" ||
         file.mimetype == "image/jpeg"
       ) {
-        cb(null, true);
+        if (file.size <= 100000) {
+          cb(null, true);
+        } else {
+          cb(new Error("File size must be less than 100 KB"));
+        }
       } else {
-        cb(new Error("Only jpg, png, jpeg"));
+        cb(new Error("Only jpg, png, jpeg format allowed!"));
       }
     },
   });

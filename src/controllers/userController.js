@@ -270,7 +270,7 @@ const updateProfile = async (req, res) => {
       unlinkImages(req.file.path)
     }
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'user', message: 'Error in updating user' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'user', message: error.message }));
   }
 };
 

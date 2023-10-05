@@ -11,6 +11,7 @@ const aboutUsRouter = require('./routes/aboutUsRouter')
 const reviewRouter = require('./routes/reviewRouter')
 const notificationRouter = require('./routes/notificationRouter')
 const activityRouter = require('./routes/activityRouter')
+const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 require('dotenv').config();
@@ -72,10 +73,14 @@ app.use('/api/reviews', reviewRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/activities', activityRouter)
 
+//invalid route handler
+app.use(notFoundHandler);
+//error handling
+app.use(errorHandler);
+
 //testing API is alive
 app.get('/test', (req, res) => {
   res.send('I am responding!!')
 })
-
 
 module.exports = app;

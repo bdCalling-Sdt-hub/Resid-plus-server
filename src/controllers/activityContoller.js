@@ -32,6 +32,7 @@ const allActivity = async (req, res) => {
     const activitys = await Activity.find()
       .limit(limit)
       .skip((page - 1) * limit)
+      .sort({createdAt:-1})
     count = await Activity.countDocuments();
 
     console.log("activitys------------->", activitys)
