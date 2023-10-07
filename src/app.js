@@ -73,14 +73,14 @@ app.use('/api/reviews', reviewRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/activities', activityRouter)
 
-//invalid route handler
-app.use(notFoundHandler);
-//error handling
-app.use(errorHandler);
-
 //testing API is alive
 app.get('/test', (req, res) => {
   res.send('I am responding!!')
 })
+
+//error handling
+app.use(errorHandler);
+//invalid route handler
+app.use(notFoundHandler);
 
 module.exports = app;

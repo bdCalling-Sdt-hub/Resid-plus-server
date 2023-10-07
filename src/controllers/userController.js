@@ -8,10 +8,12 @@ const emailWithNodemailer = require("../helpers/email");
 require('dotenv').config();
 //defining unlinking image function 
 const unlinkImages = require('../common/image/unlinkImage')
-const Activity = require('../models/Activity')
+const Activity = require('../models/Activity');
+const e = require("express");
 
 //Sign up
 const signUp = async (req, res) => {
+  console.log(req.body)
   try {
     const { fullName, email, phoneNumber, address, dateOfBirth, password, role } = req.body;
 
@@ -25,6 +27,7 @@ const signUp = async (req, res) => {
     // if(role==='admin'){
     //   return res.status(409).json(response({ statusCode: 200, message: 'You are not authorized to sign-up', status: "OK" }));
     // }
+    const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
     // Create the user in the database
     const user = await User.create({
@@ -33,13 +36,42 @@ const signUp = async (req, res) => {
       phoneNumber,
       address,
       dateOfBirth,
+      oneTimeCode,
       password,
       role
     });
 
+    if (user && (user.role === 'user' || user.role === 'host')) {
+      const emailData = {
+        email,
+        subject: 'User verification code',
+        html: `
+          <h1>Hello, ${user.fullName}</h1>
+          <p>Your One Time Code is <h3>${oneTimeCode}</h3> to verify your account</p>
+          <small>This Code is valid for 3 minutes</small>
+        `
+      }
+      console.log('email send to verify ---------------->', emailData)
+      // Send email
+      try {
+        await emailWithNodemailer(emailData);
+      } catch (emailError) {
+        console.error('Failed to send verification email', emailError);
+      }
+      setTimeout(async () => {
+        try {
+          user.oneTimeCode = null;
+          await user.save();
+          console.log('oneTimeCode reset to null after 3 minute');
+        } catch (error) {
+          console.error('Error updating oneTimeCode:', error);
+        }
+      }, 180000); // 3 minute in milliseconds
+    }
+
     res.status(201).json(response({
       status: "Created",
-      message: "User created successfully",
+      message: "User created successfully and a verification code just sent to the email",
       statusCode: 201,
       type: "user",
       data: user,
@@ -183,9 +215,59 @@ const processForgetPassword = async (req, res) => {
   }
 };
 
+const resendOneTimeCode = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json(response({ statusCode: 200, message: 'User does not exist', status: "OK" }));
+    }
+    const requestType = !req.query.requestType ? 'resetPassword' : req.query.requestType;
+    const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+    const subject = requestType === 'resetPassword' ? 'Password Reset Email' : 'User verification code';
+    const topic = requestType === 'resetPassword' ? 'reset password' : 'verify account';
+    // Store the OTC and its expiration time in the database
+    user.oneTimeCode = oneTimeCode;
+    await user.save();
+
+    // Prepare email for password reset
+    const emailData = {
+      email,
+      subject: subject,
+      html: `
+        <h1>Hello, ${user.fullName}</h1>
+        <p>Your One Time Code is <h3>${oneTimeCode}</h3> to ${topic}</p>
+        <small>This Code is valid for 3 minutes</small>
+      `
+    }
+    // Send email
+    try {
+      await emailWithNodemailer(emailData);
+    } catch (emailError) {
+      console.error('Failed to send verification email', emailError);
+    }
+    console.log(requestType, subject, topic, oneTimeCode)
+    // Set a timeout to update the oneTimeCode to null after 1 minute
+    setTimeout(async () => {
+      try {
+        user.oneTimeCode = null;
+        await user.save();
+        console.log('oneTimeCode reset to null after 3 minute');
+      } catch (error) {
+        console.error('Error updating oneTimeCode:', error);
+      }
+    }, 180000); // 3 minute in milliseconds
+
+    res.status(201).json(response({ message: `Thanks! Please check your email to ${topic}`, status: "OK", statusCode: 200 }));
+  } catch (error) {
+    res.status(500).json(response({ message: 'Error processing forget password', statusCode: 200, status: "OK" }));
+  }
+}
+
 //Verify the oneTimeCode
 const verifyOneTimeCode = async (req, res) => {
   try {
+    const requestType = !req.query.requestType ? 'resetPassword' : req.query.requestType;
     const { oneTimeCode, email } = req.body;
     console.log(req.body.oneTimeCode);
     console.log(email);
@@ -193,10 +275,26 @@ const verifyOneTimeCode = async (req, res) => {
     if (!user) {
       return res.status(40).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
     } else if (user.oneTimeCode === oneTimeCode) {
-      res.status(200).json(response({ message: 'Verified', status: "OK", statusCode: 200 }));
-      user.oneTimeCode = 'verified';
-      await user.save();
-    } else {
+      if (requestType === 'resetPassword') {
+        user.oneTimeCode = 'verified';
+        await user.save();
+        res.status(200).json(response({ message: 'One Time Code verified successfully', type:"reset-forget password",status: "OK", statusCode: 200, data: user }));
+      }
+      else if (requestType === 'verifyEmail' && user.oneTimeCode !== null && user.emailVerified === false) {
+        console.log('email verify---------------->', user)
+        user.emailVerified = true;
+        user.oneTimeCode = null;
+        await user.save();
+        res.status(200).json(response({ message: 'Email verified successfully', status: "OK", type:"email verification", statusCode: 200, data: user }));
+      }
+      else {
+        res.status(409).json(response({ message: 'Request type not defined properly', status: "Error", statusCode: 409 }));
+      }
+    } 
+    else if(user.oneTimeCode===null){
+      res.status(400).json(response({ message: 'One Time Code has expired', status: "OK", statusCode: 200 }));
+    }
+    else {
       res.status(400).json(response({ message: 'Invalid OTC', status: "OK", statusCode: 200 }));
     }
   } catch (error) {
@@ -456,4 +554,4 @@ const changePassword = async (req, res) => {
 }
 
 
-module.exports = { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser }
+module.exports = { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser, resendOneTimeCode }

@@ -92,7 +92,7 @@ const allResidence = async (req, res) => {
     const search = req.query.search || '';
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-    const category = req.query.category || ''
+    const category = req.query.category || 'residence'
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
 
     //minPrice must be greater or equal 1
@@ -138,7 +138,7 @@ const allResidence = async (req, res) => {
     let residences = [];
     let count = 0;
 
-    if (checkUser.role === 'user') {
+    if (checkUser.role === 'user' || checkUser.role === 'host') {
       const requestType = req.query.requestType || 'all'
       filter.$and = filter.$and || [];
       filter.$and.push({ status: 'active' });
@@ -162,18 +162,6 @@ const allResidence = async (req, res) => {
           .sort({ popularity: -1 });
         count = await Residence.countDocuments(filter);
       }
-    }
-    else if (checkUser.role === 'host') {
-      residences = await Residence.find({
-        hostId: req.body.userId,
-        //...filter, 
-      })
-        .limit(limit)
-        .skip((page - 1) * limit);
-      count = await Residence.countDocuments({
-        hostId: req.body.userId,
-        //...filter,
-      });
     }
 
     // //-> placed to residence dashboard API
@@ -213,6 +201,74 @@ const allResidence = async (req, res) => {
     );
   }
 };
+const allResidenceByHostId = async (req, res) => {
+  try {
+    const checkUser = await User.findOne({ _id: req.body.userId });
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    if (!checkUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+
+    let residences = [];
+    let count = 0;
+    if (checkUser.role !== 'host') {
+      return res.status(401).json(
+        response({
+          status: 'Error',
+          statusCode: '401',
+          message: 'You are not authorised to get your residences data',
+        })
+      );
+    }
+    else {
+      residences = await Residence.find({
+        hostId: req.body.userId,
+      })
+        .limit(limit)
+        .skip((page - 1) * limit);
+      count = await Residence.countDocuments({
+        hostId: req.body.userId,
+      });
+
+      return res.status(200).json(
+        response({
+          status: 'OK',
+          statusCode: '200',
+          type: 'residence',
+          message: 'Residences retrieved successfully',
+          data: {
+            residences,
+            pagination: {
+              totalDocuments: count,
+              totalPage: Math.ceil(count / limit),
+              currentPage: page,
+              previousPage: page > 1 ? page - 1 : null,
+              nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
+            },
+          },
+        })
+      );
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json(
+      response({
+        status: 'Error',
+        statusCode: '500',
+        message: 'Error getting residences',
+      })
+    );
+  }
+};
+
+
 
 //Delete residences
 const deleteResidence = async (req, res) => {
@@ -291,12 +347,12 @@ const updateResidence = async (req, res) => {
         aboutOwner,
         hostId: req.body.userId,
       }
-      if(status){
+      if (status) {
         const existingResidence = await Residence.findById(id);
-        if(existingResidence.status === 'reserved'){
+        if (existingResidence.status === 'reserved') {
           return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'You cant change staus while residence is reserved' }));
         }
-        else{
+        else {
           residence.status = status;
         }
       }
@@ -418,7 +474,7 @@ const residenceDashboard = async (req, res) => {
               nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
             },
           },
-          
+
         })
       );
     }
@@ -433,4 +489,4 @@ const residenceDashboard = async (req, res) => {
 }
 
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard };
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, allResidenceByHostId };

@@ -1,5 +1,5 @@
 const express = require('express');
-const { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser } = require('../controllers/userController');
+const { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser,resendOneTimeCode } = require('../controllers/userController');
 const router = express.Router();
 const userFileUploadMiddleware = require("../middlewares/fileUpload");
 
@@ -11,6 +11,7 @@ const { isValidUser } = require('../middlewares/auth')
 router.post('/signup', signUp);
 router.post('/signin', signIn);
 router.post('/forget/password', processForgetPassword);
+router.post('/resend-onetime-code', resendOneTimeCode);
 router.post('/verify', verifyOneTimeCode);
 router.post('/reset/password', updatePassword);
 router.patch('/', isValidUser, changePassword);

@@ -386,7 +386,7 @@ const bookingDetails = async (req, res) => {
 
     var booking
     if (checkUser.role === 'admin') {
-      booking = await Booking.findById(id).populate('hostId').exec();
+      booking = await Booking.findById(id).populate('hostId userId').exec();
     }
     else if (checkUser.role === 'host' || checkUser.role === 'user') {
       booking = await Booking.findById(id);
