@@ -130,8 +130,8 @@ const allNotifications = async (req, res) => {
       response({
         status: 'OK',
         statusCode: '200',
-        type: 'booking',
-        message: 'Bookings retrieved successfully',
+        type: 'notification',
+        message: 'Notifications retrieved successfully',
         data: data
       })
     );
@@ -186,7 +186,7 @@ const getNotificationDetails = async (req, res) => {
     }
     io.emit('admin-notification', data)
     console.log('details api response ----------------->',data)
-    return res.status(200).json(response({ status: 'OK', statusCode: '200', type: 'booking', message: 'Bookings retrieved successfully', data: data }))
+    return res.status(200).json(response({ status: 'OK', statusCode: '200', type: 'notification', message: 'Notifications retrieved successfully', data: data }))
   }
   catch (error) {
     console.error(error);
@@ -213,7 +213,6 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
       await notification.save()
     }
     const type = notification.type
-    const bookingDetails = await Booking.findById(notification.linkId).populate('residenceId hostId userId')
     //retriving all notifications
     const allNotification = await Notification.find({ type: type })
       .limit(limit)
