@@ -9,12 +9,9 @@ const messageModel = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref:'Chat'
     },
-    // sender:{
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref:'User'
-    // },
     sender:{
-      type: String
+      type: mongoose.Schema.Types.ObjectId,
+      ref:'User'
     },
   },{
     timestamps: true

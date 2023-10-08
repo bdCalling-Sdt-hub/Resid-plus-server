@@ -7,7 +7,7 @@ const generateCustomID = require('../helpers/generateCustomId');
 //a helper function to calculate hours between two date-time
 const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
 const User = require("../models/User");
-const { addNotification } = require("./notificationController");
+const { addNotification, addManyNotifications, getAllNotification } = require("./notificationController");
 const options = { new: true };
 
 
@@ -32,7 +32,7 @@ const addBooking = async (req, res) => {
       );
     }
 
-    const residence_details = await Residence.findById(residenceId)
+    const residence_details = await Residence.findById(residenceId).populate(`userId`);
     //checking there a booking reques exists in the date
     const existingBookings = await Booking.findOne({
       residenceId: residenceId,
@@ -103,6 +103,17 @@ const addBooking = async (req, res) => {
       }
       console.log(popularity, residence)
       await Residence.findByIdAndUpdate(residence_details._id, residence, options)
+      const message = residence_details.userId.fullName + ' wants to book ' + residence_details.residenceName + ' from ' + checkInTime + ' to ' + checkOutTime + ' without payment integration'
+      const newNotification = {
+        message: message,
+        receiverId: booking.hostId,
+        image: residence_details.userId.image,
+        linkId: booking._id,
+        type: 'host'
+      }
+      await addNotification(newNotification)
+      const notification = await getAllNotification('host', 6, 1, booking.hostId)
+      io.to('room' + booking.hostId).emit('host-notification', notification);
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
 
     }
@@ -228,22 +239,33 @@ const updateBooking = async (req, res) => {
 
       //changing residence status to reserved
       //----->start
-      const bookingDetails = await Booking.findById(id).populate('residenceId userId')
+      const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
       if (status === 'reserved' && bookingDetails.status === 'pending') {
         const updated_residence = {
           status
         }
         await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
-        const message = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
+        const adminMessage = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
+        const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request'
 
-        const newNotification = {
-          message: message,
+        const newNotification = [{
+          message: adminMessage,
           image: bookingDetails.userId.image,
           linkId: bookingDetails._id,
           type: 'admin'
-        }
-        const notification = await addNotification(newNotification)
-        io.emit('admin-notification', notification);
+        }, {
+          message: userMessage,
+          receiverId: bookingDetails.userId._id,
+          image: bookingDetails.userId.image,
+          linkId: bookingDetails._id,
+          type: 'user'
+        }]
+        await addManyNotifications(newNotification)
+        const adminNotification = await getAllNotification('admin')
+        io.emit('admin-notification', adminNotification);
+        const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
+        console.log(adminNotification, userNotification)
+        io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
       }
       // else {
       //   const updated_residence = {
