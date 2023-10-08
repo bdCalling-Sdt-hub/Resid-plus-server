@@ -2,12 +2,13 @@ const Chat = require("../models/Chat");
 
 exports.addChat = async (chatInfo) => {
   try {
+    console.log(chatInfo.participants)
     const existingChat = await Chat.findOne({ participants: chatInfo.participants });
 
     if (existingChat) {
       return existingChat;
     } else {
-      const newChat = await Chat.create({ participants });
+      const newChat = await Chat.create({ participants: chatInfo.participants });
       return newChat;
     }
   } catch (error) {
