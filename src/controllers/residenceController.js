@@ -1,5 +1,6 @@
 const response = require("../helpers/response");
 const Residence = require("../models/Residence");
+const Booking = require('../models/Booking')
 const User = require("../models/User");
 //defining unlinking image function 
 const unlinkImages = require('../common/image/unlinkImage')
@@ -143,24 +144,24 @@ const allResidence = async (req, res) => {
       filter.$and = filter.$and || [];
       filter.$and.push({ status: 'active' });
       if (requestType === 'all') {
-        residences = await Residence.find(filter)
+        residences = await Residence.find({ isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit);
-        count = await Residence.countDocuments(filter);
+        count = await Residence.countDocuments({ isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
-        residences = await Residence.find(filter)
+        residences = await Residence.find({ isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ createdAt: -1 });
-        count = await Residence.countDocuments(filter);
+        count = await Residence.countDocuments({ isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
-        residences = await Residence.find(filter)
+        residences = await Residence.find({ isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ popularity: -1 });
-        count = await Residence.countDocuments(filter);
+        count = await Residence.countDocuments({ isDeleted: false, ...filter });
       }
     }
 
@@ -201,11 +202,22 @@ const allResidence = async (req, res) => {
     );
   }
 };
+
 const allResidenceByHostId = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const searchRegExp = new RegExp('.*' + search + '.*', 'i');
+    const filter = {
+      $or: [
+        { residenceName: { $regex: searchRegExp } },
+        { address: { $regex: searchRegExp } },
+        { city: { $regex: searchRegExp } },
+        { municipality: { $regex: searchRegExp } },
+      ],
+    };
     if (!checkUser) {
       return res.status(404).json(
         response({
@@ -230,11 +242,15 @@ const allResidenceByHostId = async (req, res) => {
     else {
       residences = await Residence.find({
         hostId: req.body.userId,
+        isDeleted: false,
+        ...filter
       })
         .limit(limit)
         .skip((page - 1) * limit);
       count = await Residence.countDocuments({
         hostId: req.body.userId,
+        isDeleted: false,
+        ...filter
       });
 
       return res.status(200).json(
@@ -268,8 +284,6 @@ const allResidenceByHostId = async (req, res) => {
   }
 };
 
-
-
 //Delete residences
 const deleteResidence = async (req, res) => {
   try {
@@ -280,18 +294,35 @@ const deleteResidence = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
     if (checkHost.role === 'host') {
-      const images = await Residence.find({ _id: id })
-        .select('photo')
-        .exec();
+      const residenceDetails = await Residence.findOne({ _id: id })
+      if(!residenceDetails){
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence not found' }));
+      }
+      if(residenceDetails.hostId !== req.body.userId){
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this residence' }));
+      }
+      if(residenceDetails.status === 'reserved'){
+        return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'You cant delete residence while it is reserved' }));
+      }
+      if (!residenceDetails.isDeleted  && residenceDetails.status !== 'reserved') {
 
-      const paths = images.map(image =>
-        image.photo.map(photoObject => photoObject.path)
-      ).flat();
-      unlinkImages(paths)
-      console.log(paths);
+        const futureBookings = await Booking.findOne({
+          residenceId: id,
+          startDate: { $gte: today },
+          status: { $ne: 'pending' }
+        });
 
-      const residence = await Residence.findOneAndDelete(id);
-      return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'residence', message: 'Residence deleted successfully.', data: residence }));
+        if (futureBookings) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', type: 'residence', message: 'Cannot delete residence with future booking requests accepted.' }));
+        }
+        residenceDetails.isDeleted = true;
+        residenceDetails.save();
+        await Booking.updateMany({ residenceId: id }, { $set: { isDeleted: true } });
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'residence', message: 'Residence deleted successfully.', data: residenceDetails }));
+      }
+      else {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "residence", message: 'Delete credentials not match' }));
+      }
     } else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add residence' }));
     }
@@ -327,6 +358,9 @@ const updateResidence = async (req, res) => {
       status
     } = req.body;
     if (!checkHost) {
+      if (req.files.length > 0) {
+        unlinkImages(req.files.map(file => file.path))
+      }
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
     if (checkHost.role === 'host') {
@@ -382,6 +416,9 @@ const updateResidence = async (req, res) => {
       console.log(result)
       return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: 'Residence edited successfully.', data: result }));
     } else {
+      if (req.files.length > 0) {
+        unlinkImages(req.files.map(file => file.path))
+      }
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add residence' }));
     }
   }

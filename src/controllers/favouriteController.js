@@ -19,7 +19,7 @@ const addFavourite = async (req, res) => {
       );
     }
     const residence = await Residence.findById(residenceId)
-    if (!residence) {
+    if (!residence || residence.isDeleted) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -79,6 +79,7 @@ const allFavourite = async (req, res) => {
       favourites = await Favourite.find({
         userId: checkUser._id
       })
+        .populate('residenceId')
         .limit(limit)
         .skip((page - 1) * limit);
       count = await Favourite.countDocuments();

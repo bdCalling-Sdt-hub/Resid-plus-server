@@ -1,8 +1,6 @@
 const response = require("../helpers/response");
-const mongoose = require('mongoose')
 const Booking = require("../models/Booking");
 const Residence = require("../models/Residence");
-const Notification = require('../models/Notification')
 const generateCustomID = require('../helpers/generateCustomId');
 //a helper function to calculate hours between two date-time
 const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
@@ -32,7 +30,10 @@ const addBooking = async (req, res) => {
       );
     }
 
-    const residence_details = await Residence.findById(residenceId).populate(`userId`);
+    const residence_details = await Residence.findById(residenceId).populate(`hostId`);
+    if (!residenceId || residence_details.isDeleted) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence not found' }));
+    }
     //checking there a booking reques exists in the date
     const existingBookings = await Booking.findOne({
       residenceId: residenceId,
@@ -103,11 +104,11 @@ const addBooking = async (req, res) => {
       }
       console.log(popularity, residence)
       await Residence.findByIdAndUpdate(residence_details._id, residence, options)
-      const message = residence_details.userId.fullName + ' wants to book ' + residence_details.residenceName + ' from ' + checkInTime + ' to ' + checkOutTime + ' without payment integration'
+      const message = checkUser.fullName + ' wants to book ' + residence_details.residenceName + ' from ' + checkInTime + ' to ' + checkOutTime + ' without payment integration'
       const newNotification = {
         message: message,
         receiverId: booking.hostId,
-        image: residence_details.userId.image,
+        image: checkUser.image,
         linkId: booking._id,
         type: 'host'
       }
@@ -115,7 +116,6 @@ const addBooking = async (req, res) => {
       const notification = await getAllNotification('host', 6, 1, booking.hostId)
       io.to('room' + booking.hostId).emit('host-notification', notification);
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
-
     }
     else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
@@ -167,29 +167,37 @@ const allBooking = async (req, res) => {
           }
         };
       }
-      data.bookings = await Booking.find(filter)
+      data.bookings = await Booking.find({ isDeleted: false, ...filter })
         .limit(limit)
         .skip((page - 1) * limit)
         .populate('userId hostId residenceId');
-      count = await Booking.countDocuments(filter);
+      count = await Booking.countDocuments({ isDeleted: false, ...filter });
 
       bookings = data
     }
     else if (checkUser.role === 'host') {
       bookings = await Booking.find({
-        hostId: checkUser._id
+        hostId: checkUser._id,
+        isDeleted: false
       })
         .limit(limit)
         .skip((page - 1) * limit);
-      count = await Booking.countDocuments();
+      count = await Booking.countDocuments({
+        isDeleted: false, hostId: checkUser._id
+      });
     }
     else if (checkUser.role === 'user') {
       bookings = await Booking.find({
-        userId: checkUser._id
+        userId: checkUser._id,
+        isDeleted: false
       })
         .limit(limit)
-        .skip((page - 1) * limit);
-      count = await Booking.countDocuments();
+        .skip((page - 1) * limit)
+        .populate('userId hostId residenceId');
+      count = await Booking.countDocuments({
+        userId: checkUser._id,
+        isDeleted: false
+      });
     }
 
     console.log(bookings)
@@ -235,16 +243,21 @@ const updateBooking = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
     if (checkUser.role === 'host') {
-      const booking = { status }
-
-      //changing residence status to reserved
+      //changing residence status to reserved or cancelled
       //----->start
       const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
+      if (!bookingDetails || bookingDetails.isDeleted) {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: 'Booking not found' }));
+      }
       if (status === 'reserved' && bookingDetails.status === 'pending') {
         const updated_residence = {
           status
         }
         await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
+
+        bookingDetails.status = status
+        bookingDetails.save()
+
         const adminMessage = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
         const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request'
 
@@ -266,21 +279,32 @@ const updateBooking = async (req, res) => {
         const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
         console.log(adminNotification, userNotification)
         io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+
+        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
       }
-      // else {
-      //   const updated_residence = {
-      //     status: 'active'
-      //   }
-      //   await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
-      // }
+      else if (status === 'cancelled' && bookingDetails.status === 'pending') {
+        bookingDetails.status = status
+        bookingDetails.save()
+        const userMessage = bookingDetails.hostId.fullName + ' cancelled your booking request'
+
+        const newNotification = {
+          message: userMessage,
+          receiverId: bookingDetails.userId._id,
+          image: bookingDetails.userId.image,
+          linkId: bookingDetails._id,
+          type: 'user'
+        }
+        await addNotification(newNotification)
+        const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
+        console.log(userNotification)
+        io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+
+        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+      }
       else {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Cant update notifications' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: "booking-request", message: 'Your booking-request update credentials not match' }));
       }
       //----->end
-
-      const result = await Booking.findByIdAndUpdate(id, booking, options);
-      console.log(result)
-      return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: result }));
     } else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
     }
@@ -413,17 +437,29 @@ const bookingDetails = async (req, res) => {
     else if (checkUser.role === 'host' || checkUser.role === 'user') {
       booking = await Booking.findById(id);
     }
-    return res.status(200).json(
-      response({
-        status: 'OK',
-        statusCode: '200',
-        type: 'booking',
-        message: 'Booking retrieved successfully',
-        data: {
-          booking
-        },
-      })
-    );
+    if (!booking.isDeleted) {
+      return res.status(200).json(
+        response({
+          status: 'OK',
+          statusCode: '200',
+          type: 'booking',
+          message: 'Booking retrieved successfully',
+          data: {
+            booking
+          },
+        })
+      );
+    }
+    else {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'Booking not found',
+          type: 'booking',
+        })
+      );
+    }
   } catch (error) {
     console.log(error);
     return res.status(500).json(
@@ -438,9 +474,9 @@ const bookingDetails = async (req, res) => {
 
 async function bookingDashboardCount() {
   try {
-    const completed = await Booking.countDocuments({ status: 'completed' });
-    const cancelled = await Booking.countDocuments({ status: 'cancelled' });
-    const reserved = await Booking.countDocuments({ status: 'reserved' });
+    const completed = await Booking.countDocuments({ status: 'completed', isDeleted: false });
+    const cancelled = await Booking.countDocuments({ status: 'cancelled', isDeleted: false });
+    const reserved = await Booking.countDocuments({ status: 'reserved', isDeleted: false });
     const count_data = {
       completed,
       cancelled,
@@ -452,6 +488,7 @@ async function bookingDashboardCount() {
     console.log(error)
   }
 }
+
 const bookingDashboardRatio = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);

@@ -29,6 +29,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['user', 'admin', 'unknown', 'host'], default: 'unknown' },
   emailVerified: { type: Boolean, default: false },
   oneTimeCode: { type: String, required: false },
+  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true }, {
   toJSON: {
     transform(doc, ret) {

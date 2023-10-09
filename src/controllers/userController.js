@@ -278,20 +278,20 @@ const verifyOneTimeCode = async (req, res) => {
       if (requestType === 'resetPassword') {
         user.oneTimeCode = 'verified';
         await user.save();
-        res.status(200).json(response({ message: 'One Time Code verified successfully', type:"reset-forget password",status: "OK", statusCode: 200, data: user }));
+        res.status(200).json(response({ message: 'One Time Code verified successfully', type: "reset-forget password", status: "OK", statusCode: 200, data: user }));
       }
       else if (requestType === 'verifyEmail' && user.oneTimeCode !== null && user.emailVerified === false) {
         console.log('email verify---------------->', user)
         user.emailVerified = true;
         user.oneTimeCode = null;
         await user.save();
-        res.status(200).json(response({ message: 'Email verified successfully', status: "OK", type:"email verification", statusCode: 200, data: user }));
+        res.status(200).json(response({ message: 'Email verified successfully', status: "OK", type: "email verification", statusCode: 200, data: user }));
       }
       else {
         res.status(409).json(response({ message: 'Request type not defined properly', status: "Error", statusCode: 409 }));
       }
-    } 
-    else if(user.oneTimeCode===null){
+    }
+    else if (user.oneTimeCode === null) {
       res.status(400).json(response({ message: 'One Time Code has expired', status: "OK", statusCode: 200 }));
     }
     else {
@@ -331,6 +331,9 @@ const updateProfile = async (req, res) => {
     // Check if the user already exists
     const checkUser = await User.findOne({ _id: req.body.userId });
     if (!checkUser) {
+      if (req.file) {
+        unlinkImages(req.file.path)
+      }
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
     const user = {
@@ -377,6 +380,9 @@ const userDetails = async (req, res) => {
     const checkUser = await User.findOne({ _id: req.body.userId });
     const id = req.params.id
     if (!checkUser) {
+      if (req.file) {
+        unlinkImages(req.file.path)
+      }
       return res.status(404).json(
         response({
           status: 'Error',
@@ -388,10 +394,6 @@ const userDetails = async (req, res) => {
 
     const user = await User.findById(id)
       .select('fullName email phoneNumber address image dateOfBirth');
-
-    if (checkUser.role === 'admin') {
-      return res.status(409).json(response({ statusCode: 200, message: 'You are not authorised to get profile details', status: "OK" }));
-    }
 
     return res.status(200).json(
       response({
@@ -415,6 +417,36 @@ const userDetails = async (req, res) => {
     );
   }
 };
+
+const deactivateUser = async (req, res) => {
+  try {
+    const checkHost = await User.findById(req.body.userId);
+    //extracting the residence id from param that is going to be deleted
+    const id = req.params.id
+    if (!checkHost) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    };
+    if (checkHost.role === 'host') {
+      const residenceDetails = await Residence.findOne({ _id: id })
+
+      if (residenceDetails && !residenceDetails.isDeleted) {
+        residenceDetails.isDeleted = true;
+        residenceDetails.save();
+        await Booking.updateMany({ residenceId: id }, { $set: { isDeleted: true } });
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'residence', message: 'Residence deleted successfully.', data: residenceDetails }));
+      }
+      else {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "residence", message: 'Delete credentials not match' }));
+      }
+    } else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add residence' }));
+    }
+  }
+  catch (error) {
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted residence' }));
+  }
+}
 
 const allUser = async (req, res) => {
   try {

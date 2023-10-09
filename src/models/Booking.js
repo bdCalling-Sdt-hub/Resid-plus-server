@@ -17,6 +17,7 @@ const bookingSchema = new mongoose.Schema({
   status: { type: String, enum: ['reserved', 'cancelled', 'completed', 'pending','check-in','check-out'], default: 'pending' },
   guestTypes: { type: String, enum: ['adults-only', 'including-child','unknown'], default: 'unknown'},
   paymentTypes: { type: String, enum: ['half-payment', 'full-payment', 'unknown'], default: 'unknown' },
+  isDeleted: { type: Boolean, default: false },
 },
   {
     timestamps: true

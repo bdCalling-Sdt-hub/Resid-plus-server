@@ -120,7 +120,7 @@ const getAll = async (req, res) => {
         })
       );
     }
-    const reviews = await Review.find({ residenceId: residenceId }).populate('userId','fullName')
+    const reviews = await Review.find({ residenceId: residenceId }).populate('userId','fullName').sort({rating: -1})
     return res.status(200).json(response({ status: 'Success', statusCode: '200', type: 'review', message: 'Review retrived successfully', data: reviews }));
   } catch (error) {
     console.error(error.message);
