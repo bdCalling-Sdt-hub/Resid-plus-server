@@ -110,18 +110,18 @@ const allResidence = async (req, res) => {
       ],
     };
     if (minPrice && maxPrice) {
-      console.log('------enterend price------')
+      //console.log('------enterend price------')
       filter.$and = filter.$and || [];
       filter.$and.push({ dailyAmount: { $gte: minPrice, $lte: maxPrice } })
     }
     if (category) {
-      console.log('------enterend category------')
+      //console.log('------enterend category------')
       filter.$and = filter.$and || [];
       filter.$and.push({ category: category });
     }
 
     if (numberOfBeds) {
-      console.log('------enterend no..beds------')
+      //console.log('------enterend no..beds------')
       filter.$and = filter.$and || [];
       filter.$and.push({ beds: numberOfBeds });
     }
@@ -315,6 +315,10 @@ const deleteResidence = async (req, res) => {
         if (futureBookings) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', type: 'residence', message: 'Cannot delete residence with future booking requests accepted.' }));
         }
+        const paths = residenceDetails.image.map(image =>
+          image.photo.map(photoObject => photoObject.path)
+        ).flat();
+        unlinkImages(paths)
         residenceDetails.isDeleted = true;
         residenceDetails.save();
         await Booking.updateMany({ residenceId: id }, { $set: { isDeleted: true } });

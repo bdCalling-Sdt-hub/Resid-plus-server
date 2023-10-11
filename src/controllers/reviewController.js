@@ -6,8 +6,7 @@ const User = require("../models/User");
 
 const giveReview = async (req, res) => {
   try {
-    const { rating } = req.body;
-    const bookingId = req.params.bookingId
+    const { bookingId,rating } = req.body;
     const checkUser = await User.findById(req.body.userId);
     if (!checkUser) {
       return res.status(404).json(

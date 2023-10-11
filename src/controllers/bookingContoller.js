@@ -176,27 +176,48 @@ const allBooking = async (req, res) => {
       bookings = data
     }
     else if (checkUser.role === 'host') {
+      var filter
+      const bookingTypes = !req.query.bookingTypes ? '' : req.query.bookingTypes
+      
+      if(bookingTypes==="confirmed"){
+        filter = {
+          status: {$ne: 'pending'}
+        }
+      }
+      else{
+        filter = {
+          status: {$eq: 'pending'}
+        }
+      }
+      
       bookings = await Booking.find({
         hostId: checkUser._id,
-        isDeleted: false
+        isDeleted: false,
+        ...filter
       })
         .limit(limit)
-        .skip((page - 1) * limit);
+        .skip((page - 1) * limit)
+        .populate('userId hostId residenceId');
       count = await Booking.countDocuments({
-        isDeleted: false, hostId: checkUser._id
+        hostId: checkUser._id,
+        isDeleted: false, 
+        ...filter
+
       });
+      console.log('---------------->',bookingTypes, filter, bookings, count)
     }
     else if (checkUser.role === 'user') {
+      
       bookings = await Booking.find({
         userId: checkUser._id,
-        isDeleted: false
+        isDeleted: false,
       })
         .limit(limit)
         .skip((page - 1) * limit)
         .populate('userId hostId residenceId');
       count = await Booking.countDocuments({
         userId: checkUser._id,
-        isDeleted: false
+        isDeleted: false,
       });
     }
 
@@ -248,6 +269,10 @@ const updateBooking = async (req, res) => {
       const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
       if (!bookingDetails || bookingDetails.isDeleted) {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: 'Booking not found' }));
+      }
+      console.log('HELLO------------------------------>',bookingDetails,bookingDetails.hostId._id.toString(), checkUser._id.toString())
+      if (bookingDetails.hostId._id.toString() !== checkUser._id.toString()) {
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'This is not your residence' }));
       }
       if (status === 'reserved' && bookingDetails.status === 'pending') {
         const updated_residence = {
@@ -306,7 +331,7 @@ const updateBooking = async (req, res) => {
       }
       //----->end
     } else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to edit booking' }));
     }
   }
   catch (error) {
@@ -435,7 +460,7 @@ const bookingDetails = async (req, res) => {
       booking = await Booking.findById(id).populate('hostId userId').exec();
     }
     else if (checkUser.role === 'host' || checkUser.role === 'user') {
-      booking = await Booking.findById(id);
+      booking = await Booking.findById(id).populate('hostId userId residenceId').exec();
     }
     if (!booking.isDeleted) {
       return res.status(200).json(

@@ -107,6 +107,7 @@ const signIn = async (req, res) => {
     let activityId = null
     if (user.role === 'admin') {
       function extractDeviceModel(userAgent) {
+        console.log('User Activity coming-------------->',userAgent)
         const regex = /\(([^)]+)\)/;
         const matches = userAgent.match(regex);
 
@@ -417,36 +418,6 @@ const userDetails = async (req, res) => {
     );
   }
 };
-
-const deactivateUser = async (req, res) => {
-  try {
-    const checkHost = await User.findById(req.body.userId);
-    //extracting the residence id from param that is going to be deleted
-    const id = req.params.id
-    if (!checkHost) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
-    };
-    if (checkHost.role === 'host') {
-      const residenceDetails = await Residence.findOne({ _id: id })
-
-      if (residenceDetails && !residenceDetails.isDeleted) {
-        residenceDetails.isDeleted = true;
-        residenceDetails.save();
-        await Booking.updateMany({ residenceId: id }, { $set: { isDeleted: true } });
-        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'residence', message: 'Residence deleted successfully.', data: residenceDetails }));
-      }
-      else {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "residence", message: 'Delete credentials not match' }));
-      }
-    } else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add residence' }));
-    }
-  }
-  catch (error) {
-    console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted residence' }));
-  }
-}
 
 const allUser = async (req, res) => {
   try {

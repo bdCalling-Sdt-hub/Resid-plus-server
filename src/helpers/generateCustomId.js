@@ -8,7 +8,7 @@ async function generateCustomID() {
 
     let randomDigits = '';
 
-    const number = await Booking.findOne().select('bookingId').sort({ bookingId: -1 });
+    const number = await Booking.findOne().select('bookingId').sort({ createdAt: -1 });
     if (number && number.bookingId) {
       const lastNumber = parseInt(number.bookingId.split('-')[2]);
       const newNumber = (lastNumber + 1).toString().padStart(5, '0');

@@ -11,6 +11,8 @@ const aboutUsRouter = require('./routes/aboutUsRouter')
 const reviewRouter = require('./routes/reviewRouter')
 const notificationRouter = require('./routes/notificationRouter')
 const activityRouter = require('./routes/activityRouter')
+const supportRouter = require('./routes/supportRouter')
+const faqRouter = require('./routes/faqRouter')
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -72,6 +74,9 @@ app.use('/api/about-us', aboutUsRouter)
 app.use('/api/reviews', reviewRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/activities', activityRouter)
+app.use('/api/supports', supportRouter)
+app.use('/api/faqs', faqRouter)
+
 
 //testing API is alive
 app.get('/test', (req, res) => {
