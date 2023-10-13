@@ -4,7 +4,6 @@ const userRouter = require('./routes/userRouter');
 const residenceRouter = require('./routes/residenceRouter');
 const bookingRouter = require('./routes/bookingRouter');
 const favouriteRouter = require('./routes/favouriteRouter');
-const paymentRouter = require('./routes/paymentRouter');
 const termsAndConditionRouter = require('./routes/termsAndConditionRouter')
 const privacyPolicyRouter = require('./routes/privacyPolicyRouter')
 const aboutUsRouter = require('./routes/aboutUsRouter')
@@ -66,7 +65,6 @@ server.listen(socketIOPort, '192.168.10.18',() => {
 app.use('/api/users', userRouter);
 app.use('/api/residences', residenceRouter);
 app.use('/api/bookings', bookingRouter);
-app.use('/api/payments', paymentRouter)
 app.use('/api/favourites', favouriteRouter)
 app.use('/api/terms-and-conditions', termsAndConditionRouter)
 app.use('/api/privacy-policys', privacyPolicyRouter)

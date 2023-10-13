@@ -11,6 +11,7 @@ const bookingSchema = new mongoose.Schema({
   residenceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Residence', required: true },
   numberOfGuests: { type: Number, default: 1, required: false },
   userContactNumber: { type: String, required: false },
+  totalHours: { type: Number, required: false },
   totalAmount: { type: Number, default: 1, required: false },
   checkInTime: { type: String, required: true },
   checkOutTime: { type: String, required: true },

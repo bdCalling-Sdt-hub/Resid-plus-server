@@ -93,6 +93,7 @@ const addBooking = async (req, res) => {
         checkOutTime,
         userId: req.body.userId,
         hostId: residence_details.hostId,
+        totalHours: totalTime,
         totalAmount: amount,
         userContactNumber: checkUser.phoneNumber,
       });
