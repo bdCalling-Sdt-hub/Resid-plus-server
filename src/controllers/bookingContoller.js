@@ -31,7 +31,7 @@ const addBooking = async (req, res) => {
     }
 
     const residence_details = await Residence.findById(residenceId).populate(`hostId`);
-    if (!residenceId || residence_details.isDeleted) {
+    if (!residence_details || residence_details.isDeleted) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence not found' }));
     }
     //checking there a booking reques exists in the date
@@ -179,18 +179,18 @@ const allBooking = async (req, res) => {
     else if (checkUser.role === 'host') {
       var filter
       const bookingTypes = !req.query.bookingTypes ? '' : req.query.bookingTypes
-      
-      if(bookingTypes==="confirmed"){
+
+      if (bookingTypes === "confirmed") {
         filter = {
-          status: {$ne: 'pending'}
+          status: { $ne: 'pending' }
         }
       }
-      else{
+      else {
         filter = {
-          status: {$eq: 'pending'}
+          status: { $eq: 'pending' }
         }
       }
-      
+
       bookings = await Booking.find({
         hostId: checkUser._id,
         isDeleted: false,
@@ -201,14 +201,14 @@ const allBooking = async (req, res) => {
         .populate('userId hostId residenceId');
       count = await Booking.countDocuments({
         hostId: checkUser._id,
-        isDeleted: false, 
+        isDeleted: false,
         ...filter
 
       });
-      console.log('---------------->',bookingTypes, filter, bookings, count)
+      console.log('---------------->', bookingTypes, filter, bookings, count)
     }
     else if (checkUser.role === 'user') {
-      
+
       bookings = await Booking.find({
         userId: checkUser._id,
         isDeleted: false,
@@ -271,7 +271,7 @@ const updateBooking = async (req, res) => {
       if (!bookingDetails || bookingDetails.isDeleted) {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: 'Booking not found' }));
       }
-      console.log('HELLO------------------------------>',bookingDetails,bookingDetails.hostId._id.toString(), checkUser._id.toString())
+      console.log('HELLO------------------------------>', bookingDetails, bookingDetails.hostId._id.toString(), checkUser._id.toString())
       if (bookingDetails.hostId._id.toString() !== checkUser._id.toString()) {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'This is not your residence' }));
       }
@@ -562,6 +562,40 @@ const bookingDashboardRatio = async (req, res) => {
   }
 }
 
+const deleteBooking = async (req, res) => {
+  try {
+    const checkHost = await User.findById(req.body.userId);
+    //extracting the booking id from param that is going to be deleted
+    const id = req.params.id
+    if (!checkHost) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    };
+    if (checkHost.role === 'user') {
+      const bookingDetails = await Booking.findOne({ _id: id })
+      if (!bookingDetails) {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+      }
+      console.log(bookingDetails.userId.toString(), req.body.userId.toString())
+      if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking 2' }));
+      }
+      if (!bookingDetails.isDeleted && bookingDetails.status === 'pending') {
+        await Booking.findByIdAndDelete(id)
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
+      }
+      else {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
+      }
+    } else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
+    }
+  }
+  catch (error) {
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted booking' }));
+  }
+}
 
 
-module.exports = { addBooking, allBooking, updateBooking, bookingDetails, bookingDashboardCount, bookingDashboardRatio };
+
+module.exports = { addBooking, allBooking, updateBooking, bookingDetails, bookingDashboardCount, bookingDashboardRatio, deleteBooking };

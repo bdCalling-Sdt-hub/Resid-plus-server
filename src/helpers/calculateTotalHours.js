@@ -5,7 +5,7 @@ function calculateTotalHoursBetween(startDateTimeStr, endDateTimeStr) {
 
   const timeDifference = endDateTime - startDateTime;
   const totalHours = parseFloat(timeDifference / (1000 * 3600));
-  console.log(timeDifference,totalHours)
+  console.log('total hours-------->',timeDifference,totalHours)
   return totalHours;
 }
 

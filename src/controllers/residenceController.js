@@ -139,7 +139,7 @@ const allResidence = async (req, res) => {
     let residences = [];
     let count = 0;
 
-    if (checkUser.role === 'user' || checkUser.role === 'host') {
+    if (checkUser.role === 'user') {
       const requestType = req.query.requestType || 'all'
       filter.$and = filter.$and || [];
       filter.$and.push({ status: 'active' });
@@ -162,6 +162,29 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit)
           .sort({ popularity: -1 });
         count = await Residence.countDocuments({ isDeleted: false, ...filter });
+      }
+    }
+    else if (checkUser.role === 'host') {
+      const requestType = req.query.requestType || 'all'
+      if (requestType === 'all') {
+        residences = await Residence.find({ hostId: checkUser._id,isDeleted: false, ...filter })
+          .limit(limit)
+          .skip((page - 1) * limit);
+        count = await Residence.countDocuments({ hostId: checkUser._id,isDeleted: false, ...filter });
+      }
+      else if (requestType === 'new') {
+        residences = await Residence.find({ hostId: checkUser._id,isDeleted: false, ...filter })
+          .limit(limit)
+          .skip((page - 1) * limit)
+          .sort({ createdAt: -1 });
+        count = await Residence.countDocuments({ hostId: checkUser._id,isDeleted: false, ...filter });
+      }
+      else if (requestType === 'popular') {
+        residences = await Residence.find({ hostId: checkUser._id,isDeleted: false, ...filter })
+          .limit(limit)
+          .skip((page - 1) * limit)
+          .sort({ popularity: -1 });
+        count = await Residence.countDocuments({ hostId: checkUser._id,isDeleted: false, ...filter });
       }
     }
 
@@ -298,14 +321,14 @@ const deleteResidence = async (req, res) => {
       if(!residenceDetails){
         return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence not found' }));
       }
-      if(residenceDetails.hostId !== req.body.userId){
+      if(residenceDetails.hostId._id.toString() !== req.body.userId.toString()){
         return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this residence' }));
       }
       if(residenceDetails.status === 'reserved'){
         return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'You cant delete residence while it is reserved' }));
       }
       if (!residenceDetails.isDeleted  && residenceDetails.status !== 'reserved') {
-
+        const today = new Date();
         const futureBookings = await Booking.findOne({
           residenceId: id,
           startDate: { $gte: today },
@@ -315,9 +338,8 @@ const deleteResidence = async (req, res) => {
         if (futureBookings) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', type: 'residence', message: 'Cannot delete residence with future booking requests accepted.' }));
         }
-        const paths = residenceDetails.image.map(image =>
-          image.photo.map(photoObject => photoObject.path)
-        ).flat();
+        //console.log('images to be deleted-------------->',residenceDetails.photo)
+        const paths = residenceDetails.photo.map(photoObject => photoObject.path).flat();
         unlinkImages(paths)
         residenceDetails.isDeleted = true;
         residenceDetails.save();
@@ -328,7 +350,7 @@ const deleteResidence = async (req, res) => {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "residence", message: 'Delete credentials not match' }));
       }
     } else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add residence' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to delete residence' }));
     }
   }
   catch (error) {
