@@ -8,5 +8,4 @@ const router = express.Router();
 router.get('/', isValidUser, allNotifications);
 router.patch('/:id', isValidUser, getNotificationDetails);
 
-
 module.exports = router;

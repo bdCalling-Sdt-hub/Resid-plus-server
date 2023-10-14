@@ -2,6 +2,7 @@ const response = require("../helpers/response");
 const Payment = require("../models/Payment");
 const Booking = require('../models/Booking')
 const User = require("../models/User");
+const kkiapay = require('kkiapay-nodejs-sdk')
 
 //Add payment
 const addPayment = async (req, res) => {
@@ -32,7 +33,7 @@ const addPayment = async (req, res) => {
       await payment.save();
 
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'payment', message: 'Payment added successfully.', data: payment }));
-    } 
+    }
     else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add payment' }));
     }
@@ -47,23 +48,31 @@ const addPayment = async (req, res) => {
 const allPayment = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    if(!checkUser){
+    if (!checkUser) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     }
+
     const requestType = !req.query.requestType ? 'total' : req.query.requestType;
     var data
     if (requestType === 'total') {
-      const allPayments = await Payment.find();
-      const totalIncome = allPayments.reduce((total, payment) => total + payment.paymentData.amount, 0);
+      const allPayments = await Payment.find({ hostId: req.body.userId });
+      const totalIncome = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
       data = totalIncome
-    } else if (requestType === 'daily') {
-      data = await Payment.find().select('bookingId paymentData.amount').populate('bookingId').sort({ createdAt: -1 });
-    } else if (requestType === 'weekly') {
+    }
+    else if (requestType === 'daily') {
+      const dayTime = 24 * 60 * 60 * 1000;
+      const dayEndDate = new Date();
+      const dayStartDate = new Date(dayEndDate - dayTime);
+      const allPayments = await Payment.find({ createdAt: { $gte: dayStartDate, $lt: dayEndDate }, hostId: req.body.userId });
+      const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
+      data = { allPayments, total }
+    }
+    else if (requestType === 'weekly') {
       const noOfWeek = !req.query.noOfWeek ? 5 : req.query.noOfWeek;
       const weeklyTime = noOfWeek * 7 * 24 * 60 * 60 * 1000
       weeklyStartDate = new Date(new Date().getTime() - weeklyTime);
       weeklyEndDate = new Date();
-      const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate } });
+      const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate }, hostId: req.body.userId });
 
       function getWeekNumber(date) {
         const oneJan = new Date(date.getFullYear(), 0, 1);
@@ -72,7 +81,7 @@ const allPayment = async (req, res) => {
         oneJan.setDate(oneJan.getDate() + numberOfDaysToAdd);
         const timeDiff = date - oneJan;
         const weekNo = Math.ceil(timeDiff / (7 * 24 * 60 * 60 * 1000))
-        console.log("week calculation---------->", oneJan, dayOfWeek, numberOfDaysToAdd, timeDiff, weekNo)
+        //console.log("week calculation---------->", oneJan, dayOfWeek, numberOfDaysToAdd, timeDiff, weekNo)
         return weekNo;
       }
 
@@ -86,7 +95,7 @@ const allPayment = async (req, res) => {
           weeklyTotals[weekNumber] = 0;
         }
 
-        weeklyTotals[weekNumber] += payment.paymentData.amount;
+        weeklyTotals[weekNumber] += payment?.paymentData?.amount;
       });
       data = weeklyTotals
 
@@ -97,7 +106,7 @@ const allPayment = async (req, res) => {
       const monthEndDate = new Date();
       const monthStartDate = new Date(monthEndDate - monthTime);
 
-      const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate } });
+      const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate }, hostId: req.body.userId });
 
       const totalPaymentsByMonth = {};
 
@@ -110,9 +119,12 @@ const allPayment = async (req, res) => {
           totalPaymentsByMonth[key] = 0;
         }
 
-        totalPaymentsByMonth[key] += payment.paymentData.amount;
+        totalPaymentsByMonth[key] += payment?.paymentData?.amount;
       });
       data = totalPaymentsByMonth
+    }
+    else {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Request type not found' }));
     }
 
     return res.status(200).json({
@@ -129,6 +141,39 @@ const allPayment = async (req, res) => {
     );
   }
 };
+
+const refund = async (req, res) => {
+  // const id = req.params.id
+  // const payment = await Payment.findById(id)
+  const k = kkiapay({
+    privatekey: "tpk_7caf8122697911ee8d09fb6ffe60742d",
+    publickey: "7caf8120697911ee8d09fb6ffe60742d",
+    secretkey: "tsk_7caf8123697911ee8d09fb6ffe60742d",
+    sandbox: true
+  })
+  // k.verify("zy0L-Mfrw").
+  //   then((response) => {
+  //     res.status(200).json(response)
+  //   }).
+  //   catch((error) => {
+  //     res.status(500).json(error)
+  //   })
+  // k.refund("zy0L-Mfrw").
+  //   then((response) => {
+  //     res.status(200).json(response)
+  //   }).
+  //   catch((error) => {
+  //     res.status(500).json(error)
+  //   })
+  k.refund("zy0L-Mfrw", { amount: 300 }) // Specify the refund amount here
+    .then((response) => {
+      res.status(200).json(response);
+    })
+    .catch((error) => {
+      res.status(500).json(error);
+    });
+
+}
 
 //payments details
 // const paymentDetails = async (req, res) => {
@@ -171,4 +216,4 @@ const allPayment = async (req, res) => {
 // };
 
 
-module.exports = { addPayment, allPayment };
+module.exports = { addPayment, allPayment, refund };

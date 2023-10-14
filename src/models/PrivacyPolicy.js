@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const privacyPolicySchema = new mongoose.Schema({
-  content: { type: String, required: [true, 'Privacy policy field must be Required'] },
+  content: { type: String, required: true },
 },
   { timestamps: true },
 );

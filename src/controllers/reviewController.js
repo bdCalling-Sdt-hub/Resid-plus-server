@@ -60,9 +60,9 @@ const giveReview = async (req, res) => {
         })
       );
     }
-
+    console.log("hello------------->",bookingDetails.userId.toString(), req.body.userId.toString())
     if (bookingDetails.userId.toString() === req.body.userId.toString()) {
-      if (bookingDetails.status === "completed") {
+      if (bookingDetails.status === "check-out") {
         const review = await Review.create({
           userId: req.body.userId,
           residenceId: bookingDetails.residenceId,
@@ -86,9 +86,12 @@ const giveReview = async (req, res) => {
 
         return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'review', message: 'Review added successfully.', data: review }));
       }
+      else{
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'review', message: 'You can not review the residence as it is not completed yet' }));
+      }
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'review', message: 'You can not review the residence' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'review', message: 'You are not authorised to review the residence' }));
     }
   } catch (error) {
     console.error(error);
@@ -110,7 +113,7 @@ const getAll = async (req, res) => {
       );
     }
 
-    if (checkUser.role !== 'user') {
+    if (checkUser.role !== 'user' || checkUser.role !== 'host') {
       return res.status(401).json(
         response({
           status: 'Error',
@@ -119,7 +122,8 @@ const getAll = async (req, res) => {
         })
       );
     }
-    const reviews = await Review.find({ residenceId: residenceId }).populate('userId','fullName').sort({rating: -1})
+    const limit = req.query.limit ? Number(req.query.limit) : 5;
+    const reviews = await Review.find({ residenceId: residenceId }).populate('userId','fullName').sort({rating: -1}).limit(limit);
     return res.status(200).json(response({ status: 'Success', statusCode: '200', type: 'review', message: 'Review retrived successfully', data: reviews }));
   } catch (error) {
     console.error(error.message);

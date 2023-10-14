@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  residenceName: { type: String, required: true },
+  residenceName: { type: String, required: [true, 'Residence Name must be given'] },
   photo: { type: Object, required: false },
   capacity: { type: Number, required: [true, 'Capacity is must be given'] },
   beds: { type: Number, required: false },

@@ -8,15 +8,59 @@ const User = require("../models/User");
 const { addNotification, addManyNotifications, getAllNotification } = require("./notificationController");
 const options = { new: true };
 
-
+const calculateTimeAndPrice = async (req, res) => {
+  try {
+    const checkUser = await User.findById(req.body.userId);
+    if (!checkUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+    let {
+      checkInTime,
+      checkOutTime,
+      residenceId
+    } = req.body;
+    const residence_details = await Residence.findById(residenceId);
+    checkInTime = new Date(checkInTime)
+    checkOutTime = new Date(checkOutTime)
+    const totalHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
+    const totalAmount = totalHours * residence_details.hourlyAmount
+    return res.status(200).json(
+      response({
+        status: 'OK',
+        statusCode: '200',
+        type: 'booking',
+        message: 'Booking Time retrieved successfully',
+        data: {
+          checkInTime,
+          checkOutTime,
+          totalHours,
+          totalAmount
+        },
+      })
+    );
+  }
+  catch (error) {
+    console.log(error)
+  }
+}
 //Add booking
 const addBooking = async (req, res) => {
   try {
-    const {
+    let {
       residenceId,
       totalPerson,
       checkInTime,
       checkOutTime,
+      totalHours,
+      totalAmount,
+      paymentTypes,
+      guestTypes
     } = req.body;
 
     const checkUser = await User.findById(req.body.userId);
@@ -80,9 +124,6 @@ const addBooking = async (req, res) => {
     //checkInTime and checkOutTime format = 2023-09-18T14:30:00
     //****
     //calculating total hours -> amount
-    const totalTime = calculateTotalHoursBetween(checkInTime, checkOutTime)
-    const amount = totalTime * residence_details.hourlyAmount
-    console.log(amount)
 
     if (checkUser.role === 'user') {
       const booking = new Booking({
@@ -93,9 +134,11 @@ const addBooking = async (req, res) => {
         checkOutTime,
         userId: req.body.userId,
         hostId: residence_details.hostId,
-        totalHours: totalTime,
-        totalAmount: amount,
+        totalHours,
+        totalAmount,
         userContactNumber: checkUser.phoneNumber,
+        paymentTypes,
+        guestTypes
       });
       await booking.save();
       let popularity = residence_details.popularity
@@ -105,7 +148,7 @@ const addBooking = async (req, res) => {
       }
       console.log(popularity, residence)
       await Residence.findByIdAndUpdate(residence_details._id, residence, options)
-      const message = checkUser.fullName + ' wants to book ' + residence_details.residenceName + ' from ' + checkInTime + ' to ' + checkOutTime + ' without payment integration'
+      const message = checkUser.fullName + ' wants to book ' + residence_details.residenceName + ' from ' + checkInTime + ' to ' + checkOutTime
       const newNotification = {
         message: message,
         receiverId: booking.hostId,
@@ -182,7 +225,12 @@ const allBooking = async (req, res) => {
 
       if (bookingTypes === "confirmed") {
         filter = {
-          status: { $ne: 'pending' }
+          status: { $nin: ['pending', 'check-out'] }
+        }
+      }
+      else if (bookingTypes === "history") {
+        filter = {
+          status: { $eq: 'check-out' }
         }
       }
       else {
@@ -208,10 +256,17 @@ const allBooking = async (req, res) => {
       console.log('---------------->', bookingTypes, filter, bookings, count)
     }
     else if (checkUser.role === 'user') {
-
+      const bookingTypes = !req.query.bookingTypes ? '' : req.query.bookingTypes
+      var filter
+      if (bookingTypes === "history") {
+        filter = {
+          status: { $eq: 'check-out' }
+        }
+      }
       bookings = await Booking.find({
         userId: checkUser._id,
         isDeleted: false,
+        ...filter
       })
         .limit(limit)
         .skip((page - 1) * limit)
@@ -219,6 +274,7 @@ const allBooking = async (req, res) => {
       count = await Booking.countDocuments({
         userId: checkUser._id,
         isDeleted: false,
+        ...filter
       });
     }
 
@@ -264,6 +320,10 @@ const updateBooking = async (req, res) => {
     if (!checkUser) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
+    const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
+    if (!bookingDetails || bookingDetails.isDeleted) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: 'Booking not found' }));
+    }
     if (checkUser.role === 'host') {
       //changing residence status to reserved or cancelled
       //----->start
@@ -271,7 +331,7 @@ const updateBooking = async (req, res) => {
       if (!bookingDetails || bookingDetails.isDeleted) {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: 'Booking not found' }));
       }
-      console.log('HELLO------------------------------>', bookingDetails, bookingDetails.hostId._id.toString(), checkUser._id.toString())
+      //console.log('HELLO------------------------------>', bookingDetails, bookingDetails.hostId._id.toString(), checkUser._id.toString())
       if (bookingDetails.hostId._id.toString() !== checkUser._id.toString()) {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'This is not your residence' }));
       }
@@ -331,7 +391,53 @@ const updateBooking = async (req, res) => {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', type: "booking-request", message: 'Your booking-request update credentials not match' }));
       }
       //----->end
-    } else {
+    }
+    else if (checkUser.role === 'user') {
+      if (status === 'check-in' && bookingDetails.paymentTypes!=='unknown') {
+        bookingDetails.status = status
+        bookingDetails.save()
+        const hostMessage = bookingDetails.userId.fullName + ' checked-in to ' + bookingDetails.residenceId.residenceName
+
+        const newNotification = {
+          message: hostMessage,
+          receiverId: bookingDetails.hostId._id,
+          image: bookingDetails.userId.image,
+          linkId: bookingDetails._id,
+          type: 'host'
+        }
+        await addNotification(newNotification)
+        const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
+        console.log(hostNotification)
+        io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
+
+        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+      }
+      else if(status==="check-out"){
+        if(bookingDetails.paymentTypes==='full-payment'){
+          bookingDetails.status = status
+          bookingDetails.save()
+          const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName
+
+          const newNotification = {
+            message: hostMessage,
+            receiverId: bookingDetails.hostId._id,
+            image: bookingDetails.userId.image,
+            linkId: bookingDetails._id,
+            type: 'host'
+          }
+          await addNotification(newNotification)
+          const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
+          console.log(hostNotification)
+          io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
+
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+        }
+        else{
+          return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'You are not authorised to check-out without full-payment', data: bookingDetails }));
+        }
+      }
+    }
+    else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to edit booking' }));
     }
   }
@@ -596,6 +702,41 @@ const deleteBooking = async (req, res) => {
   }
 }
 
+const deleteHistory = async (req, res) => {
+  try {
+    const checkHost = await User.findById(req.body.userId);
+    //extracting the booking id from param that is going to be deleted
+    const id = req.params.id
+    if (!checkHost) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    };
+    if (checkHost.role === 'user') {
+      const bookingDetails = await Booking.findOne({ _id: id })
+      if (!bookingDetails) {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+      }
+      console.log(bookingDetails.userId.toString(), req.body.userId.toString())
+      if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking 2' }));
+      }
+      if (!bookingDetails.isDeleted && bookingDetails.status === 'pending') {
+        bookingDetails.isDeleted = true
+        await bookingDetails.save()
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
+      }
+      else {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
+      }
+    } else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
+    }
+  }
+  catch (error) {
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted booking' }));
+  }
+}
 
 
-module.exports = { addBooking, allBooking, updateBooking, bookingDetails, bookingDashboardCount, bookingDashboardRatio, deleteBooking };
+
+module.exports = { addBooking, allBooking, updateBooking, bookingDetails, bookingDashboardCount, bookingDashboardRatio, deleteBooking, calculateTimeAndPrice, deleteHistory };
