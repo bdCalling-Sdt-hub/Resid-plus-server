@@ -26,10 +26,21 @@ const calculateTimeAndPrice = async (req, res) => {
       residenceId
     } = req.body;
     const residence_details = await Residence.findById(residenceId);
+    if(!residence_details){
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'Residence not found',
+        })
+      );
+    }
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
-    const totalHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
-    const totalAmount = totalHours * residence_details.hourlyAmount
+    const hourlyAmount = Math.ceil(residence_details.hourlyAmount)
+    const totalHours = Math.ceil(calculateTotalHoursBetween(checkInTime, checkOutTime))
+    const totalAmount = Math.ceil(totalHours * hourlyAmount)
+    
     return res.status(200).json(
       response({
         status: 'OK',
@@ -59,7 +70,6 @@ const addBooking = async (req, res) => {
       checkOutTime,
       totalHours,
       totalAmount,
-      paymentTypes,
       guestTypes
     } = req.body;
 
@@ -137,7 +147,6 @@ const addBooking = async (req, res) => {
         totalHours,
         totalAmount,
         userContactNumber: checkUser.phoneNumber,
-        paymentTypes,
         guestTypes
       });
       await booking.save();
@@ -715,7 +724,7 @@ const deleteHistory = async (req, res) => {
       if (!bookingDetails) {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
       }
-      console.log(bookingDetails.userId.toString(), req.body.userId.toString())
+      //console.log(bookingDetails.userId.toString(), req.body.userId.toString())
       if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking 2' }));
       }
@@ -727,7 +736,26 @@ const deleteHistory = async (req, res) => {
       else {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
       }
-    } else {
+    } 
+    // else if (checkHost.role === 'user') {
+    //   const bookingDetails = await Booking.findOne({ _id: id })
+    //   if (!bookingDetails) {
+    //     return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+    //   }
+    //   //console.log(bookingDetails.userId.toString(), req.body.userId.toString())
+    //   if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
+    //     return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking 2' }));
+    //   }
+    //   if (!bookingDetails.isDeleted && bookingDetails.status === 'pending') {
+    //     bookingDetails.isDeleted = true
+    //     await bookingDetails.save()
+    //     return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
+    //   }
+    //   else {
+    //     return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
+    //   }
+    // } 
+    else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
     }
   }

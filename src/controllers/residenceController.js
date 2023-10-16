@@ -2,6 +2,7 @@ const response = require("../helpers/response");
 const Residence = require("../models/Residence");
 const Booking = require('../models/Booking')
 const User = require("../models/User");
+const mongoose = require('mongoose');
 //defining unlinking image function 
 const unlinkImages = require('../common/image/unlinkImage')
 
@@ -93,7 +94,7 @@ const allResidence = async (req, res) => {
     const search = req.query.search || '';
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-    const category = req.query.category || 'residence'
+    const category = req.query.category || ''
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
 
     //minPrice must be greater or equal 1
@@ -141,8 +142,6 @@ const allResidence = async (req, res) => {
 
     if (checkUser.role === 'user') {
       const requestType = req.query.requestType || 'all'
-      filter.$and = filter.$and || [];
-      filter.$and.push({ status: 'active' });
       if (requestType === 'all') {
         residences = await Residence.find({ isDeleted: false, ...filter })
           .limit(limit)
@@ -226,88 +225,89 @@ const allResidence = async (req, res) => {
   }
 };
 
-const allResidenceByHostId = async (req, res) => {
-  try {
-    const checkUser = await User.findOne({ _id: req.body.userId });
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-    const search = req.query.search || '';
-    const searchRegExp = new RegExp('.*' + search + '.*', 'i');
-    const filter = {
-      $or: [
-        { residenceName: { $regex: searchRegExp } },
-        { address: { $regex: searchRegExp } },
-        { city: { $regex: searchRegExp } },
-        { municipality: { $regex: searchRegExp } },
-      ],
-    };
-    if (!checkUser) {
-      return res.status(404).json(
-        response({
-          status: 'Error',
-          statusCode: '404',
-          message: 'User not found',
-        })
-      );
-    }
+// const allResidenceByHostId = async (req, res) => {
+//   try {
+//     const checkUser = await User.findOne({ _id: req.body.userId });
+//     const page = Number(req.query.page) || 1;
+//     const limit = Number(req.query.limit) || 10;
+//     const search = req.query.search || '';
+//     const searchRegExp = new RegExp('.*' + search + '.*', 'i');
+//     const filter = {
+//       $or: [
+//         { residenceName: { $regex: searchRegExp } },
+//         { address: { $regex: searchRegExp } },
+//         { city: { $regex: searchRegExp } },
+//         { municipality: { $regex: searchRegExp } },
+//       ],
+//     };
+//     if (!checkUser) {
+//       return res.status(404).json(
+//         response({
+//           status: 'Error',
+//           statusCode: '404',
+//           message: 'User not found',
+//         })
+//       );
+//     }
 
-    let residences = [];
-    let count = 0;
-    if (checkUser.role !== 'host') {
-      return res.status(401).json(
-        response({
-          status: 'Error',
-          statusCode: '401',
-          message: 'You are not authorised to get your residences data',
-        })
-      );
-    }
-    else {
-      residences = await Residence.find({
-        hostId: req.body.userId,
-        isDeleted: false,
-        ...filter
-      })
-        .limit(limit)
-        .skip((page - 1) * limit);
-      count = await Residence.countDocuments({
-        hostId: req.body.userId,
-        isDeleted: false,
-        ...filter
-      });
+//     let residences = [];
+//     let count = 0;
+//     if (checkUser.role !== 'host') {
+//       return res.status(401).json(
+//         response({
+//           status: 'Error',
+//           statusCode: '401',
+//           message: 'You are not authorised to get your residences data',
+//         })
+//       );
+//     }
+//     else {
+//       residences = await Residence.find({
+//         hostId: req.body.userId,
+//         isDeleted: false,
+//         ...filter
+//       })
+//         .limit(limit)
+//         .skip((page - 1) * limit);
+//       count = await Residence.countDocuments({
+//         hostId: req.body.userId,
+//         isDeleted: false,
+//         ...filter
+//       });
 
-      return res.status(200).json(
-        response({
-          status: 'OK',
-          statusCode: '200',
-          type: 'residence',
-          message: 'Residences retrieved successfully',
-          data: {
-            residences,
-            pagination: {
-              totalDocuments: count,
-              totalPage: Math.ceil(count / limit),
-              currentPage: page,
-              previousPage: page > 1 ? page - 1 : null,
-              nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
-            },
-          },
-        })
-      );
-    }
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json(
-      response({
-        status: 'Error',
-        statusCode: '500',
-        message: 'Error getting residences',
-      })
-    );
-  }
-};
+//       return res.status(200).json(
+//         response({
+//           status: 'OK',
+//           statusCode: '200',
+//           type: 'residence',
+//           message: 'Residences retrieved successfully',
+//           data: {
+//             residences,
+//             pagination: {
+//               totalDocuments: count,
+//               totalPage: Math.ceil(count / limit),
+//               currentPage: page,
+//               previousPage: page > 1 ? page - 1 : null,
+//               nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
+//             },
+//           },
+//         })
+//       );
+//     }
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json(
+//       response({
+//         status: 'Error',
+//         statusCode: '500',
+//         message: 'Error getting residences',
+//       })
+//     );
+//   }
+// };
 
 //Delete residences
+
 const deleteResidence = async (req, res) => {
   try {
     const checkHost = await User.findById(req.body.userId);
@@ -383,37 +383,38 @@ const updateResidence = async (req, res) => {
       aboutOwner,
       status
     } = req.body;
+
     if (!checkHost) {
       if (req.files.length > 0) {
         unlinkImages(req.files.map(file => file.path))
       }
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
-    if (checkHost.role === 'host') {
-      const residence = {
-        residenceName,
-        capacity,
-        beds,
-        baths,
-        address,
-        city,
-        municipality,
-        quirtier,
-        aboutResidence,
-        hourlyAmount,
-        dailyAmount,
-        amenities,
-        ownerName,
-        aboutOwner,
+    const existingResidence = await Residence.findById(id);
+    if (checkHost.role === 'host' && checkHost._id.toString() === existingResidence.hostId.toString()) {
+      const updatedResidence = {
+        residenceName: !residenceName?existingResidence.residenceName:residenceName,
+        capacity: !capacity?existingResidence.capacity:capacity,
+        beds: !beds?existingResidence.beds:beds,
+        baths: !baths?existingResidence.baths:baths,
+        address: !address?existingResidence.address:address,
+        city: !city?existingResidence.city:city,
+        municipality: !municipality?existingResidence.municipality:municipality,
+        quirtier: !quirtier?existingResidence.quirtier:quirtier,
+        aboutResidence: !aboutResidence?existingResidence.aboutResidence:aboutResidence,
+        hourlyAmount: !hourlyAmount?existingResidence.hourlyAmount:hourlyAmount,
+        dailyAmount: !dailyAmount?existingResidence.dailyAmount:dailyAmount,
+        amenities: !amenities?existingResidence.amenities:amenities,
+        ownerName: !ownerName?existingResidence.ownerName:ownerName,
+        aboutOwner: !aboutOwner?existingResidence.aboutOwner:aboutOwner,
         hostId: req.body.userId,
-      }
+      };
       if (status) {
-        const existingResidence = await Residence.findById(id);
         if (existingResidence.status === 'reserved') {
           return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'You cant change staus while residence is reserved' }));
         }
         else {
-          residence.status = status;
+          updateResidence.status = status;
         }
       }
       if (req.files.length > 0) {
@@ -435,12 +436,10 @@ const updateResidence = async (req, res) => {
           });
           console.log(files)
         });
-        residence.photo = files;
+        updateResidence.photo = files;
       }
-      const options = { new: true };
-      const result = await Residence.findByIdAndUpdate(id, residence, options);
-      console.log(result)
-      return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: 'Residence edited successfully.', data: result }));
+      const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
+      return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: 'Residence edited successfully.', data: updatedData }));
     } else {
       if (req.files.length > 0) {
         unlinkImages(req.files.map(file => file.path))
@@ -454,7 +453,7 @@ const updateResidence = async (req, res) => {
     if (req.files) {
       unlinkImages(req.files.map(file => file.path))
     }
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added residence' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error in edited residence' }));
   }
 }
 
@@ -552,4 +551,4 @@ const residenceDashboard = async (req, res) => {
 }
 
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, allResidenceByHostId };
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard };

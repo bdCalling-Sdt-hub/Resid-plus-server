@@ -113,7 +113,7 @@ const getAll = async (req, res) => {
       );
     }
 
-    if (checkUser.role !== 'user' || checkUser.role !== 'host') {
+    if (checkUser.role === 'admin') {
       return res.status(401).json(
         response({
           status: 'Error',

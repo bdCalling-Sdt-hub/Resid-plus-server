@@ -14,7 +14,6 @@ const uploadUsers = userFileUploadMiddleware(UPLOADS_FOLDER_USERS);
 //Add residence
 router.post('/', [uploadUsers.array("photo", 5)], imageVerification, isValidUser, addResidence);
 router.get('/', isValidUser, allResidence);
-router.get('/by-host', isValidUser, allResidenceByHostId);
 router.put('/:id', [uploadUsers.array("photo", 5)], isValidUser, updateResidence);
 router.delete('/:id', isValidUser, deleteResidence);
 router.get('/:id', isValidUser, residenceDetails);
