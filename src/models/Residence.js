@@ -18,12 +18,12 @@ const userSchema = new mongoose.Schema({
   amenities: {
     type: Array,
     required: false,
-    validate: {
-      validator: function (values) {
-        return values.every(value => amenities.includes(value));
-      },
-      message: 'Invalid amenities.',
-    },
+    // validate: {
+    //   validator: function (values) {
+    //     return values.every(value => amenities.includes(value));
+    //   },
+    //   message: 'Invalid amenities.',
+    // },
   },
   ownerName: { type: String, required: false },
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
