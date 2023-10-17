@@ -19,6 +19,8 @@ const bookingSchema = new mongoose.Schema({
   guestTypes: { type: String, enum: ['adults-only', 'including-child','unknown'], default: 'unknown'},
   paymentTypes: { type: String, enum: ['half-payment', 'full-payment', 'unknown'], default: 'unknown' },
   isDeleted: { type: Boolean, default: false },
+  isUserHistoryDeleted: { type: Boolean, default: false },
+  isHostHistoryDeleted: { type: Boolean, default: false },
 },
   {
     timestamps: true

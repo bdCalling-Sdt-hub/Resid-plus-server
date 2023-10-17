@@ -26,7 +26,7 @@ const calculateTimeAndPrice = async (req, res) => {
       residenceId
     } = req.body;
     const residence_details = await Residence.findById(residenceId);
-    if(!residence_details){
+    if (!residence_details) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -37,10 +37,19 @@ const calculateTimeAndPrice = async (req, res) => {
     }
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
+    if (checkInTime > checkOutTime) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'Check-in time must be greater than check-out time',
+        })
+      );
+    }
     const hourlyAmount = Math.ceil(residence_details.hourlyAmount)
     const totalHours = Math.ceil(calculateTotalHoursBetween(checkInTime, checkOutTime))
     const totalAmount = Math.ceil(totalHours * hourlyAmount)
-    
+
     return res.status(200).json(
       response({
         status: 'OK',
@@ -72,6 +81,16 @@ const addBooking = async (req, res) => {
       totalAmount,
       guestTypes
     } = req.body;
+
+    if (checkInTime > checkOutTime) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'Check-in time must be grater than check-out time',
+        })
+      );
+    }
 
     const checkUser = await User.findById(req.body.userId);
     if (!checkUser) {
@@ -239,7 +258,10 @@ const allBooking = async (req, res) => {
       }
       else if (bookingTypes === "history") {
         filter = {
-          status: { $eq: 'check-out' }
+          $and: [
+            { status: { $eq: 'check-out' } },
+            { isHostHistoryDeleted: { $eq: false } }
+          ]
         }
       }
       else {
@@ -269,9 +291,13 @@ const allBooking = async (req, res) => {
       var filter
       if (bookingTypes === "history") {
         filter = {
-          status: { $eq: 'check-out' }
+          $and: [
+            { status: { $eq: 'check-out' } },
+            { isUserHistoryDeleted: { $eq: false } }
+          ]
         }
       }
+
       bookings = await Booking.find({
         userId: checkUser._id,
         isDeleted: false,
@@ -402,7 +428,7 @@ const updateBooking = async (req, res) => {
       //----->end
     }
     else if (checkUser.role === 'user') {
-      if (status === 'check-in' && bookingDetails.paymentTypes!=='unknown') {
+      if (status === 'check-in' && bookingDetails.paymentTypes !== 'unknown') {
         bookingDetails.status = status
         bookingDetails.save()
         const hostMessage = bookingDetails.userId.fullName + ' checked-in to ' + bookingDetails.residenceId.residenceName
@@ -421,8 +447,8 @@ const updateBooking = async (req, res) => {
 
         return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
       }
-      else if(status==="check-out"){
-        if(bookingDetails.paymentTypes==='full-payment'){
+      else if (status === "check-out") {
+        if (bookingDetails.paymentTypes === 'full-payment') {
           bookingDetails.status = status
           bookingDetails.save()
           const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName
@@ -441,7 +467,7 @@ const updateBooking = async (req, res) => {
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
         }
-        else{
+        else {
           return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'You are not authorised to check-out without full-payment', data: bookingDetails }));
         }
       }
@@ -728,33 +754,33 @@ const deleteHistory = async (req, res) => {
       if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking 2' }));
       }
-      if (!bookingDetails.isDeleted && bookingDetails.status === 'pending') {
-        bookingDetails.isDeleted = true
+      if (!bookingDetails.isDeleted && !bookingDetails.isUserHistoryDeleted && bookingDetails.status === 'check-out') {
+        bookingDetails.isUserHistoryDeleted = true
         await bookingDetails.save()
         return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
       }
       else {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
       }
-    } 
-    // else if (checkHost.role === 'user') {
-    //   const bookingDetails = await Booking.findOne({ _id: id })
-    //   if (!bookingDetails) {
-    //     return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
-    //   }
-    //   //console.log(bookingDetails.userId.toString(), req.body.userId.toString())
-    //   if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
-    //     return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking 2' }));
-    //   }
-    //   if (!bookingDetails.isDeleted && bookingDetails.status === 'pending') {
-    //     bookingDetails.isDeleted = true
-    //     await bookingDetails.save()
-    //     return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
-    //   }
-    //   else {
-    //     return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
-    //   }
-    // } 
+    }
+    else if (checkHost.role === 'host') {
+      const bookingDetails = await Booking.findOne({ _id: id })
+      if (!bookingDetails) {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+      }
+      //console.log(bookingDetails.userId.toString(), req.body.userId.toString())
+      if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking 2' }));
+      }
+      if (!bookingDetails.isDeleted && !bookingDetails.isHostHistoryDeleted && bookingDetails.status === 'check-out') {
+        bookingDetails.isHostHistoryDeleted = true
+        await bookingDetails.save()
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
+      }
+      else {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
+      }
+    }
     else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
     }
