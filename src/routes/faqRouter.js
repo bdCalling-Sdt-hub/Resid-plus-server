@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { createFaq, getAll, deleteFaq, updateFaq, getFaqById } = require("../controllers/faqController");
-const { isValidUser } = require('../middleWares/auth');
+const { isValidUser } = require('../middlewares/auth');
 
 
 router.post('/', isValidUser, createFaq);

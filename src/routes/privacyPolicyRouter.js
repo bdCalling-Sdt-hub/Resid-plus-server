@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { isValidUser } = require('../middleWares/auth');
+const { isValidUser } = require('../middlewares/auth');
 const { getAll, createPrivacyPolicy } = require('../controllers/privacyPolicyController');
 
 

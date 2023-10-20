@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { createTermsAndCondition, getAll } = require("../controllers/termsAndConditionController");
-const { isValidUser } = require('../middleWares/auth');
+const { isValidUser } = require('../middlewares/auth');
 
 
 router.post('/', isValidUser, createTermsAndCondition);
