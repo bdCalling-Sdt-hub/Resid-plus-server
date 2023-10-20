@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const Notification = require("../models/Notification");
 const User = require('../models/User')
 const Booking = require('../models/Booking')
+const Residence = require('../models/Residence')
 
 async function addNotification(data) {
   try {
@@ -27,27 +28,27 @@ async function addManyNotifications(data) {
     console.error("Error adding notification:", error);
   }
 }
-async function getAllNotification(type, limit = 10, page = 1, receiverId = null) {
+async function getAllNotification(role, limit = 10, page = 1, receiverId = null) {
   try {
     // Create a new notification using the data provided
     var allNotification
     var notViewed
     var count
-    if (type === 'admin') {
-      allNotification = await Notification.find({ type: type })
+    if (role === 'admin') {
+      allNotification = await Notification.find({ role: role })
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
-      notViewed = await Notification.countDocuments({ viewStatus: 'false', type: type });
-      count = await Notification.countDocuments({ type: type });
+      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role });
+      count = await Notification.countDocuments({ role: role });
     }
-    else if(type === 'user' || type === 'host'){
-      allNotification = await Notification.find({ receiverId: receiverId, type: type })
+    else if (role === 'user' || role === 'host') {
+      allNotification = await Notification.find({ receiverId: receiverId, role: role })
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
-      notViewed = await Notification.countDocuments({ viewStatus: 'false', receiverId: receiverId, type: type });
-      count = await Notification.countDocuments({ receiverId: receiverId, type: type });
+      notViewed = await Notification.countDocuments({ viewStatus: 'false', receiverId: receiverId, role: role });
+      count = await Notification.countDocuments({ receiverId: receiverId, role: role });
     }
     const data = {
       allNotification,
@@ -79,27 +80,27 @@ const allNotifications = async (req, res) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    var type = checkUser.role
+    var role = checkUser.role
     var allNotification
     var notViewed
     var count
-    if (type === 'admin') {
-      allNotification = await Notification.find({ type: type })
+    if (role === 'admin') {
+      allNotification = await Notification.find({ role: role })
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
-      notViewed = await Notification.countDocuments({ viewStatus: 'false', type: type });
-      count = await Notification.countDocuments({ type: type });
+      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role });
+      count = await Notification.countDocuments({ role: role });
     }
-    else if(type === 'user' || type === 'host'){
-      allNotification = await Notification.find({ receiverId: req.body.userId, type: type })
+    else if (role === 'user' || role === 'host') {
+      allNotification = await Notification.find({ receiverId: req.body.userId, role: role })
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
-      notViewed = await Notification.countDocuments({ viewStatus: 'false', receiverId: req.body.userId, type: type });
-      count = await Notification.countDocuments({ receiverId: req.body.userId, type: type });
+      notViewed = await Notification.countDocuments({ viewStatus: 'false', receiverId: req.body.userId, role: role });
+      count = await Notification.countDocuments({ receiverId: req.body.userId, role: role });
     }
-    else{
+    else {
       return res.status(500).json(
         response({
           status: 'Error',
@@ -120,11 +121,11 @@ const allNotifications = async (req, res) => {
         nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
     }
-    if(type === 'admin'){
+    if (role === 'admin') {
       io.emit('admin-notification', data)
     }
-    else{
-      io.to('room'+req.body.userId).emit(`${type}-notification`, data)
+    else {
+      io.to('room' + req.body.userId).emit(`${role}-notification`, data)
     }
     return res.status(200).json(
       response({
@@ -164,15 +165,22 @@ const getNotificationDetails = async (req, res) => {
       notification.viewStatus = true
       await notification.save()
     }
+    const role = notification.role
     const type = notification.type
-    const bookingDetails = await Booking.findById(notification.linkId).populate('residenceId hostId userId')
+    var details
+    if (type === 'booking') {
+      details = await Booking.findById(notification.linkId).populate('residenceId hostId userId')
+    }
+    else if (type === 'residence') {
+      details = await Residence.findById(notification.linkId).populate('hostId')
+    }
     //retriving all notifications
-    const allNotification = await Notification.find({ type: type })
+    const allNotification = await Notification.find({ role: role })
       .limit(limit)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 })
-    const notViewed = await Notification.countDocuments({ viewStatus: 'false', type: type });
-    const count = await Notification.countDocuments({ type: type });
+    const notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role });
+    const count = await Notification.countDocuments({ role: role });
     const data = {
       allNotification,
       notViewed: notViewed,
@@ -184,9 +192,14 @@ const getNotificationDetails = async (req, res) => {
         nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
     }
-    io.emit('admin-notification', data)
-    console.log('details api response ----------------->',data)
-    return res.status(200).json(response({ status: 'OK', statusCode: '200', type: 'notification', message: 'Notifications retrieved successfully', data: data }))
+    if (role === 'admin') {
+      io.emit('admin-notification', data)
+    }
+    else if (role === 'user' || role === 'host') {
+      io.to('room' + req.body.userId).emit(`${role}-notification`, data)
+    }
+    console.log('details api response ----------------->', details)
+    return res.status(200).json(response({ status: 'OK', statusCode: '200', type: type, message: 'Notifications retrieved successfully', data: details }))
   }
   catch (error) {
     console.error(error);
@@ -212,14 +225,14 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
       notification.viewStatus = true
       await notification.save()
     }
-    const type = notification.type
+    const role = notification.role
     //retriving all notifications
-    const allNotification = await Notification.find({ type: type })
+    const allNotification = await Notification.find({ role: role })
       .limit(limit)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 })
-    const notViewed = await Notification.countDocuments({ viewStatus: 'false', type: type });
-    const count = await Notification.countDocuments({ type: type });
+    const notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role });
+    const count = await Notification.countDocuments({ role: role });
     const data = {
       allNotification,
       notViewed: notViewed,

@@ -1,29 +1,29 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  residenceName: { type: String, required: [true, 'Residence Name must be given'] },
+  residenceName: { type: String, required: [true, 'Residence Name must be given'], trim: true },
   photo: { type: Object, required: false },
   capacity: { type: Number, required: [true, 'Capacity is must be given'] },
-  beds: { type: Number, required: false },
-  baths: { type: Number, required: false },
-  address: { type: String, required: false },
-  city: { type: String, required: false },
-  municipality: { type: String, required: false },
-  quirtier: { type: String, reqiured: false },
+  beds: { type: Number, required: true },
+  baths: { type: Number, required: true },
+  address: { type: String, required: true },
+  city: { type: String, required: true },
+  municipality: { type: String, required: true },
+  quirtier: { type: String, reqiured: true },
   aboutResidence: { type: String, reqiured: false },
-  hourlyAmount: { type: Number, reqiured: false },
+  hourlyAmount: { type: Number, reqiured: true },
   popularity: { type: Number, default:0 },
   ratings: { type: Number, default:0 },
   dailyAmount: { type: Number, reqiured: false },
   amenities: {
     type: Array,
-    required: false,
-    // validate: {
-    //   validator: function (values) {
-    //     return values.every(value => amenities.includes(value));
-    //   },
-    //   message: 'Invalid amenities.',
-    // },
+    required: true,
+    validate: {
+      validator: function (values) {
+        return values.every(value => amenities.includes(value));
+      },
+      message: 'Invalid amenities.',
+    },
   },
   ownerName: { type: String, required: false },
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -36,8 +36,10 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
+
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
+
     if (checkInTime > checkOutTime) {
       return res.status(404).json(
         response({
@@ -80,8 +82,12 @@ const addBooking = async (req, res) => {
       checkOutTime,
       totalHours,
       totalAmount,
-      guestTypes
+      guestTypes,
+      numberOfGuests
     } = req.body;
+    checkInTime = new Date(checkInTime)
+    checkOutTime = new Date(checkOutTime)
+    console.log('add booking called ------------------->', req.body)
 
     if (checkInTime > checkOutTime) {
       return res.status(404).json(
@@ -150,11 +156,6 @@ const addBooking = async (req, res) => {
       return res.status(409).json(response({ status: 'Error', statusCode: '409', message: 'The request already exists, wait for confirmation' }));
     }
 
-    //****
-    //checkInTime and checkOutTime format = 2023-09-18T14:30:00
-    //****
-    //calculating total hours -> amount
-
     if (checkUser.role === 'user') {
       const booking = new Booking({
         bookingId: await generateCustomID(),
@@ -167,7 +168,8 @@ const addBooking = async (req, res) => {
         totalHours,
         totalAmount,
         userContactNumber: checkUser.phoneNumber,
-        guestTypes
+        guestTypes,
+        numberOfGuests
       });
       await booking.save();
       let popularity = residence_details.popularity
@@ -177,7 +179,20 @@ const addBooking = async (req, res) => {
       }
       console.log(popularity, residence)
       await Residence.findByIdAndUpdate(residence_details._id, residence, options)
-      
+
+      const message = checkUser.fullName + ' wants to book ' + bookingDetails.residenceId.residenceName + ' from ' + bookingDetails.checkInTime + ' to ' + bookingDetails.checkOutTime
+      const newNotification = {
+        message: message,
+        receiverId: bookingDetails.hostId,
+        image: checkUser.image,
+        linkId: bookingDetails._id,
+        type:'booking',
+        role: 'host'
+      }
+      await addNotification(newNotification)
+      const notification = await getAllNotification('host', 30, 1, bookingDetails.hostId)
+      io.to('room' + bookingDetails.hostId).emit('host-notification', notification);
+
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
     }
     else {
@@ -244,20 +259,23 @@ const allBooking = async (req, res) => {
 
       if (bookingTypes === "confirmed") {
         filter = {
-          status: { $nin: ['pending', 'check-out'] }
+          status: { $nin: ['pending', 'check-out', 'cancelled'] },
+          paymentTypes: { $ne: 'unknown' }
         }
       }
       else if (bookingTypes === "history") {
         filter = {
           $and: [
             { status: { $eq: 'check-out' } },
+            { paymentTypes: { $ne: 'unknown' } },
             { isHostHistoryDeleted: { $eq: false } }
           ]
         }
       }
       else {
         filter = {
-          status: { $eq: 'pending' }
+          status: { $eq: 'pending' },
+          paymentTypes: { $ne: 'unknown' }
         }
       }
 
@@ -268,12 +286,12 @@ const allBooking = async (req, res) => {
       })
         .limit(limit)
         .skip((page - 1) * limit)
-        .populate('userId hostId residenceId');
+        .populate('userId hostId residenceId')
+        .sort({ createdAt: -1 });
       count = await Booking.countDocuments({
         hostId: checkUser._id,
         isDeleted: false,
         ...filter
-
       });
       console.log('---------------->', bookingTypes, filter, bookings, count)
     }
@@ -284,6 +302,7 @@ const allBooking = async (req, res) => {
         filter = {
           $and: [
             { status: { $eq: 'check-out' } },
+            { paymentTypes: { $ne: 'unknown' } },
             { isUserHistoryDeleted: { $eq: false } }
           ]
         }
@@ -296,7 +315,8 @@ const allBooking = async (req, res) => {
       })
         .limit(limit)
         .skip((page - 1) * limit)
-        .populate('userId hostId residenceId');
+        .populate('userId hostId residenceId')
+        .sort({ createdAt: -1 });
       count = await Booking.countDocuments({
         userId: checkUser._id,
         isDeleted: false,
@@ -361,34 +381,34 @@ const updateBooking = async (req, res) => {
       if (bookingDetails.hostId._id.toString() !== checkUser._id.toString()) {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'This is not your residence' }));
       }
+      if(bookingDetails.paymentTypes==='unknown'){
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'User need to payment first to have a reserved residence' }));
+      }
       if (status === 'reserved' && bookingDetails.status === 'pending' && bookingDetails.paymentTypes !== 'unknown') {
         const updated_residence = {
           status
         }
         await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
-        
-        //changing payment status to accepted
-        const payment = await Payment.findOne({ bookingId: bookingDetails._id })
-        payment.status = 'accepted'
-        payment.save()
-        
+
         bookingDetails.status = status
         bookingDetails.save()
 
         const adminMessage = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
-        const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request'
+        const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for '+ bookingDetails.residenceId.residenceName
 
         const newNotification = [{
           message: adminMessage,
           image: bookingDetails.userId.image,
           linkId: bookingDetails._id,
-          type: 'admin'
+          role: 'admin',
+          type: 'booking'
         }, {
           message: userMessage,
           receiverId: bookingDetails.userId._id,
           image: bookingDetails.userId.image,
           linkId: bookingDetails._id,
-          type: 'user'
+          role: 'user',
+          type: 'booking'
         }]
         await addManyNotifications(newNotification)
         const adminNotification = await getAllNotification('admin')
@@ -399,22 +419,23 @@ const updateBooking = async (req, res) => {
 
         return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
       }
-      else if (status === 'cancelled' && bookingDetails.status === 'pending') {
+      else if (status === 'cancelled' && bookingDetails.status !== 'pending') {
         //changing payment status to rejected
         const payment = await Payment.findOne({ bookingId: bookingDetails._id })
-        payment.status = 're'
+        payment.status = 'rejected'
         payment.save()
 
         bookingDetails.status = status
         bookingDetails.save()
-        const userMessage = bookingDetails.hostId.fullName + ' cancelled your booking request'
+        const userMessage = bookingDetails.hostId.fullName + ' cancelled your booking request for '+ bookingDetails.residenceId.residenceName
 
         const newNotification = {
           message: userMessage,
           receiverId: bookingDetails.userId._id,
           image: bookingDetails.userId.image,
           linkId: bookingDetails._id,
-          type: 'user'
+          role: 'user',
+          type: 'booking'
         }
         await addNotification(newNotification)
         const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
@@ -439,7 +460,8 @@ const updateBooking = async (req, res) => {
           receiverId: bookingDetails.hostId._id,
           image: bookingDetails.userId.image,
           linkId: bookingDetails._id,
-          type: 'host'
+          role: 'host',
+          type: 'booking'
         }
         await addNotification(newNotification)
         const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
@@ -459,7 +481,8 @@ const updateBooking = async (req, res) => {
             receiverId: bookingDetails.hostId._id,
             image: bookingDetails.userId.image,
             linkId: bookingDetails._id,
-            type: 'host'
+            type: 'booking',
+            role: 'host'
           }
           await addNotification(newNotification)
           const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
@@ -485,104 +508,7 @@ const updateBooking = async (req, res) => {
   }
 };
 
-//Implementable after payment integration
-// const updateBooking = async (req, res) => {
-//   console.log(req.body)
-//   try {
-//     const checkUser = await User.findById(req.body.userId);
-//     //extracting the booking id from param that is going to be edited
-//     const id = req.params.id
-//     const { status } = req.body;
-//     if (!checkUser) {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
-//     };
-//     if (checkUser.role === 'host') {
-//       var updated_residence
-
-//       //changing residence status to reserved
-//       //----->start
-//       const bookingDetails = await Booking.findById(id).populate('residenceId userId')
-//       if (status) {
-//         if (status === 'reserved' && bookingDetails.status === 'pending') {
-//           updated_residence = {
-//             status
-//           }
-//         }
-//         else if (status === 'reserved' && bookingDetails.status !== 'pending') {
-//           return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Cant update bookings status to reserced as its already reserved' }));
-//         }
-//         //booking cancellation with payment
-//         else if(status === 'cancelled' && bookingDetails.status === 'reserved' && bookingDetails.paymentTypes !== 'unknown'){
-//           // more things to add after payment integration
-//           updated_residence = {
-//             status
-//           }
-//         }
-//         //booking cancellation without payment
-//         else if(status === 'cancelled' && bookingDetails.status === 'reserved' && bookingDetails.paymentTypes === 'unknown'){
-//           // as no payment is done, so no need to refund
-//           updated_residence = {
-//             status
-//           }
-//         }
-//         //booking check-in
-//         else if(status === 'check-in' && bookingDetails.status === 'reserved' && bookingDetails.paymentTypes !== 'unknown'){
-//           // more things to add after payment integration
-//           updated_residence = {
-//             status
-//           }
-//         }
-//         //booking check-in without payment not possible
-//         else if(status === 'check-in' && bookingDetails.status === 'reserved' && bookingDetails.paymentTypes === 'unknown'){
-//           // more things to add after payment integration
-//           return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Cant update bookings status to check-in as payment is not done yet' }));
-//         }
-//         //booking check-out
-//         else if(status === 'check-out' && bookingDetails.status === 'reserved' && bookingDetails.paymentTypes !== 'unknown'){
-//           // more things to add after payment integration
-//           updated_residence = {
-//             status
-//           }
-//         }
-//         //booking check-out without payment not possible
-//         else if(status === 'check-out' && bookingDetails.status === 'reserved' && bookingDetails.paymentTypes !== 'full-payment'){
-//           // more things to add after payment integration
-//           return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Cant update bookings status to check-out as full-payment is not done yet' }));
-//         }
-//         await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
-//         const message = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
-
-//         const newNotification = {
-//           message: message,
-//           image: bookingDetails.userId.image,
-//           linkId: bookingDetails._id,
-//           type: 'admin'
-//         }
-//         const notification = await addNotification(newNotification)
-//         io.emit('admin-notification', notification);
-//       }
-//       else {
-//         return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Cant update bookings' }));
-//       }
-//       //----->end
-
-//       const result = await Booking.findByIdAndUpdate(id, booking, options);
-//       console.log(result)
-//       return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: result }));
-//     } else {
-//       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
-//     }
-//   }
-//   catch (error) {
-//     console.error(error);
-//     //deleting the images if something went wrong
-
-//     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added booking' }));
-//   }
-// };
-
 //booking details
-
 const bookingDetails = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
@@ -791,7 +717,5 @@ const deleteHistory = async (req, res) => {
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted booking' }));
   }
 }
-
-
 
 module.exports = { addBooking, allBooking, updateBooking, bookingDetails, bookingDashboardCount, bookingDashboardRatio, deleteBooking, calculateTimeAndPrice, deleteHistory };

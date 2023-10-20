@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  fullName: { type: String, required: [true, 'Name is must be given'] },
+  fullName: { type: String, required: [true, 'Name is must be given'], trim: true },
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -16,8 +16,8 @@ const userSchema = new mongoose.Schema({
       message: 'Please enter a valid Email'
     }
   },
-  phoneNumber: { type: String, required: false },
-  address: { type: String, required: false },
+  phoneNumber: { type: String, required: false, trim: true },
+  address: { type: String, required: false, trim: true },
   dateOfBirth: { type: String, required: false },
   password: { type: String, required: [true, 'Password must be given'], set: (v) => bcrypt.hashSync(v, bcrypt.genSaltSync(10)) },
   image: {
@@ -28,8 +28,9 @@ const userSchema = new mongoose.Schema({
   },
   role: { type: String, enum: ['user', 'admin', 'unknown', 'host'], default: 'unknown' },
   emailVerified: { type: Boolean, default: false },
+  //emailVerificationAttemps: { type: Number, default: 0 },
   oneTimeCode: { type: String, required: false },
-  isDeleted: { type: Boolean, default: false },
+  //isDeleted: { type: Boolean, default: false },
 }, { timestamps: true }, {
   toJSON: {
     transform(doc, ret) {

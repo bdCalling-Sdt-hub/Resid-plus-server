@@ -16,11 +16,11 @@ const addPayment = async (req, res) => {
     const checkUser = await User.findById(req.body.userId);
 
     if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found 2' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
 
-    console.log("paymentTypes----------->", paymentTypes)
-    if(paymentTypes !== 'half-payment' && paymentTypes !== 'full-payment'){
+    //console.log("paymentTypes----------->", paymentTypes)
+    if (paymentTypes !== 'half-payment' && paymentTypes !== 'full-payment') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment status not not appropiate' }));
     }
     const bookingDetails = await Booking.findById(bookingId).populate('residenceId');
@@ -29,7 +29,7 @@ const addPayment = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
     };
 
-    if (checkUser.role === 'user' && bookingDetails.userId.toString() === req.body.userId) {
+    if (checkUser.role === 'user' && bookingDetails.userId.toString() === req.body.userId && bookingDetails.status === 'reserved') {
       const payment = new Payment({
         paymentData,
         bookingId,
@@ -43,7 +43,7 @@ const addPayment = async (req, res) => {
       bookingDetails.paymentTypes = paymentTypes;
       await bookingDetails.save();
 
-      const message = checkUser.fullName + ' wants to book ' + bookingDetails.residenceId.residenceName + ' from ' + bookingDetails.checkInTime + ' to ' + bookingDetails.checkOutTime + ' , also completed '+ paymentTypes
+      const message = checkUser.fullName + ' has completed ' + paymentTypes + ' for ' + bookingDetails.residenceId.residenceName
       const newNotification = {
         message: message,
         receiverId: bookingDetails.hostId,
@@ -52,12 +52,12 @@ const addPayment = async (req, res) => {
         type: 'host'
       }
       await addNotification(newNotification)
-      const notification = await getAllNotification('host', 6, 1, bookingDetails.hostId)
+      const notification = await getAllNotification('host', 30, 1, bookingDetails.hostId)
       io.to('room' + bookingDetails.hostId).emit('host-notification', notification);
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'payment', message: 'Payment added successfully.', data: payment }));
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add payment' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to do payment now' }));
     }
 
   } catch (error) {
@@ -127,28 +127,33 @@ const allPayment = async (req, res) => {
 
       const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate }, hostId: req.body.userId, ...filter });
 
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+
       const totalPaymentsByMonth = {};
 
       allPayments.forEach(payment => {
         const year = payment.createdAt.getFullYear();
-        const month = payment.createdAt.getMonth() + 1;
+        const month = payment.createdAt.getMonth();
 
-        const key = `${month}-${year}`;
+        const key = `${monthNames[month]} ${year}`;
         if (!totalPaymentsByMonth[key]) {
           totalPaymentsByMonth[key] = 0;
         }
 
-        totalPaymentsByMonth[key] += payment?.paymentData?.amount;
+        totalPaymentsByMonth[key] += payment?.paymentData?.requestData?.amount;
       });
-      data = totalPaymentsByMonth
+
+      data = totalPaymentsByMonth;
     }
+
     else {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Request type not found' }));
     }
 
-    return res.status(200).json({
-      data
-    });
+    return res.status(200).json({ data });
   } catch (error) {
     console.log(error);
     return res.status(500).json(
@@ -162,6 +167,7 @@ const allPayment = async (req, res) => {
 };
 
 const refund = async (req, res) => {
+  console.log("refund hitted")
   // const id = req.params.id
   // const payment = await Payment.findById(id)
   const k = kkiapay({
@@ -170,69 +176,42 @@ const refund = async (req, res) => {
     secretkey: "tsk_7caf8123697911ee8d09fb6ffe60742d",
     sandbox: true
   })
-  // k.verify("zy0L-Mfrw").
-  //   then((response) => {
-  //     res.status(200).json(response)
-  //   }).
-  //   catch((error) => {
-  //     res.status(500).json(error)
-  //   })
-  // k.refund("zy0L-Mfrw").
-  //   then((response) => {
-  //     res.status(200).json(response)
-  //   }).
-  //   catch((error) => {
-  //     res.status(500).json(error)
-  //   })
-  k.refund("zy0L-Mfrw", { amount: 300 }) // Specify the refund amount here
-    .then((response) => {
-      res.status(200).json(response);
+  // var daata
+  k.verify("CFBlthP1Q").
+    then((response) => {
+      daata = response
+      res.status(200).json(daata)
+    }).
+    catch((error) => {
+      res.status(500).json(error)
     })
-    .catch((error) => {
-      res.status(500).json(error);
-    });
+
+  // k.refund(""CFBlthP1Q").
+  //   then((response) => {
+  //     res.status(200).json(response)
+  //   }).
+  //   catch((error) => {
+  //     res.status(500).json(error)
+  //   })
+  // k.refund("Fkz-oEiZS", { amount: 1000 }) // Specify the refund amount here
+  //   .then((response) => {
+  //     res.status(200).json(response);
+  //   })
+  //   .catch((error) => {
+  //     res.status(500).json(error);
+  //   });
+  k.setup_payout({
+    algorithm: "roof",
+    send_notification: true,
+    destination_type: "MOBILE_MONEY",
+    roof_amount: "5000",
+    destination: "653245b46beeea812edf94ac"
+  }).then((response) => {
+    res.status(200).json(response)
+  }).catch((error) => {
+    res.status(500).json(error)
+  })
 
 }
-
-//payments details
-// const paymentDetails = async (req, res) => {
-//   try {
-//     const checkUser = await User.findOne({ _id: req.body.userId });
-//     const id = req.params.id
-//     if (!checkUser) {
-//       return res.status(404).json(
-//         response({
-//           status: 'Error',
-//           statusCode: '404',
-//           message: 'User not found',
-//         })
-//       );
-//     }
-
-//     const payments = await Payment.findById(id);
-
-//     return res.status(200).json(
-//       response({
-//         status: 'OK',
-//         statusCode: '200',
-//         type: 'payment',
-//         message: 'Payment retrieved successfully',
-//         data: {
-//           payments
-//         },
-//       })
-//     );
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json(
-//       response({
-//         status: 'Error',
-//         statusCode: '500',
-//         message: 'Error getting payments',
-//       })
-//     );
-//   }
-// };
-
 
 module.exports = { addPayment, allPayment, refund };

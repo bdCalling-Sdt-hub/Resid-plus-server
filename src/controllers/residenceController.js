@@ -4,7 +4,8 @@ const Booking = require('../models/Booking')
 const User = require("../models/User");
 const mongoose = require('mongoose');
 //defining unlinking image function 
-const unlinkImages = require('../common/image/unlinkImage')
+const unlinkImages = require('../common/image/unlinkImage');
+const { addNotification, getAllNotification } = require("./notificationController");
 
 //Add residence
 const addResidence = async (req, res) => {
@@ -70,6 +71,17 @@ const addResidence = async (req, res) => {
       });
 
       await residence.save();
+      const message = checkHost.fullName + ' has added ' + residence.residenceName
+      const newNotification = {
+        message: message,
+        image: checkHost.image,
+        linkId: residence._id,
+        type: 'residence',
+        role: 'admin'
+      }
+      await addNotification(newNotification)
+      const notification = await getAllNotification('admin', 10, 1)
+      io.emit('admin-notification', notification);
 
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'residence', message: 'Residence added successfully.', data: residence }));
     } else {

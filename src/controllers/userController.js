@@ -273,9 +273,14 @@ const verifyOneTimeCode = async (req, res) => {
     console.log(req.body.oneTimeCode);
     console.log(email);
     const user = await User.findOne({ email });
+    const currentTime = new Date();
     if (!user) {
       return res.status(40).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
-    } else if (user.oneTimeCode === oneTimeCode) {
+    } 
+    // else if(user.emailVerificationAttemps >= 3){
+      
+    // }
+    else if (user.oneTimeCode === oneTimeCode) {
       if (requestType === 'resetPassword') {
         user.oneTimeCode = 'verified';
         await user.save();
@@ -292,14 +297,19 @@ const verifyOneTimeCode = async (req, res) => {
         res.status(409).json(response({ message: 'Request type not defined properly', status: "Error", statusCode: 409 }));
       }
     }
+    // else if(user.oneTimeCode !== oneTimeCode){
+    //   user.emailVerificationAttemps = user.emailVerificationAttemps + 1;
+    //   await user.save();
+    //   res.status(400).json(response({ message: 'Invalid OTC', status: "OK", statusCode: 400 }));
+    // }
     else if (user.oneTimeCode === null) {
-      res.status(400).json(response({ message: 'One Time Code has expired', status: "OK", statusCode: 200 }));
+      res.status(408).json(response({ message: 'One Time Code has expired', status: "OK", statusCode: 408 }));
     }
     else {
-      res.status(400).json(response({ message: 'Invalid OTC', status: "OK", statusCode: 200 }));
+      res.status(406).json(response({ message: 'Requirements not fulfilled in verifying OTC', status: "Error", statusCode: 406 }));
     }
   } catch (error) {
-    res.status(500).json(response({ message: 'Error verifying OTC', status: "OK", statusCode: 200 }));
+    res.status(500).json(response({ message: 'Error verifying OTC', status: "OK", statusCode: 500 }));
   }
 };
 
