@@ -67,5 +67,20 @@ const getAll = async (req, res) => {
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'privacy-policy', message: 'Server Error' }));
   }
 };
+const getAllForWebSite = async (req, res) => {
+  try {
+    const privacyPolicy = await PrivacyPolicy.findOne();
 
-module.exports = { createPrivacyPolicy, getAll };
+    if (!privacyPolicy) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'privacy-policy', message: 'Privacy Policy content not found' }));
+    }
+
+    //const privacyPolicyContentWithoutTags = privacyPolicy.content.replace(/<\/?[^>]+(>|$)/g, "");
+    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'privacy-policy', message: 'Privacy Policy content retrieved successfully', data: privacyPolicy }));
+  } catch (error) {
+    console.error(error.message);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'privacy-policy', message: 'Server Error' }));
+  }
+};
+
+module.exports = { createPrivacyPolicy, getAll, getAllForWebSite };

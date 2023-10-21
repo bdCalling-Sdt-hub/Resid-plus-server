@@ -5,14 +5,14 @@ const router = express.Router();
 const userFileUploadMiddleware = require("../middlewares/fileUpload");
 //middleware to check if req.files is empty or not
 const imageVerification = require('../middlewares/fileVerifcation')
-
+const validateResidenceMiddleware = require('../middlewares/residence/residenceValidator');
 
 const UPLOADS_FOLDER_USERS = "./public/uploads/residences";
 const uploadUsers = userFileUploadMiddleware(UPLOADS_FOLDER_USERS);
 
 
 //Add residence
-router.post('/', [uploadUsers.array("photo", 5)], imageVerification, isValidUser, addResidence);
+router.post('/',[uploadUsers.array("photo", 5)], imageVerification, validateResidenceMiddleware,isValidUser, addResidence);
 router.get('/', isValidUser, allResidence);
 router.put('/:id', [uploadUsers.array("photo", 5)], isValidUser, updateResidence);
 router.delete('/:id', isValidUser, deleteResidence);

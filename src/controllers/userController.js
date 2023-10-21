@@ -9,7 +9,7 @@ require('dotenv').config();
 //defining unlinking image function 
 const unlinkImages = require('../common/image/unlinkImage')
 const Activity = require('../models/Activity');
-const e = require("express");
+const options = { new: true };
 
 //Sign up
 const signUp = async (req, res) => {
@@ -337,8 +337,8 @@ const updatePassword = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { fullName, phoneNumber, address, dateOfBirth } = req.body;
-
+    let { fullName, phoneNumber, address, dateOfBirth } = req.body;
+    dateOfBirth = new Date(dateOfBirth)
     // Check if the user already exists
     const checkUser = await User.findOne({ _id: req.body.userId });
     if (!checkUser) {
@@ -348,10 +348,10 @@ const updateProfile = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
     const user = {
-      fullName,
-      phoneNumber,
-      address,
-      dateOfBirth
+      fullName: !fullName ? checkUser.fullName : fullName,
+      phoneNumber: !phoneNumber ? checkUser.phoneNumber : phoneNumber,
+      address: !address ? checkUser.address : address,
+      dateOfBirth: !dateOfBirth ? checkUser.dateOfBirth : dateOfBirth,
     };
 
     //checking if user has provided any photo
@@ -370,7 +370,6 @@ const updateProfile = async (req, res) => {
 
       user.image = fileInfo
     }
-    const options = { new: true };
     const result = await User.findByIdAndUpdate(checkUser._id, user, options);
 
     //console.log('result---------------------------->',result)

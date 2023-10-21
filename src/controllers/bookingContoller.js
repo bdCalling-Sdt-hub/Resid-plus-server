@@ -85,6 +85,17 @@ const addBooking = async (req, res) => {
       guestTypes,
       numberOfGuests
     } = req.body;
+
+    if(!numberOfGuests || !guestTypes || !totalPerson || !checkInTime || !checkOutTime || !totalHours || !totalAmount || !residenceId){
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '403',
+          message: 'Please fill all the fields',
+        })
+      );
+    }
+
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
     console.log('add booking called ------------------->', req.body)
@@ -180,18 +191,18 @@ const addBooking = async (req, res) => {
       console.log(popularity, residence)
       await Residence.findByIdAndUpdate(residence_details._id, residence, options)
 
-      const message = checkUser.fullName + ' wants to book ' + bookingDetails.residenceId.residenceName + ' from ' + bookingDetails.checkInTime + ' to ' + bookingDetails.checkOutTime
+      const message = checkUser.fullName + ' wants to book ' + booking.residenceId.residenceName + ' from ' + booking.checkInTime + ' to ' + booking.checkOutTime
       const newNotification = {
         message: message,
-        receiverId: bookingDetails.hostId,
+        receiverId: booking.hostId,
         image: checkUser.image,
-        linkId: bookingDetails._id,
-        type:'booking',
+        linkId: booking._id,
+        type: 'booking',
         role: 'host'
       }
       await addNotification(newNotification)
-      const notification = await getAllNotification('host', 30, 1, bookingDetails.hostId)
-      io.to('room' + bookingDetails.hostId).emit('host-notification', notification);
+      const notification = await getAllNotification('host', 30, 1, booking.hostId)
+      io.to('room' + booking.hostId).emit('host-notification', notification);
 
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
     }
@@ -363,6 +374,15 @@ const updateBooking = async (req, res) => {
     //extracting the booking id from param that is going to be edited
     const id = req.params.id
     const { status } = req.body;
+    if(!status){ 
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '403',
+          message: 'Please fill all the fields',
+        })
+      );
+    }
     if (!checkUser) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
@@ -371,78 +391,78 @@ const updateBooking = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: 'Booking not found' }));
     }
     if (checkUser.role === 'host') {
-      //changing residence status to reserved or cancelled
-      //----->start
-      const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
-      if (!bookingDetails || bookingDetails.isDeleted) {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: 'Booking not found' }));
-      }
-      //console.log('HELLO------------------------------>', bookingDetails, bookingDetails.hostId._id.toString(), checkUser._id.toString())
       if (bookingDetails.hostId._id.toString() !== checkUser._id.toString()) {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'This is not your residence' }));
       }
-      if(bookingDetails.paymentTypes==='unknown'){
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'User need to payment first to have a reserved residence' }));
-      }
-      if (status === 'reserved' && bookingDetails.status === 'pending' && bookingDetails.paymentTypes !== 'unknown') {
-        const updated_residence = {
-          status
+      if (status === 'reserved') {
+        if (bookingDetails.status === 'pending') {
+          const updated_residence = {
+            status
+          }
+          await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
+
+          bookingDetails.status = status
+          bookingDetails.save()
+
+          const adminMessage = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
+          const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for ' + bookingDetails.residenceId.residenceName
+
+          const newNotification = [{
+            message: adminMessage,
+            image: bookingDetails.userId.image,
+            linkId: bookingDetails._id,
+            role: 'admin',
+            type: 'booking'
+          }, {
+            message: userMessage,
+            receiverId: bookingDetails.userId._id,
+            image: bookingDetails.userId.image,
+            linkId: bookingDetails._id,
+            role: 'user',
+            type: 'booking'
+          }]
+          await addManyNotifications(newNotification)
+          const adminNotification = await getAllNotification('admin')
+          io.emit('admin-notification', adminNotification);
+          const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
+          console.log(adminNotification, userNotification)
+          io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
         }
-        await Residence.findByIdAndUpdate(bookingDetails.residenceId, updated_residence, options);
-
-        bookingDetails.status = status
-        bookingDetails.save()
-
-        const adminMessage = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
-        const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for '+ bookingDetails.residenceId.residenceName
-
-        const newNotification = [{
-          message: adminMessage,
-          image: bookingDetails.userId.image,
-          linkId: bookingDetails._id,
-          role: 'admin',
-          type: 'booking'
-        }, {
-          message: userMessage,
-          receiverId: bookingDetails.userId._id,
-          image: bookingDetails.userId.image,
-          linkId: bookingDetails._id,
-          role: 'user',
-          type: 'booking'
-        }]
-        await addManyNotifications(newNotification)
-        const adminNotification = await getAllNotification('admin')
-        io.emit('admin-notification', adminNotification);
-        const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
-        console.log(adminNotification, userNotification)
-        io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
-
-        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
-      }
-      else if (status === 'cancelled' && bookingDetails.status !== 'pending') {
-        //changing payment status to rejected
-        const payment = await Payment.findOne({ bookingId: bookingDetails._id })
-        payment.status = 'rejected'
-        payment.save()
-
-        bookingDetails.status = status
-        bookingDetails.save()
-        const userMessage = bookingDetails.hostId.fullName + ' cancelled your booking request for '+ bookingDetails.residenceId.residenceName
-
-        const newNotification = {
-          message: userMessage,
-          receiverId: bookingDetails.userId._id,
-          image: bookingDetails.userId.image,
-          linkId: bookingDetails._id,
-          role: 'user',
-          type: 'booking'
+        else {
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: 'Your booking-request update credentials not match' }));
         }
-        await addNotification(newNotification)
-        const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
-        console.log(userNotification)
-        io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+      }
+      else if (status === 'cancelled') {
+        if (bookingDetails.status === 'pending') {
+          //changing payment status to rejected
+          // const payment = await Payment.findOne({ bookingId: bookingDetails._id })
+          // payment.status = 'rejected'
+          // payment.save()
 
-        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+          bookingDetails.status = status
+          bookingDetails.save()
+          const userMessage = bookingDetails.hostId.fullName + ' cancelled your booking request for ' + bookingDetails.residenceId.residenceName
+
+          const newNotification = {
+            message: userMessage,
+            receiverId: bookingDetails.userId._id,
+            image: bookingDetails.userId.image,
+            linkId: bookingDetails._id,
+            role: 'user',
+            type: 'booking'
+          }
+          await addNotification(newNotification)
+          const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
+          console.log(userNotification)
+          io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+        }
+        else {
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: 'Your booking-request update credentials not match' }));
+        }
       }
       else {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', type: "booking-request", message: 'Your booking-request update credentials not match' }));
@@ -450,28 +470,36 @@ const updateBooking = async (req, res) => {
       //----->end
     }
     else if (checkUser.role === 'user') {
-      if (status === 'check-in' && bookingDetails.paymentTypes !== 'unknown') {
-        bookingDetails.status = status
-        bookingDetails.save()
-        const hostMessage = bookingDetails.userId.fullName + ' checked-in to ' + bookingDetails.residenceId.residenceName
+      if (bookingDetails.userId._id.toString() !== checkUser._id.toString()) {
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'You are not authorised to access this booking request' }));
+      }
+      if (status === 'check-in') {
+        if (bookingDetails.paymentTypes !== 'unknown' && bookingDetails.status === 'reserved') {
+          bookingDetails.status = status
+          bookingDetails.save()
+          const hostMessage = bookingDetails.userId.fullName + ' checked-in to ' + bookingDetails.residenceId.residenceName
 
-        const newNotification = {
-          message: hostMessage,
-          receiverId: bookingDetails.hostId._id,
-          image: bookingDetails.userId.image,
-          linkId: bookingDetails._id,
-          role: 'host',
-          type: 'booking'
+          const newNotification = {
+            message: hostMessage,
+            receiverId: bookingDetails.hostId._id,
+            image: bookingDetails.userId.image,
+            linkId: bookingDetails._id,
+            role: 'host',
+            type: 'booking'
+          }
+          await addNotification(newNotification)
+          const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
+          console.log(hostNotification)
+          io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
+
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
         }
-        await addNotification(newNotification)
-        const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
-        console.log(hostNotification)
-        io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
-
-        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+        else {
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: "booking-request", message: 'Your booking-request update credentials not match' }));
+        }
       }
       else if (status === "check-out") {
-        if (bookingDetails.paymentTypes === 'full-payment') {
+        if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
           bookingDetails.status = status
           bookingDetails.save()
           const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName
@@ -484,6 +512,9 @@ const updateBooking = async (req, res) => {
             type: 'booking',
             role: 'host'
           }
+          const residence = await Residence.findById(bookingDetails.residenceId)
+          residence.status = 'active'
+          await residence.save()
           await addNotification(newNotification)
           const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
           console.log(hostNotification)
@@ -492,7 +523,7 @@ const updateBooking = async (req, res) => {
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
         }
         else {
-          return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'You are not authorised to check-out without full-payment', data: bookingDetails }));
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: 'Your booking-request update credentials not match' }));
         }
       }
     }
@@ -635,6 +666,15 @@ const deleteBooking = async (req, res) => {
     const checkHost = await User.findById(req.body.userId);
     //extracting the booking id from param that is going to be deleted
     const id = req.params.id
+    if(!id){
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '403',
+          message: 'Please fill all the fields',
+        })
+      );
+    }
     if (!checkHost) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
@@ -669,6 +709,15 @@ const deleteHistory = async (req, res) => {
     const checkHost = await User.findById(req.body.userId);
     //extracting the booking id from param that is going to be deleted
     const id = req.params.id
+    if(!id){
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '403',
+          message: 'Please fill all the fields',
+        })
+      );
+    }
     if (!checkHost) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };

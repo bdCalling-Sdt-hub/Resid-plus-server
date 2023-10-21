@@ -177,14 +177,14 @@ const refund = async (req, res) => {
     sandbox: true
   })
   // var daata
-  k.verify("CFBlthP1Q").
-    then((response) => {
-      daata = response
-      res.status(200).json(daata)
-    }).
-    catch((error) => {
-      res.status(500).json(error)
-    })
+  // k.verify("CFBlthP1Q").
+  //   then((response) => {
+  //     daata = response
+  //     res.status(200).json(daata)
+  //   }).
+  //   catch((error) => {
+  //     res.status(500).json(error)
+  //   })
 
   // k.refund(""CFBlthP1Q").
   //   then((response) => {
@@ -200,12 +200,13 @@ const refund = async (req, res) => {
   //   .catch((error) => {
   //     res.status(500).json(error);
   //   });
+  console.log('hitting---------------->')
   k.setup_payout({
     algorithm: "roof",
     send_notification: true,
     destination_type: "MOBILE_MONEY",
     roof_amount: "5000",
-    destination: "653245b46beeea812edf94ac"
+    destination: "3456789098765"
   }).then((response) => {
     res.status(200).json(response)
   }).catch((error) => {

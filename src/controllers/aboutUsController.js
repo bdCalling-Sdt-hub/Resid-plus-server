@@ -70,5 +70,32 @@ const getAll = async (req, res) => {
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'about-us', message: 'Server Error' }));
   }
 };
+const getAllForWebSite = async (req, res) => {
+  try {
+    const user = await User.findById(req.body.userId);
 
-module.exports = { createAboutUs, getAll };
+    if (!user) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+
+    const aboutUs = await AboutUs.findOne();
+
+    if (!aboutUs) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'about-us', message: 'About us content not found' }));
+    }
+
+    //const aboutUsContentWithoutTags = aboutUs.content.replace(/<\/?[^>]+(>|$)/g, "");
+    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'about-us', message: 'About us content retrieved successfully', data: aboutUs }));
+  } catch (error) {
+    console.error(error.message);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'about-us', message: 'Server Error' }));
+  }
+};
+
+module.exports = { createAboutUs, getAll, getAllForWebSite };

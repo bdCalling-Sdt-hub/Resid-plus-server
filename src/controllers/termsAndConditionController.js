@@ -68,5 +68,20 @@ const getAll = async (req, res) => {
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'terms-and-conditions', message: 'Server Error' }));
   }
 };
+const getAllForWebSite = async (req, res) => {
+  try {
+    const termsAndCondition = await TermsAndCondition.findOne();
 
-module.exports = { createTermsAndCondition, getAll };
+    if (!termsAndCondition) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'terms-and-conditions', message: 'Terms and conditions content not found' }));
+    }
+
+    //const termsAndConditionContentWithoutTags = termsAndCondition.content.replace(/<\/?[^>]+(>|$)/g, "");
+    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'terms-and-conditions', message: 'Terms and conditions content retrieved successfully', data: termsAndCondition }));
+  } catch (error) {
+    console.error(error.message);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'terms-and-conditions', message: 'Server Error' }));
+  }
+};
+
+module.exports = { createTermsAndCondition, getAll, getAllForWebSite };

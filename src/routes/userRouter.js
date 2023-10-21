@@ -6,9 +6,10 @@ const userFileUploadMiddleware = require("../middlewares/fileUpload");
 const UPLOADS_FOLDER_USERS = "./public/uploads/users";
 const uploadUsers = userFileUploadMiddleware(UPLOADS_FOLDER_USERS);
 const { isValidUser } = require('../middlewares/auth')
+const  validationMiddleware = require('../middlewares/user/signupValidation');
 
 //Sign-up user
-router.post('/signup', signUp);
+router.post('/signup',  validationMiddleware, signUp);
 router.post('/signin', signIn);
 router.post('/forget/password', processForgetPassword);
 router.post('/resend-onetime-code', resendOneTimeCode);

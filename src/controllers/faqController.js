@@ -178,5 +178,20 @@ const getAll = async (req, res) => {
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'faq', message: 'Server Error' }));
   }
 };
+const getAllForWebSite = async (req, res) => {
+  try {
+    const faq = await Faq.find();
 
-module.exports = { createFaq, getAll, deleteFaq, updateFaq, getFaqById };
+    if (faq.length === 0) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'faq', message: 'faq content not found' }));
+    }
+
+    //const faqContentWithoutTags = faq.content.replace(/<\/?[^>]+(>|$)/g, "");
+    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'faq', message: 'faq content retrieved successfully', data: faq }));
+  } catch (error) {
+    console.error(error.message);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'faq', message: 'Server Error' }));
+  }
+};
+
+module.exports = { createFaq, getAll, deleteFaq, updateFaq, getFaqById, getAllForWebSite };
