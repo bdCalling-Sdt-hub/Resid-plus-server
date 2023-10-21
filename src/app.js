@@ -39,10 +39,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Enable CORS
 app.use(cors(
-  // {
-  //   origin: [process.env.ALLOWED_CLIENT_URLS, process.env.ALLOWED_CLIENT_URLS_2],
-  //   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
-  // }
+  {
+    origin: [process.env.ALLOWED_CLIENT_URLS],
+    optionsSuccessStatus: 200
+  }
 ));
 
 //initilizing socketIO
@@ -59,7 +59,7 @@ socketIO(io);
 global.io = io
 
 const socketIOPort = process.env.SOCKET_IO_PORT
-server.listen(socketIOPort, '192.168.10.18',() => {
+server.listen(socketIOPort, '134.209.188.175',() => {
   console.log(`Server is listening on port: ${socketIOPort}`);
 });
 //initilizing API routes
