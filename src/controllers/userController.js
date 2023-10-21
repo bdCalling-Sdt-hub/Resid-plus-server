@@ -11,6 +11,13 @@ const unlinkImages = require('../common/image/unlinkImage')
 const Activity = require('../models/Activity');
 const options = { new: true };
 
+function validatePassword(password) {
+  const hasNumber = /\d/.test(password);
+  const hasLetter = /[a-zA-ZÀ-ÖØ-öø-ÿ]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  return password.length >= 8 && hasNumber && (hasLetter || hasSpecialChar);
+}
+
 //Sign up
 const signUp = async (req, res) => {
   console.log(req.body)
@@ -107,7 +114,7 @@ const signIn = async (req, res) => {
     let activityId = null
     if (user.role === 'admin') {
       function extractDeviceModel(userAgent) {
-        console.log('User Activity coming-------------->',userAgent)
+        console.log('User Activity coming-------------->', userAgent)
         const regex = /\(([^)]+)\)/;
         const matches = userAgent.match(regex);
 
@@ -276,9 +283,9 @@ const verifyOneTimeCode = async (req, res) => {
     const currentTime = new Date();
     if (!user) {
       return res.status(40).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
-    } 
+    }
     // else if(user.emailVerificationAttemps >= 3){
-      
+
     // }
     else if (user.oneTimeCode === oneTimeCode) {
       if (requestType === 'resetPassword') {
@@ -317,11 +324,21 @@ const verifyOneTimeCode = async (req, res) => {
 const updatePassword = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!validatePassword(password)) {
+      return res.status(400).json(
+        response({
+          status: 'Error',
+          statusCode: '400',
+          message: 'New password does not meet the criteria, password must be at least 8 characters long, contain at least one letter or special character',
+        })
+      );
+    }
     console.log(email);
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
-    } else if (user.oneTimeCode === 'verified') {
+    }
+    else if (user.oneTimeCode === 'verified') {
       user.password = password;
       user.oneTimeCode = null;
       await user.save();
@@ -522,6 +539,16 @@ const changePassword = async (req, res) => {
   console.log(req.body.userId)
   try {
     const { currentPassword, newPassword } = req.body;
+    if (!validatePassword(newPassword)) {
+      return res.status(400).json(
+        response({
+          status: 'Error',
+          statusCode: '400',
+          message: 'New password does not meet the criteria, password must be at least 8 characters long, contain at least one letter or special character',
+        })
+      );
+    }
+
     const checkUser = await User.findOne({ _id: req.body.userId });
 
     if (!checkUser) {
