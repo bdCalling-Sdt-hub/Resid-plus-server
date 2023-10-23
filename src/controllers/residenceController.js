@@ -448,7 +448,7 @@ const updateResidence = async (req, res) => {
           });
           console.log(files)
         });
-        updateResidence.photo = files;
+        updatedResidence.photo = files;
       }
       const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
       return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: 'Residence edited successfully.', data: updatedData }));
