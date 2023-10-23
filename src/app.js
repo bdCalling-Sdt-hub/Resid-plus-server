@@ -40,7 +40,7 @@ app.use(express.urlencoded({ extended: true }));
 // Enable CORS
 app.use(cors(
   {
-    origin: [process.env.ALLOWED_CLIENT_URLS],
+    origin: process.env.ALLOWED_CLIENT_URLS,
     optionsSuccessStatus: 200
   }
 ));
@@ -50,7 +50,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const server = http.createServer(app);
 const io = socketIo(server, {cors: {
-  origin: "*"
+  origin: process.env.ALLOWED_CLIENT_URLS
 }});
 
 const socketIO = require("./helpers/socketIO");
