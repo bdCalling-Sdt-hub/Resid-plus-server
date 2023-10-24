@@ -35,7 +35,7 @@ const validationMiddleware = async (req, res, next) => {
   if (!address) {
     errors.push({ field: 'address', error: 'Address must be given' });
   }
-  if (validateDate(dateOfBirth)) {
+  if (!validateDate(dateOfBirth)) {
     errors.push({ field: 'dateOfBirth', error: 'Date of birth must be given' });
   }
   if (!validatePassword(password)) {
