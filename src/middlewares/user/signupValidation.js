@@ -25,7 +25,7 @@ const validationMiddleware = async (req, res, next) => {
   if (!fullName) {
     errors.push({ field: 'fullName', error: 'Full name must be given' });
   }
-  if (!phoneNumber || !/^\+225\d{6,10}$/.test(phoneNumber)) {
+  if (!/^\+225\d{6,10}$/.test(phoneNumber)) {
     errors.push({ field: 'phoneNumber', error: 'Invalid phone number format' });
   }
 
