@@ -12,6 +12,10 @@ function validatePassword(password) {
   return password.length >= 8 && hasNumber && (hasLetter || hasSpecialChar);
 }
 
+function validateDate(dateString) {
+  var date = new Date(dateString);
+  return !isNaN(date.getTime());
+}
 
 const validationMiddleware = async (req, res, next) => {
   const { fullName, email, phoneNumber, address, dateOfBirth, password, role } = req.body;
@@ -28,10 +32,10 @@ const validationMiddleware = async (req, res, next) => {
   if (!validateEmail(email)) {
     errors.push({ field: 'email', error: 'Invalid email format' });
   }
-  if(!address){
+  if (!address) {
     errors.push({ field: 'address', error: 'Address must be given' });
   }
-  if(!dateOfBirth){
+  if (validateDate(dateOfBirth)) {
     errors.push({ field: 'dateOfBirth', error: 'Date of birth must be given' });
   }
   if (!validatePassword(password)) {
@@ -41,11 +45,11 @@ const validationMiddleware = async (req, res, next) => {
   if (userExist) {
     errors.push({ field: 'email', error: 'User already exists' });
   }
-  if(!role){
+  if (!role) {
     errors.push({ field: 'role', error: 'Role must be given' });
   }
   if (errors.length > 0) {
-    return res.status(400).json(response({ status: 'Error', statusCode: '400',type:"sign-up", message: errors }));
+    return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: errors }));
   }
 
   next(); // Continue to the next middleware or route handler
