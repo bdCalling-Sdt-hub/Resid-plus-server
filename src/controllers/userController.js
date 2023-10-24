@@ -354,8 +354,10 @@ const updatePassword = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    let { fullName, phoneNumber, address, dateOfBirth } = req.body;
-    dateOfBirth = new Date(dateOfBirth)
+    let { fullName, phoneNumber, address } = req.body;
+    if (dateOfBirth) {
+      dateOfBirth = new Date(dateOfBirth)
+    }
     // Check if the user already exists
     const checkUser = await User.findOne({ _id: req.body.userId });
     if (!checkUser) {
