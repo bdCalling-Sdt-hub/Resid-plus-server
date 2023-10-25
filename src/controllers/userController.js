@@ -58,7 +58,7 @@ const signUp = async (req, res) => {
           <small>This Code is valid for 3 minutes</small>
         `
       }
-      console.log('email send to verify ---------------->', emailData)
+      // console.log('email send to verify-------->', emailData)
       // Send email
       try {
         await emailWithNodemailer(emailData);
@@ -354,9 +354,12 @@ const updatePassword = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    let { fullName, phoneNumber, address } = req.body;
+    let { fullName, phoneNumber, address, dateOfBirth } = req.body;
     if (dateOfBirth) {
       dateOfBirth = new Date(dateOfBirth)
+      if(isNaN(dateOfBirth.getTime())){
+        return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message: 'Invalid date of birth' }));
+      }
     }
     // Check if the user already exists
     const checkUser = await User.findOne({ _id: req.body.userId });
@@ -366,6 +369,7 @@ const updateProfile = async (req, res) => {
       }
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
+    console.log('all value-------->',req.body)
     const user = {
       fullName: !fullName ? checkUser.fullName : fullName,
       phoneNumber: !phoneNumber ? checkUser.phoneNumber : phoneNumber,
@@ -390,8 +394,7 @@ const updateProfile = async (req, res) => {
       user.image = fileInfo
     }
     const result = await User.findByIdAndUpdate(checkUser._id, user, options);
-
-    //console.log('result---------------------------->',result)
+    console.log('update result--------------->', user,result)
     return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'user', message: 'User profile edited successfully.', data: result }));
   }
   catch (error) {

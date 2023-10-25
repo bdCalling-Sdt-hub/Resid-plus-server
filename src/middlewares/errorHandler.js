@@ -1,11 +1,12 @@
 const response = require('../helpers/response')
-const multer = require('multer')
 function notFoundHandler(req, res, next){
-  next(new Error('Your requested content not found'))
+  const requestedPath = req.originalUrl;
+  next(new Error(`Requested content not found for path: ${requestedPath}`));
 }
 
+
 function errorHandler(err, req, res, next){
-  console.log('Error Handler--------->', err)
+  console.error('Error Handler--------->', err);
   res.status(500).json(response({ status: 'Error', statusCode: '500', type: err.name, message: err.message, data: null }));
 }
 module.exports = {notFoundHandler, errorHandler}

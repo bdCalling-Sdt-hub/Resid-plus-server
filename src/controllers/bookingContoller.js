@@ -8,6 +8,14 @@ const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
 const User = require("../models/User");
 const { addNotification, addManyNotifications, getAllNotification } = require("./notificationController");
 const options = { new: true };
+const kkiapay = require('kkiapay-nodejs-sdk')
+const k = kkiapay({
+  privatekey: process.env.KKIAPAY_PRKEY,
+  publickey: process.env.KKIAPAY_PBKEY,
+  secretkey: process.env.KKIAPAY_SCKEY,
+  sandbox: true
+})
+
 
 const calculateTimeAndPrice = async (req, res) => {
   try {
@@ -49,9 +57,22 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
-    const hourlyAmount = Math.ceil(residence_details.hourlyAmount)
-    const totalHours = Math.ceil(calculateTotalHoursBetween(checkInTime, checkOutTime))
-    const totalAmount = Math.ceil(totalHours * hourlyAmount)
+  
+    const hourlyAmount = residence_details.hourlyAmount/5 //as we are charging for 5 hours minimum
+    const totalHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
+    if(totalHours < 5){
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'Total stay must be greater than 5 hours',
+        })
+      );
+    }
+
+    const initialAmount = totalHours * hourlyAmount
+    //charging 6%, 3% for admin and 3% for payout charge
+    const totalAmount = Math.ceil(initialAmount + (0.06 * initialAmount))
 
     return res.status(200).json(
       response({
@@ -77,7 +98,6 @@ const addBooking = async (req, res) => {
   try {
     let {
       residenceId,
-      totalPerson,
       checkInTime,
       checkOutTime,
       totalHours,
@@ -86,7 +106,8 @@ const addBooking = async (req, res) => {
       numberOfGuests
     } = req.body;
 
-    if(!numberOfGuests || !guestTypes || !totalPerson || !checkInTime || !checkOutTime || !totalHours || !totalAmount || !residenceId){
+    if(!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || !totalHours || !totalAmount || !residenceId){
+      console.log('Booking requst validation----------->', req.body)
       return res.status(404).json(
         response({
           status: 'Error',
@@ -171,7 +192,6 @@ const addBooking = async (req, res) => {
       const booking = new Booking({
         bookingId: await generateCustomID(),
         residenceId,
-        totalPerson,
         checkInTime,
         checkOutTime,
         userId: req.body.userId,
@@ -204,6 +224,7 @@ const addBooking = async (req, res) => {
       const notification = await getAllNotification('host', 30, 1, booking.hostId)
       io.to('room' + booking.hostId).emit('host-notification', notification);
 
+      console.log('add booking successfull --------->', booking)
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
     }
     else {
@@ -271,14 +292,12 @@ const allBooking = async (req, res) => {
       if (bookingTypes === "confirmed") {
         filter = {
           status: { $nin: ['pending', 'check-out', 'cancelled'] },
-          paymentTypes: { $ne: 'unknown' }
         }
       }
       else if (bookingTypes === "history") {
         filter = {
           $and: [
             { status: { $eq: 'check-out' } },
-            { paymentTypes: { $ne: 'unknown' } },
             { isHostHistoryDeleted: { $eq: false } }
           ]
         }
@@ -286,7 +305,6 @@ const allBooking = async (req, res) => {
       else {
         filter = {
           status: { $eq: 'pending' },
-          paymentTypes: { $ne: 'unknown' }
         }
       }
 
@@ -313,7 +331,6 @@ const allBooking = async (req, res) => {
         filter = {
           $and: [
             { status: { $eq: 'check-out' } },
-            { paymentTypes: { $ne: 'unknown' } },
             { isUserHistoryDeleted: { $eq: false } }
           ]
         }
@@ -405,7 +422,7 @@ const updateBooking = async (req, res) => {
           bookingDetails.save()
 
           const adminMessage = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
-          const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for ' + bookingDetails.residenceId.residenceName
+          const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for ' + bookingDetails.residenceId.residenceName + ', so make payment to confirm your booking'
 
           const newNotification = [{
             message: adminMessage,
@@ -502,8 +519,7 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
           bookingDetails.status = status
           bookingDetails.save()
-          const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName
-
+          const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', please do the payment'
           const newNotification = {
             message: hostMessage,
             receiverId: bookingDetails.hostId._id,
@@ -519,7 +535,18 @@ const updateBooking = async (req, res) => {
           const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
           console.log(hostNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
-
+          const sendingAmount = Math.ceil(0.96 * bookingDetails.totalAmount)
+          k.setup_payout({
+            algorithm: "roof",
+            send_notification: true,
+            destination_type: "MOBILE_MONEY",
+            roof_amount: sendingAmount,
+            destination: bookingDetails.hostId.phoneNumber
+          }).then((response) => {
+            res.status(200).json(response)
+          }).catch((error) => {
+            res.status(500).json(error)
+          })
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
         }
         else {

@@ -59,7 +59,7 @@ socketIO(io);
 global.io = io
 
 const socketIOPort = process.env.SOCKET_IO_PORT
-server.listen(socketIOPort, '134.209.188.175',() => {
+server.listen(socketIOPort, '165.22.118.95',() => {
   console.log(`Server is listening on port: ${socketIOPort}`);
 });
 //initilizing API routes
@@ -83,9 +83,8 @@ app.get('/test', (req, res) => {
   res.send('I am responding!!')
 })
 
-//error handling
-app.use(errorHandler);
 //invalid route handler
 app.use(notFoundHandler);
-
+//error handling
+app.use(errorHandler);
 module.exports = app;
