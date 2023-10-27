@@ -59,7 +59,7 @@ socketIO(io);
 global.io = io
 
 const socketIOPort = process.env.SOCKET_IO_PORT
-server.listen(socketIOPort, '165.22.118.95',() => {
+server.listen(socketIOPort, '138.68.184.31',() => {
   console.log(`Server is listening on port: ${socketIOPort}`);
 });
 //initilizing API routes

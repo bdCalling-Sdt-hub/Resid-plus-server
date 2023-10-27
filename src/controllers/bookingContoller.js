@@ -57,10 +57,10 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
-  
-    const hourlyAmount = residence_details.hourlyAmount/5 //as we are charging for 5 hours minimum
+
+    const hourlyAmount = residence_details.hourlyAmount / 5 //as we are charging for 5 hours minimum
     const totalHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
-    if(totalHours < 5){
+    if (totalHours < 5) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -106,7 +106,7 @@ const addBooking = async (req, res) => {
       numberOfGuests
     } = req.body;
 
-    if(!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || !totalHours || !totalAmount || !residenceId){
+    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || !totalHours || !totalAmount || !residenceId) {
       console.log('Booking requst validation----------->', req.body)
       return res.status(404).json(
         response({
@@ -335,6 +335,14 @@ const allBooking = async (req, res) => {
           ]
         }
       }
+      else {
+        filter = {
+          $and: [
+            { status: { $ne: 'check-out' } },
+            { isUserHistoryDeleted: { $eq: false } }
+          ]
+        }
+      }
 
       bookings = await Booking.find({
         userId: checkUser._id,
@@ -391,7 +399,7 @@ const updateBooking = async (req, res) => {
     //extracting the booking id from param that is going to be edited
     const id = req.params.id
     const { status } = req.body;
-    if(!status){ 
+    if (!status) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -494,7 +502,7 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes !== 'unknown' && bookingDetails.status === 'reserved') {
           bookingDetails.status = status
           bookingDetails.save()
-          const hostMessage = bookingDetails.userId.fullName + ' checked-in to ' + bookingDetails.residenceId.residenceName
+          const hostMessage = bookingDetails.userId.fullName + ' checked-in to ' + bookingDetails.residenceId.residenceName + ', please do the payment'
 
           const newNotification = {
             message: hostMessage,
@@ -519,7 +527,12 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
           bookingDetails.status = status
           bookingDetails.save()
-          const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', please do the payment'
+
+          const residence = await Residence.findById(bookingDetails.residenceId)
+          residence.status = 'active'
+          await residence.save()
+
+          const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', and payment is transferred to your account'
           const newNotification = {
             message: hostMessage,
             receiverId: bookingDetails.hostId._id,
@@ -528,9 +541,6 @@ const updateBooking = async (req, res) => {
             type: 'booking',
             role: 'host'
           }
-          const residence = await Residence.findById(bookingDetails.residenceId)
-          residence.status = 'active'
-          await residence.save()
           await addNotification(newNotification)
           const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
           console.log(hostNotification)
@@ -542,9 +552,40 @@ const updateBooking = async (req, res) => {
             destination_type: "MOBILE_MONEY",
             roof_amount: sendingAmount,
             destination: bookingDetails.hostId.phoneNumber
-          }).then((response) => {
+          }).then(async (response) => {
+            const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', payment is transferred to your KKiapay account no-' + bookingDetails.hostId.phoneNumber
+            const adminMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', payment is transferred to host KKiapay account no-' + bookingDetails.hostId.phoneNumber
+            const newNotification = [{
+              message: hostMessage,
+              receiverId: bookingDetails.hostId._id,
+              image: bookingDetails.userId.image,
+              linkId: bookingDetails._id,
+              type: 'booking',
+              role: 'host'
+            }, {
+              message: adminMessage,
+              image: bookingDetails.userId.image,
+              linkId: bookingDetails._id,
+              type: 'booking',
+              role: 'host'
+            }]
+            await Notification.add
+            const adminNotification = await getAllNotification('admin')
+            io.emit('admin-notification', adminNotification);
+            const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
+            console.log(adminNotification, userNotification)
+            io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
             res.status(200).json(response)
           }).catch((error) => {
+            const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', '
+            const newNotification = {
+              message: hostMessage,
+              receiverId: bookingDetails.hostId._id,
+              image: bookingDetails.userId.image,
+              linkId: bookingDetails._id,
+              type: 'booking',
+              role: 'host'
+            }
             res.status(500).json(error)
           })
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
@@ -693,7 +734,7 @@ const deleteBooking = async (req, res) => {
     const checkHost = await User.findById(req.body.userId);
     //extracting the booking id from param that is going to be deleted
     const id = req.params.id
-    if(!id){
+    if (!id) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -736,7 +777,7 @@ const deleteHistory = async (req, res) => {
     const checkHost = await User.findById(req.body.userId);
     //extracting the booking id from param that is going to be deleted
     const id = req.params.id
-    if(!id){
+    if (!id) {
       return res.status(404).json(
         response({
           status: 'Error',

@@ -70,6 +70,7 @@ const getAll = async (req, res) => {
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'about-us', message: 'Server Error' }));
   }
 };
+
 const getAllForWebSite = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);

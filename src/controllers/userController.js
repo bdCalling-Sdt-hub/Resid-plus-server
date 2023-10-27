@@ -9,6 +9,7 @@ require('dotenv').config();
 //defining unlinking image function 
 const unlinkImages = require('../common/image/unlinkImage')
 const Activity = require('../models/Activity');
+const { addNotification, getAllNotification } = require("./notificationController");
 const options = { new: true };
 
 function validatePassword(password) {
@@ -294,10 +295,22 @@ const verifyOneTimeCode = async (req, res) => {
         res.status(200).json(response({ message: 'One Time Code verified successfully', type: "reset-forget password", status: "OK", statusCode: 200, data: user }));
       }
       else if (requestType === 'verifyEmail' && user.oneTimeCode !== null && user.emailVerified === false) {
-        console.log('email verify---------------->', user)
+        //console.log('email verify---------------->', user)
         user.emailVerified = true;
         user.oneTimeCode = null;
         await user.save();
+        const message = user.fullName + ' has registered to be a ' + user.role + ' in your system'
+        const newNotification = {
+          message: message,
+          image: user.image,
+          linkId: user._id,
+          type: 'user',
+          role: 'admin'
+        }
+        await addNotification(newNotification)
+        const notification = await getAllNotification('admin', 10, 1)
+        io.emit('admin-notification', notification);
+        console.log('email verify---------------->', user)
         res.status(200).json(response({ message: 'Email verified successfully', status: "OK", type: "email verification", statusCode: 200, data: user }));
       }
       else {
@@ -357,7 +370,7 @@ const updateProfile = async (req, res) => {
     let { fullName, phoneNumber, address, dateOfBirth } = req.body;
     if (dateOfBirth) {
       dateOfBirth = new Date(dateOfBirth)
-      if(isNaN(dateOfBirth.getTime())){
+      if (isNaN(dateOfBirth.getTime())) {
         return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message: 'Invalid date of birth' }));
       }
     }
@@ -369,7 +382,7 @@ const updateProfile = async (req, res) => {
       }
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
-    console.log('all value-------->',req.body)
+    console.log('all value-------->', req.body)
     const user = {
       fullName: !fullName ? checkUser.fullName : fullName,
       phoneNumber: !phoneNumber ? checkUser.phoneNumber : phoneNumber,
@@ -394,7 +407,7 @@ const updateProfile = async (req, res) => {
       user.image = fileInfo
     }
     const result = await User.findByIdAndUpdate(checkUser._id, user, options);
-    console.log('update result--------------->', user,result)
+    console.log('update result--------------->', user, result)
     return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'user', message: 'User profile edited successfully.', data: result }));
   }
   catch (error) {

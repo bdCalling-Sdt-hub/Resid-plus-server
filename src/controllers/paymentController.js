@@ -12,16 +12,6 @@ const k = kkiapay({
   sandbox: true
 })
 
-const verifyPayment = async (transactionId) => {
-  k.verify(transactionId).
-    then((response) => {
-      return response
-    }).
-    catch((error) => {
-      return null
-    })
-}
-
 //Add payment
 const addPayment = async (req, res) => {
   try {
@@ -46,51 +36,70 @@ const addPayment = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
     };
 
-    if (checkUser.role === 'user' && bookingDetails.userId.toString() === req.body.userId && bookingDetails.status === 'reserved') {
-      const payment = verifyPayment(paymentData.transactionId)
-      let amount = bookingDetails.totalAmount
-      if (paymentTypes === 'half-payment') {
-        amount = amount / 2
-      }
-      if (payment === null) {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Invalid payment data' }));
-      }
-      //enable it if running on production
-      else if (payment.state === 'Fake data' && process.env.NODE_ENV === 'production') {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Fake data is not allowed in production level' }));
-      }
+    if (bookingDetails.status === 'cancelled') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking is cancelled' }));
+    }
 
-      else if (payment.amount !== amount) {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Invalid payment amount' }));
-      }
+    if (bookingDetails.paymentTypes === 'full-payment') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment is already done' }));
+    }
 
-      else {
-        const newPayment = new Payment({
-          paymentData: payment,
-          bookingId,
-          userId: req.body.userId,
-          hostId: bookingDetails.hostId,
-          residenceId: bookingDetails.residenceId
-        });
+    if (checkUser.role === 'user' && bookingDetails.userId.toString() === req.body.userId) {
+      k.verify(paymentData.transactionId).
+        then(async (paymentResponse) => {
+          console.log('payment info---------->', req.body)
+          let amount = bookingDetails.totalAmount
+          var paidAmount = paymentResponse.amount
+          if ((paymentTypes === 'half-payment' && bookingDetails.paymentTypes === 'unknown') || (paymentTypes === 'full-payment' && bookingDetails.paymentTypes === 'half-payment')) {
+            amount = Math.ceil(amount / 2)
+          }
+          if (paymentResponse === null) {
+            return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Invalid payment data' }));
+          }
+          //enable it if running on production
+          else if (paymentResponse?.state === 'Fake data' && process.env.NODE_ENV === 'production') {
+            return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Fake data is not allowed in production level' }));
+          }
 
-        await newPayment.save();
-        console.log("payment Details--------->", payment)
-        bookingDetails.paymentTypes = paymentTypes;
-        await bookingDetails.save();
+          else if (paidAmount !== amount) {
+            return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Invalid payment amount', data: { paidAmount, amount } }));
+          }
 
-        const message = checkUser.fullName + ' has completed ' + paymentTypes + ' for ' + bookingDetails.residenceId.residenceName
-        const newNotification = {
-          message: message,
-          receiverId: bookingDetails.hostId,
-          image: checkUser.image,
-          linkId: bookingDetails._id,
-          type: 'host'
-        }
-        await addNotification(newNotification)
-        const notification = await getAllNotification('host', 30, 1, bookingDetails.hostId)
-        io.to('room' + bookingDetails.hostId).emit('host-notification', notification);
-        return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'payment', message: 'Payment added successfully.', data: payment }));
-      }
+          else if(bookingDetails.paymentTypes===paymentTypes){
+            return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Payment is already done', data: { paidAmount, amount } }));
+          }
+
+          else {
+            const newPayment = new Payment({
+              paymentData: paymentResponse,
+              bookingId,
+              userId: req.body.userId,
+              hostId: bookingDetails.hostId,
+              residenceId: bookingDetails.residenceId
+            });
+
+            await newPayment.save();
+            bookingDetails.paymentTypes = paymentTypes;
+            await bookingDetails.save();
+
+            const message = checkUser.fullName + ' has completed ' + paymentTypes + ' for ' + bookingDetails.residenceId.residenceName
+            const newNotification = {
+              message: message,
+              receiverId: bookingDetails.hostId,
+              image: checkUser.image,
+              linkId: bookingDetails._id,
+              type: 'host'
+            }
+            await addNotification(newNotification)
+            const notification = await getAllNotification('host', 10, 1, bookingDetails.hostId)
+            io.to('room' + bookingDetails.hostId).emit('host-notification', notification);
+            return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'payment', message: 'Payment added successfully.', data: newPayment }));
+          }
+        }).
+        catch((error) => {
+          console.log("error---------->", error)
+          return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
+        })
     }
     else {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to do payment now' }));
@@ -109,22 +118,20 @@ const allPayment = async (req, res) => {
     if (!checkUser) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     }
-    const filter = {
-      status: { $eq: 'accepted' }
-    };
 
     const requestType = !req.query.requestType ? 'total' : req.query.requestType;
     var data
     if (requestType === 'total') {
-      const allPayments = await Payment.find({ hostId: req.body.userId, ...filter });
-      const totalIncome = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
-      data = totalIncome
+      const allPayments = await Payment.find({ hostId: req.body.userId });
+      const total = allPayments.reduce((total, payment) => total + payment.paymentData.amount, 0);
+      data = total
+      console.log("totalIncome---------->", total, allPayments, req.body.userId)
     }
     else if (requestType === 'daily') {
       const dayTime = 24 * 60 * 60 * 1000;
       const dayEndDate = new Date();
       const dayStartDate = new Date(dayEndDate - dayTime);
-      const allPayments = await Payment.find({ createdAt: { $gte: dayStartDate, $lt: dayEndDate }, hostId: req.body.userId, ...filter }).populate('bookingId residenceId');
+      const allPayments = await Payment.find({ createdAt: { $gte: dayStartDate, $lt: dayEndDate }, hostId: req.body.userId }).populate('bookingId residenceId');
       const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
       data = { allPayments, total }
     }
@@ -132,7 +139,7 @@ const allPayment = async (req, res) => {
       const weeklyTime = 7 * 24 * 60 * 60 * 1000
       weeklyStartDate = new Date(new Date().getTime() - weeklyTime);
       weeklyEndDate = new Date();
-      const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate }, hostId: req.body.userId, ...filter }).populate('bookingId residenceId');
+      const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate }, hostId: req.body.userId }).populate('bookingId residenceId');
       const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
       data = { allPayments, total }
 
@@ -161,7 +168,7 @@ const allPayment = async (req, res) => {
       const monthEndDate = new Date();
       const monthStartDate = new Date(monthEndDate - monthTime);
 
-      const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate }, hostId: req.body.userId, ...filter });
+      const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate }, hostId: req.body.userId });
 
       const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',

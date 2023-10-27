@@ -12,7 +12,13 @@ const socketIO = (io) => {
 
     socket.on('add-new-chat', async (data) => {
       //console.log("data info---->", data.chatInfo)
-      const chat = await addChat(data.chatInfo)
+      var chat
+      if (data?.chatInfo?.participants?.length >= 2) {
+        chat = await addChat(data.chatInfo)
+      }
+      else{
+        io.to('room' + data.uid).emit('chat-error', 'Must provide 2 participants')
+      }
       socket.join('room' + data.uid)
       console.log("add-new chat--->", chat, data.uid)
       io.to('room' + data.uid).emit('new-chat', chat)
@@ -25,7 +31,13 @@ const socketIO = (io) => {
     })
     socket.on('add-new-message', async (data) => {
       console.log("message info------->", data)
-      const message = await addMessage(data)
+      var message
+      if (data && data?.chat && data?.message !== null) {
+        message = await addMessage(data)
+      }
+      else{
+        io.to('room' + data?.sender).emit('chat-error', 'Must provide a valid message')
+      }
       console.log('new message---------> ', message)
       const allMessages = await getMessageByChatId(message.chat)
       console.log('all messages list----> ', allMessages)
@@ -34,6 +46,7 @@ const socketIO = (io) => {
     socket.on('get-all-chats', async (data) => {
       const allChats = await getChatByParticipantId(data.uid)
       //console.log('hitting from socket -------->', allChats)
+      socket.join('room' + data.uid)
       io.to('room' + data).emit('all-chats', allChats)
     })
 
