@@ -11,7 +11,7 @@ const server = app.listen(port, '138.68.184.31',() => {
 //initializing socket io
 const socketIo = require('socket.io');
 const io = socketIo(server, {cors: {
-  origin: process.env.ALLOWED_CLIENT_URLS
+  origin: [process.env.ALLOWED_CLIENT_URL_WEB, process.env.ALLOWED_CLIENT_URL_DASHBOARD]
 }});
 
 
