@@ -101,7 +101,7 @@ const addResidence = async (req, res) => {
 //All residences
 const allResidence = async (req, res) => {
   try {
-    const checkUser = await User.findOne({ _id: req.body.userId });
+    const checkUser = await User.findById(req.body.userId);
 
     const search = req.query.search || '';
     const page = Number(req.query.page) || 1;
@@ -178,24 +178,24 @@ const allResidence = async (req, res) => {
     else if (checkUser.role === 'host') {
       const requestType = req.query.requestType || 'all'
       if (requestType === 'all') {
-        residences = await Residence.find({ hostId: checkUser._id,isDeleted: false, ...filter })
+        residences = await Residence.find({ hostId: checkUser._id, isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit);
-        count = await Residence.countDocuments({ hostId: checkUser._id,isDeleted: false, ...filter });
+        count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
-        residences = await Residence.find({ hostId: checkUser._id,isDeleted: false, ...filter })
+        residences = await Residence.find({ hostId: checkUser._id, isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ createdAt: -1 });
-        count = await Residence.countDocuments({ hostId: checkUser._id,isDeleted: false, ...filter });
+        count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
-        residences = await Residence.find({ hostId: checkUser._id,isDeleted: false, ...filter })
+        residences = await Residence.find({ hostId: checkUser._id, isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ popularity: -1 });
-        count = await Residence.countDocuments({ hostId: checkUser._id,isDeleted: false, ...filter });
+        count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
     }
 
@@ -237,89 +237,70 @@ const allResidence = async (req, res) => {
   }
 };
 
-// const allResidenceByHostId = async (req, res) => {
-//   try {
-//     const checkUser = await User.findOne({ _id: req.body.userId });
-//     const page = Number(req.query.page) || 1;
-//     const limit = Number(req.query.limit) || 10;
-//     const search = req.query.search || '';
-//     const searchRegExp = new RegExp('.*' + search + '.*', 'i');
-//     const filter = {
-//       $or: [
-//         { residenceName: { $regex: searchRegExp } },
-//         { address: { $regex: searchRegExp } },
-//         { city: { $regex: searchRegExp } },
-//         { municipality: { $regex: searchRegExp } },
-//       ],
-//     };
-//     if (!checkUser) {
-//       return res.status(404).json(
-//         response({
-//           status: 'Error',
-//           statusCode: '404',
-//           message: 'User not found',
-//         })
-//       );
-//     }
+const searchCredentials = async (req, res) => {
+  try {
+    const checkUser = await User.findById(req.body.userId);
+    if (!checkUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+    if (checkUser.role === 'user') {
+      const noOfUniqueBeds = await Residence.distinct('beds');
+      const minPriceResidence = await Residence.find().sort({ dailyAmount: 1 }).populate('dailyAmount').limit(1);
+      const maxPriceResidence = await Residence.find().sort({ dailyAmount: -1 }).populate('dailyAmount').limit(1);
+      const minPrice = minPriceResidence[0].dailyAmount;
+      const maxPrice = maxPriceResidence[0].dailyAmount;
+      const range = maxPrice - minPrice;
+      const priceRange = Math.ceil(range / 5);
+      let priceArray = [];
 
-//     let residences = [];
-//     let count = 0;
-//     if (checkUser.role !== 'host') {
-//       return res.status(401).json(
-//         response({
-//           status: 'Error',
-//           statusCode: '401',
-//           message: 'You are not authorised to get your residences data',
-//         })
-//       );
-//     }
-//     else {
-//       residences = await Residence.find({
-//         hostId: req.body.userId,
-//         isDeleted: false,
-//         ...filter
-//       })
-//         .limit(limit)
-//         .skip((page - 1) * limit);
-//       count = await Residence.countDocuments({
-//         hostId: req.body.userId,
-//         isDeleted: false,
-//         ...filter
-//       });
+      if (priceRange === 0) {
+        priceArray = [{ min: minPrice, max: maxPrice }];
+      } else {
+        for (let i = 0; i < 5; i++) {
+          const minRange = minPrice + priceRange * i;
+          const maxRange = minRange + priceRange;
+          priceArray.push({ min: minRange, max: maxRange });
+        }
+      }
 
-//       return res.status(200).json(
-//         response({
-//           status: 'OK',
-//           statusCode: '200',
-//           type: 'residence',
-//           message: 'Residences retrieved successfully',
-//           data: {
-//             residences,
-//             pagination: {
-//               totalDocuments: count,
-//               totalPage: Math.ceil(count / limit),
-//               currentPage: page,
-//               previousPage: page > 1 ? page - 1 : null,
-//               nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
-//             },
-//           },
-//         })
-//       );
-//     }
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json(
-//       response({
-//         status: 'Error',
-//         statusCode: '500',
-//         message: 'Error getting residences',
-//       })
-//     );
-//   }
-// };
+      console.log('all data --------->', noOfUniqueBeds, minPrice, maxPrice, priceRange, range)
+      const data = {
+        noOfUniqueBeds,
+        priceArray,
+      }
+      return res.status(200).json(
+        response({
+          status: 'OK',
+          statusCode: '200',
+          type: 'residence',
+          message: 'Search credentials retrieved successfully',
+          data: data,
+        })
+      );
+    }
+    else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get all search credentials' }));
+    }
+  }
+  catch (error) {
+    console.log(error)
+    return res.status(500).json(
+      response({
+        status: 'Error',
+        statusCode: '500',
+        message: 'Internal Server Error',
+      })
+    );
+  }
+}
 
 //Delete residences
-
 const deleteResidence = async (req, res) => {
   try {
     const checkHost = await User.findById(req.body.userId);
@@ -330,16 +311,16 @@ const deleteResidence = async (req, res) => {
     };
     if (checkHost.role === 'host') {
       const residenceDetails = await Residence.findOne({ _id: id })
-      if(!residenceDetails){
+      if (!residenceDetails) {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence not found' }));
       }
-      if(residenceDetails.hostId._id.toString() !== req.body.userId.toString()){
+      if (residenceDetails.hostId._id.toString() !== req.body.userId.toString()) {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this residence' }));
       }
-      if(residenceDetails.status === 'reserved'){
+      if (residenceDetails.status === 'reserved') {
         return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'You cant delete residence while it is reserved' }));
       }
-      if (!residenceDetails.isDeleted  && residenceDetails.status !== 'reserved') {
+      if (!residenceDetails.isDeleted && residenceDetails.status !== 'reserved') {
         const today = new Date();
         const futureBookings = await Booking.findOne({
           residenceId: id,
@@ -405,20 +386,20 @@ const updateResidence = async (req, res) => {
     const existingResidence = await Residence.findById(id);
     if (checkHost.role === 'host' && checkHost._id.toString() === existingResidence.hostId.toString()) {
       const updatedResidence = {
-        residenceName: !residenceName?existingResidence.residenceName:residenceName,
-        capacity: !capacity?existingResidence.capacity:capacity,
-        beds: !beds?existingResidence.beds:beds,
-        baths: !baths?existingResidence.baths:baths,
-        address: !address?existingResidence.address:address,
-        city: !city?existingResidence.city:city,
-        municipality: !municipality?existingResidence.municipality:municipality,
-        quirtier: !quirtier?existingResidence.quirtier:quirtier,
-        aboutResidence: !aboutResidence?existingResidence.aboutResidence:aboutResidence,
-        hourlyAmount: !hourlyAmount?existingResidence.hourlyAmount:hourlyAmount,
-        dailyAmount: !dailyAmount?existingResidence.dailyAmount:dailyAmount,
-        amenities: !amenities?existingResidence.amenities:amenities,
-        ownerName: !ownerName?existingResidence.ownerName:ownerName,
-        aboutOwner: !aboutOwner?existingResidence.aboutOwner:aboutOwner,
+        residenceName: !residenceName ? existingResidence.residenceName : residenceName,
+        capacity: !capacity ? existingResidence.capacity : capacity,
+        beds: !beds ? existingResidence.beds : beds,
+        baths: !baths ? existingResidence.baths : baths,
+        address: !address ? existingResidence.address : address,
+        city: !city ? existingResidence.city : city,
+        municipality: !municipality ? existingResidence.municipality : municipality,
+        quirtier: !quirtier ? existingResidence.quirtier : quirtier,
+        aboutResidence: !aboutResidence ? existingResidence.aboutResidence : aboutResidence,
+        hourlyAmount: !hourlyAmount ? existingResidence.hourlyAmount : hourlyAmount,
+        dailyAmount: !dailyAmount ? existingResidence.dailyAmount : dailyAmount,
+        amenities: !amenities ? existingResidence.amenities : amenities,
+        ownerName: !ownerName ? existingResidence.ownerName : ownerName,
+        aboutOwner: !aboutOwner ? existingResidence.aboutOwner : aboutOwner,
         hostId: req.body.userId,
       };
       if (status) {
@@ -472,7 +453,7 @@ const updateResidence = async (req, res) => {
 //residences details
 const residenceDetails = async (req, res) => {
   try {
-    const checkUser = await User.findOne({ _id: req.body.userId });
+    const checkUser = await User.findById(req.body.userId);
     const id = req.params.id
     if (!checkUser) {
       return res.status(404).json(
@@ -563,4 +544,4 @@ const residenceDashboard = async (req, res) => {
 }
 
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard };
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials };

@@ -371,7 +371,19 @@ const updateProfile = async (req, res) => {
     if (dateOfBirth) {
       dateOfBirth = new Date(dateOfBirth)
       if (isNaN(dateOfBirth.getTime())) {
+        if (req.file) {
+          unlinkImages(req.file.path)
+        }
         return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message: 'Invalid date of birth' }));
+      }
+    }
+
+    if(phoneNumber){
+      if (!/^\+225\d{6,10}$/.test(phoneNumber)) {
+        if (req.file) {
+          unlinkImages(req.file.path)
+        }
+        return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message: 'Invalid phone number format' }));
       }
     }
     // Check if the user already exists

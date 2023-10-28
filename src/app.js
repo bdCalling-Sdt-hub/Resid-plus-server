@@ -45,23 +45,6 @@ app.use(cors(
   }
 ));
 
-//initilizing socketIO
-const http = require('http');
-const socketIo = require('socket.io');
-const server = http.createServer(app);
-const io = socketIo(server, {cors: {
-  origin: process.env.ALLOWED_CLIENT_URLS
-}});
-
-const socketIO = require("./helpers/socketIO");
-socketIO(io);
-
-global.io = io
-
-const socketIOPort = process.env.SOCKET_IO_PORT
-server.listen(socketIOPort, '138.68.184.31',() => {
-  console.log(`Server is listening on port: ${socketIOPort}`);
-});
 //initilizing API routes
 app.use('/api/users', userRouter);
 app.use('/api/residences', residenceRouter);

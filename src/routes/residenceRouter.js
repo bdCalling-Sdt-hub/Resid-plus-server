@@ -1,5 +1,5 @@
 const express = require('express');
-const { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, allResidenceByHostId } = require('../controllers/residenceController');
+const { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials } = require('../controllers/residenceController');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 const userFileUploadMiddleware = require("../middlewares/fileUpload");
@@ -16,8 +16,10 @@ router.post('/',[uploadUsers.array("photo", 5)], imageVerification, validateResi
 router.get('/', isValidUser, allResidence);
 router.put('/:id', [uploadUsers.array("photo", 5)], isValidUser, updateResidence);
 router.delete('/:id', isValidUser, deleteResidence);
+router.get('/search-credentials', isValidUser, searchCredentials);
 router.get('/:id', isValidUser, residenceDetails);
 router.get('/dashboard/status', isValidUser, residenceDashboard);
+
 
 
 module.exports = router;

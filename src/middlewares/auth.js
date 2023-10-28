@@ -13,7 +13,7 @@ const isValidUser = async (req, res, next) => {
         let activity;
         if (authorization && authorization.startsWith("Bearer")) {
             token = authorization.split(" ")[1];
-            console.log(token);
+            //console.log(token);
             decodedData = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
             console.log(decodedData);
             if (decodedData.role === 'admin' && decodedData.activityId!==null) {
