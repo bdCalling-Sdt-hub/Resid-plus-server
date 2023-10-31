@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const Favourite = require("../models/Favourite");
 const Residence = require("../models/Residence");
 const User = require("../models/User");
+const logger = require("../helpers/logger");
 
 //Add favourite
 const addFavourite = async (req, res) => {
@@ -51,6 +52,7 @@ const addFavourite = async (req, res) => {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add in favourite' }));
     }
   } catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added favourite' }));
   }
@@ -107,6 +109,7 @@ const allFavourite = async (req, res) => {
       })
     );
   } catch (error) {
+    logger.error(error)
     console.log(error);
     return res.status(500).json(
       response({
@@ -135,6 +138,7 @@ const deleteFavourite = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error in removing from favourite' }));
   }

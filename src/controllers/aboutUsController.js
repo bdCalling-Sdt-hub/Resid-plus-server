@@ -1,6 +1,7 @@
 const AboutUs = require("../models/AboutUs");
 const User = require("../models/User");
 const response = require("../helpers/response");
+const logger = require("../helpers/logger");
 
 const createAboutUs = async (req, res) => {
   const { content } = req.body;
@@ -38,6 +39,7 @@ const createAboutUs = async (req, res) => {
     await aboutUs.save();
     return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'about-us', message: 'About us content updated successfully', data: aboutUs }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'about-us', message: 'Server error'}));
   }
@@ -66,6 +68,7 @@ const getAll = async (req, res) => {
     //const aboutUsContentWithoutTags = aboutUs.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'about-us', message: 'About us content retrieved successfully', data: aboutUs }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'about-us', message: 'Server Error' }));
   }
@@ -94,6 +97,7 @@ const getAllForWebSite = async (req, res) => {
     //const aboutUsContentWithoutTags = aboutUs.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'about-us', message: 'About us content retrieved successfully', data: aboutUs }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'about-us', message: 'Server Error' }));
   }

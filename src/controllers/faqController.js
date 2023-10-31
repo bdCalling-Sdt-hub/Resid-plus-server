@@ -1,6 +1,7 @@
 const Faq = require("../models/Faq");
 const User = require("../models/User");
 const response = require("../helpers/response");
+const logger = require("../helpers/logger");
 
 const createFaq = async (req, res) => {
   const { question, answer } = req.body;
@@ -38,6 +39,7 @@ const createFaq = async (req, res) => {
       return res.status(201).json(response({ status: 'Error', statusCode: '201', type: 'faq', message: 'Faq already exists', data: faq }));
     }
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'faq', message: 'Server error' }));
   }
@@ -78,6 +80,7 @@ const updateFaq = async (req, res) => {
     await faq.save();
     return res.status(201).json(response({ status: 'Updated', statusCode: '201', type: 'faq', message: 'Faq updated successfully.', data: faq }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'faq', message: 'Server error' }));
   }
@@ -112,6 +115,7 @@ const deleteFaq = async (req, res) => {
     await Faq.findByIdAndDelete(id);
     return res.status(201).json(response({ status: 'deleted', statusCode: '201', type: 'faq', message: 'Faq deleted successfully.', data: faq }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'faq', message: 'Server error' }));
   }
@@ -144,6 +148,7 @@ const getFaqById = async (req, res) => {
     }
     return res.status(201).json(response({ status: 'OK', statusCode: '201', type: 'faq', message: 'Faq retrived successfully.', data: faq }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'faq', message: 'Server error' }));
   }
@@ -174,6 +179,7 @@ const getAll = async (req, res) => {
     //const faqContentWithoutTags = faq.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'faq', message: 'faq content retrieved successfully', data: faq }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'faq', message: 'Server Error' }));
   }
@@ -189,6 +195,7 @@ const getAllForWebSite = async (req, res) => {
     //const faqContentWithoutTags = faq.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'faq', message: 'faq content retrieved successfully', data: faq }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'faq', message: 'Server Error' }));
   }

@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 //defining unlinking image function 
 const unlinkImages = require('../common/image/unlinkImage');
 const { addNotification, getAllNotification } = require("./notificationController");
+const logger = require("../helpers/logger");
 
 //Add residence
 const addResidence = async (req, res) => {
@@ -91,6 +92,7 @@ const addResidence = async (req, res) => {
     }
 
   } catch (error) {
+    logger.error(error)
     console.error(error);
     //deleting the images if something went wrong
     unlinkImages(req.files.map(file => file.path))
@@ -226,6 +228,7 @@ const allResidence = async (req, res) => {
       })
     );
   } catch (error) {
+    logger.error(error)
     console.log(error);
     return res.status(500).json(
       response({
@@ -289,6 +292,7 @@ const searchCredentials = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.log(error)
     return res.status(500).json(
       response({
@@ -347,6 +351,7 @@ const deleteResidence = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted residence' }));
   }
@@ -441,6 +446,7 @@ const updateResidence = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     //deleting the images if something went wrong
     if (req.files) {
@@ -479,6 +485,7 @@ const residenceDetails = async (req, res) => {
       })
     );
   } catch (error) {
+    logger.error(error)
     console.log(error);
     return res.status(500).json(
       response({
@@ -538,6 +545,7 @@ const residenceDashboard = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.log(error)
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server not responding' }));
   }

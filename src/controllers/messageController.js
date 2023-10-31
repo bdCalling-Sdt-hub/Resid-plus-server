@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Message = require('../models/Message');
+const logger = require("../helpers/logger");
 
 exports.addMessage = async (messageInfo) => {
   console.log('------------add message hitted----------')
@@ -8,6 +9,7 @@ exports.addMessage = async (messageInfo) => {
     await newMessage.save();
     return newMessage;
   } catch (err) {
+    logger.error(err)
     console.error(err);
     return null;
   }
@@ -18,6 +20,7 @@ exports.getById = async (id) => {
     console.log(id, message)
     return message;
   } catch (err) {
+    logger.error(err)
     console.error(err);
     return null;
   }
@@ -28,6 +31,7 @@ exports.getMessageByChatId = async (id) => {
     console.log(id, message)
     return message;
   } catch (err) {
+    logger.error(err)
     console.error(err);
     return null;
   }
@@ -37,6 +41,7 @@ exports.updateMessageById = async  (id, document, options) =>{
     const message = await Message.findByIdAndUpdate(id, document, options)
     return message
   } catch (error) {
+    logger.error(error)
     console.log(error)
   }
 }
@@ -46,6 +51,7 @@ exports.deleteMessageById = async (id) =>{
     console.log(message)
     return message
   } catch (error) {
+    logger.error(error)
     console.log(error)
   }
 }

@@ -3,7 +3,8 @@ const mongoose = require('mongoose')
 const Notification = require("../models/Notification");
 const User = require('../models/User')
 const Booking = require('../models/Booking')
-const Residence = require('../models/Residence')
+const Residence = require('../models/Residence');
+const logger = require("../helpers/logger");
 
 async function addNotification(data) {
   try {
@@ -12,9 +13,11 @@ async function addNotification(data) {
     const newNotification = new Notification(data);
 
     // Save the notification to the database
-    await newNotification.save();
+    const data1 = await newNotification.save();
+    console.log('hello---->', data1)
   }
   catch (error) {
+    logger.error(error)
     console.error("Error adding notification:", error);
   }
 }
@@ -25,6 +28,7 @@ async function addManyNotifications(data) {
     await Notification.insertMany(data);
   }
   catch (error) {
+    logger.error(error)
     console.error("Error adding notification:", error);
   }
 }
@@ -64,6 +68,7 @@ async function getAllNotification(role, limit = 10, page = 1, receiverId = null)
     return data
   }
   catch (error) {
+    logger.error(error)
     console.error("Error adding notification:", error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server error in retriving notifications' }));
   }
@@ -138,6 +143,7 @@ const allNotifications = async (req, res) => {
     );
   }
   catch (error) {
+    logger.error(error)
     console.log(error);
     return res.status(500).json(
       response({
@@ -174,6 +180,9 @@ const getNotificationDetails = async (req, res) => {
     else if (type === 'residence') {
       details = await Residence.findById(notification.linkId).populate('hostId')
     }
+    else if(type === 'user'){
+      details = await User.findById(notification.linkId)
+    }
     //retriving all notifications
     const allNotification = await Notification.find({ role: role })
       .limit(limit)
@@ -202,6 +211,7 @@ const getNotificationDetails = async (req, res) => {
     return res.status(200).json(response({ status: 'OK', statusCode: '200', type: type, message: 'Notifications retrieved successfully', data: details }))
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     //deleting the images if something went wrong
 
@@ -247,6 +257,7 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
     io.emit('admin-notification', data)
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     //deleting the images if something went wrong
 

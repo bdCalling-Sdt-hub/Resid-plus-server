@@ -3,6 +3,7 @@ const Residence = require("../models/Residence");
 const Booking = require('../models/Booking')
 const Review = require("../models/Review");
 const User = require("../models/User");
+const logger = require("../helpers/logger");
 
 const giveReview = async (req, res) => {
   try {
@@ -94,6 +95,7 @@ const giveReview = async (req, res) => {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'review', message: 'You are not authorised to review the residence' }));
     }
   } catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'review', message: 'Error adding review' }));
   }
@@ -126,6 +128,7 @@ const getAll = async (req, res) => {
     const reviews = await Review.find({ residenceId: residenceId }).populate('userId','fullName').sort({rating: -1}).limit(limit);
     return res.status(200).json(response({ status: 'Success', statusCode: '200', type: 'review', message: 'Review retrived successfully', data: reviews }));
   } catch (error) {
+    logger.error(error)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'review', message: 'Error in getting reviews' }));
   }

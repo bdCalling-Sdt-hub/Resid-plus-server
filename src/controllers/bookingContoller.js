@@ -8,7 +8,8 @@ const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
 const User = require("../models/User");
 const { addNotification, addManyNotifications, getAllNotification } = require("./notificationController");
 const options = { new: true };
-const kkiapay = require('kkiapay-nodejs-sdk')
+const kkiapay = require('kkiapay-nodejs-sdk');
+const logger = require("../helpers/logger");
 const k = kkiapay({
   privatekey: process.env.KKIAPAY_PRKEY,
   publickey: process.env.KKIAPAY_PBKEY,
@@ -90,6 +91,7 @@ const calculateTimeAndPrice = async (req, res) => {
     );
   }
   catch (error) {
+    logger.error(error)
     console.log(error)
   }
 }
@@ -211,7 +213,7 @@ const addBooking = async (req, res) => {
       console.log(popularity, residence)
       await Residence.findByIdAndUpdate(residence_details._id, residence, options)
 
-      const message = checkUser.fullName + ' wants to book ' + booking.residenceId.residenceName + ' from ' + booking.checkInTime + ' to ' + booking.checkOutTime
+      const message = checkUser.fullName + ' wants to book ' + residence_details.residenceName + ' from ' + booking.checkInTime + ' to ' + booking.checkOutTime
       const newNotification = {
         message: message,
         receiverId: booking.hostId,
@@ -231,6 +233,7 @@ const addBooking = async (req, res) => {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
     }
   } catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added booking' }));
   }
@@ -380,6 +383,7 @@ const allBooking = async (req, res) => {
       })
     );
   } catch (error) {
+    logger.error(error)
     console.log(error);
     return res.status(500).json(
       response({
@@ -600,6 +604,7 @@ const updateBooking = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     //deleting the images if something went wrong
 
@@ -654,6 +659,7 @@ const bookingDetails = async (req, res) => {
       );
     }
   } catch (error) {
+    logger.error(error)
     console.log(error);
     return res.status(500).json(
       response({
@@ -678,6 +684,7 @@ async function bookingDashboardCount() {
     return count_data;
   }
   catch (error) {
+    logger.error(error)
     console.log(error)
   }
 }
@@ -724,6 +731,7 @@ const bookingDashboardRatio = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.log(error)
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server not responding' }));
   }
@@ -767,6 +775,7 @@ const deleteBooking = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted booking' }));
   }
@@ -830,6 +839,7 @@ const deleteHistory = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted booking' }));
   }

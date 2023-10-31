@@ -1,5 +1,6 @@
 const User = require('../../models/User');
 const response = require('../../helpers/response');
+const logger = require('../../helpers/logger');
 
 function validateEmail(email) {
   return /^[a-zA-ZÀ-ÖØ-öø-ÿ0-9._%+-]+@[a-zA-ZÀ-ÖØ-öø-ÿ0-9.-]+\.[a-zA-ZÀ-ÖØ-öø-ÿ]{2,}$/.test(email);
@@ -49,6 +50,7 @@ const validationMiddleware = async (req, res, next) => {
     errors.push({ field: 'role', error: 'Role must be given' });
   }
   if (errors.length > 0) {
+    logger.error("sign up validation error in middleware")
     return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: errors }));
   }
 

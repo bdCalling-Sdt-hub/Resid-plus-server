@@ -1,3 +1,4 @@
+const logger = require("../helpers/logger");
 const Chat = require("../models/Chat");
 
 exports.addChat = async (chatInfo) => {
@@ -12,6 +13,7 @@ exports.addChat = async (chatInfo) => {
       return newChat;
     }
   } catch (error) {
+    logger.error(error)
     console.log(error)
     return null;
   }
@@ -56,6 +58,7 @@ exports.deleteChatById = async (id) => {
       return null;
     }
   } catch (error) {
+    logger.error(error)
     console.log(error)
   }
 }

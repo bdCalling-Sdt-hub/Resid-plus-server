@@ -4,7 +4,8 @@ const Booking = require('../models/Booking')
 const User = require("../models/User");
 const kkiapay = require('kkiapay-nodejs-sdk')
 const axios = require('axios')
-const { addNotification, getAllNotification } = require('./notificationController')
+const { addNotification, getAllNotification } = require('./notificationController');
+const logger = require("../helpers/logger");
 
 const payInTokenUrl = 'https://app.paydunya.com/api/v1/checkout-invoice/create'
 const payInUrlCard = 'https://app.paydunya.com/api/v1/softpay/card'
@@ -83,6 +84,7 @@ const createPayInToken = async (req, res) => {
     }
 
   } catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
   }
@@ -126,6 +128,7 @@ const createDisburseToken = async (data) => {
     }
 
   } catch (error) {
+    logger.error(error)
     console.error(error);
     return error.message;
   }
@@ -246,6 +249,7 @@ const addPayment = async (req, res) => {
     }
 
   } catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
   }
@@ -338,6 +342,7 @@ const allPayment = async (req, res) => {
 
     return res.status(200).json({ data });
   } catch (error) {
+    logger.error(error)
     console.log(error);
     return res.status(500).json(
       response({

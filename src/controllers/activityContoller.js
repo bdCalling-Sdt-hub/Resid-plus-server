@@ -1,3 +1,4 @@
+const logger = require("../helpers/logger");
 const response = require("../helpers/response");
 const Activity = require("../models/Activity");
 const User = require("../models/User");
@@ -55,6 +56,7 @@ const allActivity = async (req, res) => {
       })
     );
   } catch (error) {
+    logger.error(error);
     console.log(error);
     return res.status(500).json(
       response({
@@ -87,6 +89,7 @@ const deleteActivity = async (req, res) => {
     return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'activity', message: 'Activity deleted successfully.', data: deleteActivity }));
   }
   catch (error) {
+    logger.error(error)
     console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'activity',message: 'Error deleted deleteActivity' }));
   }

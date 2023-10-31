@@ -1,3 +1,4 @@
+const logger = require('../helpers/logger');
 const response = require('../helpers/response')
 function notFoundHandler(req, res, next){
   const requestedPath = req.originalUrl;
@@ -7,6 +8,7 @@ function notFoundHandler(req, res, next){
 
 function errorHandler(err, req, res, next){
   console.error('Error Handler--------->', err);
+  logger.error(err.message+' on path: '+req.originalUrl);
   res.status(500).json(response({ status: 'Error', statusCode: '500', type: err.name, message: err.message, data: null }));
 }
 module.exports = {notFoundHandler, errorHandler}
