@@ -28,12 +28,12 @@ const signUp = async (req, res) => {
     // Check if the user already exists
     const userExist = await User.findOne({ email });
     if (userExist) {
-      return res.status(409).json(response({ statusCode: 200, message: 'User already exists', status: "OK" }));
+      return res.status(409).json(response({ statusCode: 200, message:req.t('User already exists'), status: "OK" }));
     }
 
     //role as admin is not allowed to be signed-up
     // if(role==='admin'){
-    //   return res.status(409).json(response({ statusCode: 200, message: 'You are not authorized to sign-up', status: "OK" }));
+    //   return res.status(409).json(response({ statusCode: 200, message:req.t('You are not authorized to sign-up'), status: "OK" }));
     // }
     const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
@@ -79,7 +79,7 @@ const signUp = async (req, res) => {
 
     res.status(201).json(response({
       status: "Created",
-      message: "User created successfully and a verification code just sent to the email",
+      message:req.t("User created successfully and a verification code just sent to the email"),
       statusCode: 201,
       type: "user",
       data: user,
@@ -87,7 +87,7 @@ const signUp = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'user', message: 'Error creating user' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'user', message:req.t( 'Error creating user') }));
   }
 };
 
@@ -102,14 +102,14 @@ const signIn = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json(response({ statusCode: 200, message: 'User not found', status: "OK" }));
+      return res.status(404).json(response({ statusCode: 200, message:req.t('User does not exists'), status: "OK" }));
     }
 
     // Compare the provided password with the stored hashed password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json(response({ statusCode: 200, message: 'Invalid password', status: "OK" }));
+      return res.status(401).json(response({ statusCode: 200, message:req.t('Invalid password'), status: "OK" }));
     }
 
     let activityId = null
@@ -164,10 +164,10 @@ const signIn = async (req, res) => {
     const accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activityId }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
 
     //Success response
-    res.status(200).json(response({ statusCode: 200, message: 'User logged in successfully', status: "OK", type: "user", data: user, token: accessToken }));
+    res.status(200).json(response({ statusCode: 200, message:req.t('User logged in successfully'), status: "OK", type: "user", data: user, token: accessToken }));
   } catch (error) {
     console.error(error);
-    res.status(500).json(response({ statusCode: 200, message: 'Error logging in user', status: "OK", error }));
+    res.status(500).json(response({ statusCode: 200, message:req.t('Error logging in user'), status: "OK", error }));
   }
 };
 
@@ -179,7 +179,7 @@ const processForgetPassword = async (req, res) => {
     // Check if the user already exists
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json(response({ statusCode: 200, message: 'User does not exists', status: "OK" }));
+      return res.status(400).json(response({ statusCode: 200, message:req.t('User does not exists'), status: "OK" }));
     }
 
     // Generate OTC (One-Time Code)
@@ -218,9 +218,9 @@ const processForgetPassword = async (req, res) => {
       }
     }, 180000); // 3 minute in milliseconds
 
-    res.status(201).json(response({ message: 'Thanks! Please check your email to reset password', status: "OK", statusCode: 200 }));
+    res.status(201).json(response({ message:req.t('resetpassword'), status: "OK", statusCode: 200 }));
   } catch (error) {
-    res.status(500).json(response({ message: 'Error processing forget password', statusCode: 200, status: "OK" }));
+    res.status(500).json(response({ message:req.t('Error processing forget password'), statusCode: 200, status: "OK" }));
   }
 };
 
@@ -229,12 +229,12 @@ const resendOneTimeCode = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json(response({ statusCode: 200, message: 'User does not exist', status: "OK" }));
+      return res.status(400).json(response({ statusCode: 200, message:req.t('User does not exist'), status: "OK" }));
     }
     const requestType = !req.query.requestType ? 'resetPassword' : req.query.requestType;
     const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
     const subject = requestType === 'resetPassword' ? 'Password Reset Email' : 'User verification code';
-    const topic = requestType === 'resetPassword' ? 'reset password' : 'verify account';
+    const topic = requestType === 'resetPassword' ? 'resetpassword' : 'verifyaccount';
     // Store the OTC and its expiration time in the database
     user.oneTimeCode = oneTimeCode;
     await user.save();
@@ -267,9 +267,9 @@ const resendOneTimeCode = async (req, res) => {
       }
     }, 180000); // 3 minute in milliseconds
 
-    res.status(201).json(response({ message: `Thanks! Please check your email to ${topic}`, status: "OK", statusCode: 200 }));
+    res.status(201).json(response({ message:req.t(`${topic}`), status: "OK", statusCode: 200 }));
   } catch (error) {
-    res.status(500).json(response({ message: 'Error processing forget password', statusCode: 200, status: "OK" }));
+    res.status(500).json(response({ message:req.t(`${topic}error`), statusCode: 200, status: "OK" }));
   }
 }
 
@@ -283,7 +283,7 @@ const verifyOneTimeCode = async (req, res) => {
     const user = await User.findOne({ email });
     const currentTime = new Date();
     if (!user) {
-      return res.status(40).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
+      return res.status(40).json(response({ message:req.t('User does not exist'), status: "OK", statusCode: 200 }));
     }
     // else if(user.emailVerificationAttemps >= 3){
 
@@ -292,16 +292,16 @@ const verifyOneTimeCode = async (req, res) => {
       if (requestType === 'resetPassword') {
         user.oneTimeCode = 'verified';
         await user.save();
-        res.status(200).json(response({ message: 'One Time Code verified successfully', type: "reset-forget password", status: "OK", statusCode: 200, data: user }));
+        res.status(200).json(response({ message:req.t('One Time Code verified successfully'), type: "reset-forget password", status: "OK", statusCode: 200, data: user }));
       }
       else if (requestType === 'verifyEmail' && user.oneTimeCode !== null && user.emailVerified === false) {
         //console.log('email verify---------------->', user)
         user.emailVerified = true;
         user.oneTimeCode = null;
         await user.save();
-        const message = user.fullName + ' has registered to be a ' + user.role + ' in your system'
+        const adminMessage = user.fullName + ' has registered to be a ' + user.role + ' in your system'
         const newNotification = {
-          message: message,
+          message:adminMessage,
           image: user.image,
           linkId: user._id,
           type: 'user',
@@ -311,25 +311,25 @@ const verifyOneTimeCode = async (req, res) => {
         const notification = await getAllNotification('admin', 10, 1)
         io.emit('admin-notification', notification);
         console.log('email verify---------------->', user)
-        res.status(200).json(response({ message: 'Email verified successfully', status: "OK", type: "email verification", statusCode: 200, data: user }));
+        res.status(200).json(response({ message:req.t('Email verified successfully'), status: "OK", type: "email verification", statusCode: 200, data: user }));
       }
       else {
-        res.status(409).json(response({ message: 'Request type not defined properly', status: "Error", statusCode: 409 }));
+        res.status(409).json(response({ message:req.t('Request type not defined properly'), status: "Error", statusCode: 409 }));
       }
     }
     // else if(user.oneTimeCode !== oneTimeCode){
     //   user.emailVerificationAttemps = user.emailVerificationAttemps + 1;
     //   await user.save();
-    //   res.status(400).json(response({ message: 'Invalid OTC', status: "OK", statusCode: 400 }));
+    //   res.status(400).json(response({ message:req.t( 'Invalid OTC', status: "OK", statusCode: 400 }));
     // }
     else if (user.oneTimeCode === null) {
-      res.status(408).json(response({ message: 'One Time Code has expired', status: "OK", statusCode: 408 }));
+      res.status(408).json(response({ message:req.t('One Time Code has expired'), status: "OK", statusCode: 408 }));
     }
     else {
-      res.status(406).json(response({ message: 'Requirements not fulfilled in verifying OTC', status: "Error", statusCode: 406 }));
+      res.status(406).json(response({ message:req.t('Requirements not fulfilled in verifying OTC'), status: "Error", statusCode: 406 }));
     }
   } catch (error) {
-    res.status(500).json(response({ message: 'Error verifying OTC', status: "OK", statusCode: 500 }));
+    res.status(500).json(response({ message:req.t('Error verifying OTC'), status: "OK", statusCode: 500 }));
   }
 };
 
@@ -342,26 +342,26 @@ const updatePassword = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '400',
-          message: 'New password does not meet the criteria, password must be at least 8 characters long, contain at least one letter or special character',
+          message:req.t('New password does not meet the criteria, password must be at least 8 characters long, contain at least one letter or special character'),
         })
       );
     }
     console.log(email);
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json(response({ message: 'User does not exist', status: "OK", statusCode: 200 }));
+      return res.status(400).json(response({ message:req.t('User does not exist'), status: "OK", statusCode: 200 }));
     }
     else if (user.oneTimeCode === 'verified') {
       user.password = password;
       user.oneTimeCode = null;
       await user.save();
-      res.status(200).json(response({ message: 'Password updated successfully', status: "OK", statusCode: 200 }));
+      res.status(200).json(response({ message:req.t('Password updated successfully'), status: "OK", statusCode: 200 }));
     }
     else {
-      res.status(200).json(response({ message: 'Something went wrong, try forget password again', status: "OK", statusCode: 200 }));
+      res.status(200).json(response({ message:req.t('Something went wrong, try forget password again'), status: "OK", statusCode: 200 }));
     }
   } catch (error) {
-    res.status(500).json(response({ message: 'Error updating password', status: "OK", statusCode: 200 }));
+    res.status(500).json(response({ message:req.t('Error updating password'), status: "OK", statusCode: 200 }));
   }
 };
 
@@ -374,7 +374,7 @@ const updateProfile = async (req, res) => {
         if (req.file) {
           unlinkImages(req.file.path)
         }
-        return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message: 'Invalid date of birth' }));
+        return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message:req.t('Invalid date of birth') }));
       }
     }
 
@@ -383,7 +383,7 @@ const updateProfile = async (req, res) => {
         if (req.file) {
           unlinkImages(req.file.path)
         }
-        return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message: 'Invalid phone number format' }));
+        return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message:req.t('Invalid phone number format') }));
       }
     }
     // Check if the user already exists
@@ -392,7 +392,7 @@ const updateProfile = async (req, res) => {
       if (req.file) {
         unlinkImages(req.file.path)
       }
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message:req.t('User not found') }));
     };
     console.log('all value-------->', req.body)
     const user = {
@@ -420,7 +420,7 @@ const updateProfile = async (req, res) => {
     }
     const result = await User.findByIdAndUpdate(checkUser._id, user, options);
     console.log('update result--------------->', user, result)
-    return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'user', message: 'User profile edited successfully.', data: result }));
+    return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'user', message:req.t( 'User profile edited successfully'), data: result }));
   }
   catch (error) {
     //providing the image path saved in the server
@@ -444,7 +444,7 @@ const userDetails = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message:req.t('User not found'),
         })
       );
     }
@@ -457,7 +457,7 @@ const userDetails = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'user',
-        message: 'User details retrieved successfully',
+        message:req.t('User details retrieved successfully'),
         data: {
           user
         },
@@ -469,7 +469,7 @@ const userDetails = async (req, res) => {
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting residences',
+        message:req.t('Error getting residences'),
       })
     );
   }
@@ -483,7 +483,7 @@ const allUser = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message:req.t('User not found'),
         })
       );
     }
@@ -530,7 +530,7 @@ const allUser = async (req, res) => {
       count = await User.countDocuments(filter);
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'user', message: 'You are not authorised to get all user details', data: null }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'user', message:req.t( 'You are not authorised to get all user details'), data: null }));
     }
 
     return res.status(200).json(
@@ -538,7 +538,7 @@ const allUser = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'user',
-        message: 'Users retrieved successfully',
+        message:req.t('Users retrieved successfully'),
         data: {
           users,
           completeHistory: completed,
@@ -558,7 +558,7 @@ const allUser = async (req, res) => {
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting users',
+        message:req.t('Error getting users'),
       })
     );
   }
@@ -574,7 +574,7 @@ const changePassword = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '400',
-          message: 'New password does not meet the criteria, password must be at least 8 characters long, contain at least one letter or special character',
+          message:req.t('New password does not meet the criteria, password must be at least 8 characters long, contain at least one letter or special character'),
         })
       );
     }
@@ -586,7 +586,7 @@ const changePassword = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message:req.t('User not found'),
         })
       );
     }
@@ -599,7 +599,7 @@ const changePassword = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '401',
-          message: 'Current password is incorrect',
+          message:req.t('Current password is incorrect'),
         })
       );
     }
@@ -612,13 +612,13 @@ const changePassword = async (req, res) => {
       response({
         status: 'Success',
         statusCode: '200',
-        message: 'Password changed successfully',
+        message:req.t('Password changed successfully'),
         data: checkUser
       })
     );
   } catch (error) {
     console.log(error)
-    return res.status(500).json(response({ status: 'Edited', statusCode: '500', type: 'user', message: 'An error occurred while changing password' }));
+    return res.status(500).json(response({ status: 'Edited', statusCode: '500', type: 'user', message:req.t('An error occurred while changing password') }));
   }
 }
 

@@ -62,7 +62,7 @@ i18next
     caches: ['cookie']
   },
   preload: ['en', 'fr'],
-  fallbackLng: 'fr',
+  fallbackLng: process.env.API_RESPONCE_LANGUAGE,
 });
 app.use(i18nextMiddleware.handle(i18next));
 
