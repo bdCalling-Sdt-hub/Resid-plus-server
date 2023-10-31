@@ -158,21 +158,21 @@ const allResidence = async (req, res) => {
         residences = await Residence.find({ isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit);
-        count = await Residence.countDocuments({ isDeleted: false, ...filter });
+        count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
-        residences = await Residence.find({ isDeleted: false, ...filter })
+        residences = await Residence.find({ status: 'active' ,isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ createdAt: -1 });
-        count = await Residence.countDocuments({ isDeleted: false, ...filter });
+        count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
-        residences = await Residence.find({ isDeleted: false, ...filter })
+        residences = await Residence.find({ status: 'active' ,isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ popularity: -1 });
-        count = await Residence.countDocuments({ isDeleted: false, ...filter });
+        count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
     }
     else if (checkUser.role === 'host') {
@@ -403,11 +403,11 @@ const updateResidence = async (req, res) => {
         hostId: req.body.userId,
       };
       if (status) {
-        if (existingResidence.status === 'reserved') {
-          return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'You cant change staus while residence is reserved' }));
+        if (status!=='active' || status!=='inactive') {
+          return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'Invalid status' }));
         }
         else {
-          updateResidence.status = status;
+          updatedResidence.status = status;
         }
       }
       if (req.files.length > 0) {
@@ -542,6 +542,5 @@ const residenceDashboard = async (req, res) => {
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server not responding' }));
   }
 }
-
 
 module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials };

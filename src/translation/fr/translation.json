@@ -1,0 +1,13 @@
+{
+  "Back-end is responding!!":"Le back-end répond !!",
+  "User already exists":"L'utilisateur existe déjà",
+  "User created successfully and a verification code just sent to the email": "Utilisateur créé avec succès et un code de vérification vient d'être envoyé à l'e-mail",
+  "Error creating user":"Erreur lors de la création de l'utilisateur",
+  "User not found":"Utilisateur non trouvé",
+  "Invalid password":"Mot de passe invalide",
+  "User logged in successfully":"Utilisateur connecté avec succès",
+  "Error logging in user":"Erreur de connexion de l'utilisateur",
+  "Thanks! Please check your email to reset password":"Merci! Veuillez vérifier votre e-mail pour réinitialiser le mot de passe",
+  "Error processing forget password":"Erreur de traitement du mot de passe oublié",
+  "User does not exists":"L'utilisateur n'existe pas"
+}

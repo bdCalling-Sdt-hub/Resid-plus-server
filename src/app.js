@@ -45,6 +45,27 @@ app.use(cors(
   }
 ));
 
+//configuring i18next
+const i18next = require('i18next');
+const i18nextMiddleware = require('i18next-http-middleware');
+const Backend = require('i18next-node-fs-backend');
+
+i18next
+.use(Backend)
+.use(i18nextMiddleware.LanguageDetector)
+.init({
+  backend: {
+    loadPath: __dirname + '/translation/{{lng}}/translation.json',
+  },
+  detection: {
+    order: ['header'],
+    caches: ['cookie']
+  },
+  preload: ['en', 'fr'],
+  fallbackLng: 'fr',
+});
+app.use(i18nextMiddleware.handle(i18next));
+
 //initilizing API routes
 app.use('/api/users', userRouter);
 app.use('/api/residences', residenceRouter);
@@ -63,7 +84,7 @@ app.use('/api/payments', paymentRouter)
 
 //testing API is alive
 app.get('/test', (req, res) => {
-  res.send('I am responding!!')
+  res.send(req.t('Back-end is responding!!'))
 })
 
 //invalid route handler

@@ -1,0 +1,14 @@
+{
+  "Back-end is responding!!":"Back-end is responding!!",
+  "User already exists":"User already exists",
+  "User created successfully and a verification code just sent to the email":"User created successfully and a verification code just sent to the email",
+  "Error creating user":"Error creating user",
+  "User not found":"User not found",
+  "Invalid password":"Invalid password",
+  "User logged in successfully":"User logged in successfully",
+  "Error logging in user":"Error logging in user",
+  "Thanks! Please check your email to reset password":"Thanks! Please check your email to reset password",
+  "Error processing forget password":"Error processing forget password",
+  "User does not exists": "User does not exists"
+
+}

@@ -179,7 +179,7 @@ const processForgetPassword = async (req, res) => {
     // Check if the user already exists
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json(response({ statusCode: 200, message: 'User does not exist', status: "OK" }));
+      return res.status(400).json(response({ statusCode: 200, message: 'User does not exists', status: "OK" }));
     }
 
     // Generate OTC (One-Time Code)

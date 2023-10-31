@@ -3,7 +3,19 @@ const Payment = require("../models/Payment");
 const Booking = require('../models/Booking')
 const User = require("../models/User");
 const kkiapay = require('kkiapay-nodejs-sdk')
+const axios = require('axios')
 const { addNotification, getAllNotification } = require('./notificationController')
+
+const payInTokenUrl = 'https://app.paydunya.com/api/v1/checkout-invoice/create'
+const payInUrlCard = 'https://app.paydunya.com/api/v1/softpay/card'
+const payoutdisburseTokenUrl = 'https://app.paydunya.com/api/v1/disburse/get-invoice'
+const payoutDisburseAmountUrl = 'https://app.paydunya.com/api/v1/disburse/submit-invoice'
+const headers = {
+  'Content-Type': 'application/json',
+  'PAYDUNYA-MASTER-KEY': process.env.PAYDUNYA_MASTER_KEY,
+  'PAYDUNYA-PRIVATE-KEY': process.env.PAYDUNYA_PRIVATE_KEY,
+  'PAYDUNYA-TOKEN': process.env.PAYDUNYA_TOKEN
+}
 
 const k = kkiapay({
   privatekey: process.env.KKIAPAY_PRKEY,
@@ -11,6 +23,134 @@ const k = kkiapay({
   secretkey: process.env.KKIAPAY_SCKEY,
   sandbox: true
 })
+
+const createPayInToken = async (req, res) => {
+  try {
+    const checkUser = await User.findById(req.body.userId);
+
+    if (!checkUser) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    };
+
+    const {
+      bookingId,
+      paymentTypes
+    } = req.body;
+
+    if (paymentTypes !== 'half-payment' && paymentTypes !== 'full-payment') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment status not not appropiate' }));
+    }
+    const bookingDetails = await Booking.findById(bookingId).populate('residenceId userId');
+    console.log("bookingDetails--------->", bookingDetails, bookingId)
+    if (!bookingDetails) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+    };
+
+    if (bookingDetails.status === 'cancelled') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking is cancelled' }));
+    }
+
+    if (bookingDetails.paymentTypes === 'full-payment') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment is already done' }));
+    }
+
+    if (checkUser.role === 'user' && bookingDetails.userId.toString() === req.body.userId) {
+      let paymentAmount = bookingDetails.totalAmount
+      if ((bookingDetails.paymentTypes === 'unknown' && paymentTypes === 'half-payment' || bookingDetails.paymentTypes === 'half-payment' && paymentTypes === 'full-payment')) {
+        paymentAmount = Math.ceil(paymentAmount / 2)
+      }
+      const payload =
+      {
+        "invoice": {
+          "total_amount": paymentAmount,
+          "description": bookingDetails._id
+        },
+        "store": {
+          "name": bookingDetails.userId.fullName,
+          "phone": bookingDetails.userId.phoneNumber,
+        }
+      }
+      const response = await axios.post(payInTokenUrl, payload, { headers });
+      if (response.data.response_code === '00') {
+        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment token created successfully.', data: response.data }));
+      }
+      else {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: response.data }));
+      }
+    }
+    else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to do payment now' }));
+    }
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
+  }
+
+}
+
+const createDisburseToken = async (data) => {
+  try {
+    const bookingDetails = await Booking.findById(data.bookingId).populate('residenceId hostId');
+    console.log("bookingDetails--------->", bookingDetails, data.bookingId)
+    if (!bookingDetails) {
+      return {message: 'Booking not found' }
+    };
+
+    if (bookingDetails.status === 'cancelled') {
+      return {message: 'Booking is cancelled' }
+    }
+
+    if (bookingDetails.paymentTypes !== 'full-payment') {
+      return {message: 'Full payment not done yet' }
+    }
+
+    if (bookingDetails.status !== 'cancelled' && bookingDetails.status!=='pending' && bookingDetails.paymentTypes === 'full-payment') {
+      const disburseAmount = bookingDetails.totalAmount*0.94
+      const payload =
+      {
+        account_alias: data.account_alias,
+        amount: disburseAmount,
+        withdraw_mode: data?.withdraw_mode
+      }
+      const response = await axios.post(createDisburseToken, payload, { headers });
+      if (response?.data?.response_code === '00') {
+        return response.data;
+      }
+      else {
+        return response.data;
+      }
+    }
+    else {
+      return {message: 'You are Not authorize to do payment now' };
+    }
+
+  } catch (error) {
+    console.error(error);
+    return error.message;
+  }
+
+}
+
+const payoutDisburseAmount = async (data) => {
+  try{
+    if(!data.disburse_invoice){
+      return {message: 'Disburse invoice not found'}
+    }
+    const payload = {"disburse_invoice": data.disburse_invoice, "disburse_id": data?.bookingId }
+    const response = await axios.post(payoutDisburseAmountUrl, payload, { headers });
+    if (response?.data?.response_code === '00') {
+      return response.data;
+    }
+    else {
+      return response.data;
+    }
+  }
+  catch(error){
+    console.error(error);
+    return error.message
+  }
+}
 
 //Add payment
 const addPayment = async (req, res) => {
@@ -65,7 +205,7 @@ const addPayment = async (req, res) => {
             return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Invalid payment amount', data: { paidAmount, amount } }));
           }
 
-          else if(bookingDetails.paymentTypes===paymentTypes){
+          else if (bookingDetails.paymentTypes === paymentTypes) {
             return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'Payment is already done', data: { paidAmount, amount } }));
           }
 

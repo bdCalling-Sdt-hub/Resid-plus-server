@@ -23,9 +23,9 @@ module.exports = function (UPLOADS_FOLDER) {
 
   const upload = multer({
     storage: storage,
-    limits: {
-      fileSize: 2000000, // 2MB
-    },
+    // limits: {
+    //   fileSize: 2000000, // 2MB
+    // },
     fileFilter: (req, file, cb) => {
       if (
         file.mimetype == "image/jpg" ||
