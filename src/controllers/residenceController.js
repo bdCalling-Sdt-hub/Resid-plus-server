@@ -34,7 +34,7 @@ const addResidence = async (req, res) => {
     if (!checkHost) {
       //deleting the images if user is not valid
       unlinkImages(req.files.map(file => file.path))
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
 
     //extracting file names and path for static display with link
@@ -84,15 +84,15 @@ const addResidence = async (req, res) => {
       const notification = await getAllNotification('admin', 10, 1)
       io.emit('admin-notification', notification);
 
-      return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'residence', message: 'Residence added successfully.', data: residence }));
+      return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'residence', message: req.t('Residence added successfully.'), data: residence }));
     } else {
       //deleting the images if user is host
       unlinkImages(req.files.map(file => file.path))
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add residence' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to add residence') }));
     }
 
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
     //deleting the images if something went wrong
     unlinkImages(req.files.map(file => file.path))
@@ -146,7 +146,7 @@ const allResidence = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -214,7 +214,7 @@ const allResidence = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'residence',
-        message: 'Residences retrieved successfully',
+        message: req.t('Residences retrieved successfully'),
         data: {
           residences,
           pagination: {
@@ -228,13 +228,13 @@ const allResidence = async (req, res) => {
       })
     );
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error);
     return res.status(500).json(
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting residences',
+        message: req.t('Error getting residences'),
       })
     );
   }
@@ -248,7 +248,7 @@ const searchCredentials = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -282,23 +282,23 @@ const searchCredentials = async (req, res) => {
           status: 'OK',
           statusCode: '200',
           type: 'residence',
-          message: 'Search credentials retrieved successfully',
+          message: req.t('Search credentials retrieved successfully'),
           data: data,
         })
       );
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get all search credentials' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to get all search credentials') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error)
     return res.status(500).json(
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Internal Server Error',
+        message: req.t('Internal Server Error'),
       })
     );
   }
@@ -311,18 +311,18 @@ const deleteResidence = async (req, res) => {
     //extracting the residence id from param that is going to be deleted
     const id = req.params.id
     if (!checkHost) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'host') {
       const residenceDetails = await Residence.findOne({ _id: id })
       if (!residenceDetails) {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence not found' }));
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Residence not found') }));
       }
       if (residenceDetails.hostId._id.toString() !== req.body.userId.toString()) {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this residence' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to delete this residence') }));
       }
       if (residenceDetails.status === 'reserved') {
-        return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'You cant delete residence while it is reserved' }));
+        return res.status(403).json(response({ status: 'Error', statusCode: '403', message: req.t('You cant delete residence while it is reserved') }));
       }
       if (!residenceDetails.isDeleted && residenceDetails.status !== 'reserved') {
         const today = new Date();
@@ -333,7 +333,7 @@ const deleteResidence = async (req, res) => {
         });
 
         if (futureBookings) {
-          return res.status(400).json(response({ status: 'Error', statusCode: '400', type: 'residence', message: 'Cannot delete residence with future booking requests accepted.' }));
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', type: 'residence', message: req.t('Cannot delete residence with future booking requests accepted.') }));
         }
         //console.log('images to be deleted-------------->',residenceDetails.photo)
         const paths = residenceDetails.photo.map(photoObject => photoObject.path).flat();
@@ -341,19 +341,19 @@ const deleteResidence = async (req, res) => {
         residenceDetails.isDeleted = true;
         residenceDetails.save();
         await Booking.updateMany({ residenceId: id }, { $set: { isDeleted: true } });
-        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'residence', message: 'Residence deleted successfully.', data: residenceDetails }));
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'residence', message: req.t('Residence deleted successfully.'), data: residenceDetails }));
       }
       else {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "residence", message: 'Delete credentials not match' }));
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "residence", message: req.t('Delete credentials not match') }));
       }
     } else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to delete residence' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to delete residence') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted residence' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error deleted residence') }));
   }
 }
 
@@ -386,7 +386,7 @@ const updateResidence = async (req, res) => {
       if (req.files.length > 0) {
         unlinkImages(req.files.map(file => file.path))
       }
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const existingResidence = await Residence.findById(id);
     if (checkHost.role === 'host' && checkHost._id.toString() === existingResidence.hostId.toString()) {
@@ -409,7 +409,7 @@ const updateResidence = async (req, res) => {
       };
       if (status) {
         if (status!=='active' || status!=='inactive') {
-          return res.status(403).json(response({ status: 'Error', statusCode: '403', message: 'Invalid status' }));
+          return res.status(403).json(response({ status: 'Error', statusCode: '403', message: req.t('Invalid status') }));
         }
         else {
           updatedResidence.status = status;
@@ -437,22 +437,22 @@ const updateResidence = async (req, res) => {
         updatedResidence.photo = files;
       }
       const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
-      return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: 'Residence edited successfully.', data: updatedData }));
+      return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: req.t('Residence edited successfully.'), data: updatedData }));
     } else {
       if (req.files.length > 0) {
         unlinkImages(req.files.map(file => file.path))
       }
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add residence' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to add residence') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
     //deleting the images if something went wrong
     if (req.files) {
       unlinkImages(req.files.map(file => file.path))
     }
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error in edited residence' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error in edited residence') }));
   }
 }
 
@@ -466,7 +466,7 @@ const residenceDetails = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -478,20 +478,20 @@ const residenceDetails = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'residence',
-        message: 'Residence retrieved successfully',
+        message: req.t('Residence retrieved successfully'),
         data: {
           residences
         },
       })
     );
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error);
     return res.status(500).json(
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting residences',
+        message: req.t('Error getting residences'),
       })
     );
   }
@@ -501,7 +501,7 @@ const residenceDashboard = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
     if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
 
     if (checkUser.role === 'admin') {
@@ -524,7 +524,7 @@ const residenceDashboard = async (req, res) => {
           status: 'OK',
           statusCode: '200',
           type: 'residence',
-          message: 'Residence count and details retrieved successfully',
+          message: req.t('Residence count and details retrieved successfully'),
           data: {
             residences,
             status: count_data,
@@ -541,13 +541,13 @@ const residenceDashboard = async (req, res) => {
       );
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get all counts' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to get all counts') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error)
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server not responding' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Server not responding') }));
   }
 }
 

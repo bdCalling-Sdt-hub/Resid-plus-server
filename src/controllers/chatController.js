@@ -3,8 +3,8 @@ const Chat = require("../models/Chat");
 
 exports.addChat = async (chatInfo) => {
   try {
-    console.log(chatInfo.participants)
-    const existingChat = await Chat.findOne({ participants: chatInfo.participants });
+    console.log(chatInfo?.participants)
+    const existingChat = await Chat.findOne({ participants: chatInfo?.participants });
 
     if (existingChat) {
       return existingChat;
@@ -13,7 +13,7 @@ exports.addChat = async (chatInfo) => {
       return newChat;
     }
   } catch (error) {
-    logger.error(error)
+    logger.error(error, 'from: add-chat')
     console.log(error)
     return null;
   }
@@ -29,6 +29,7 @@ exports.getChatById = async (id) => {
       return null;
     }
   } catch (err) {
+    logger.error(err, 'from: get chat by id')
     console.error(err);
     return null;
   }
@@ -45,6 +46,7 @@ exports.getChatByParticipantId = async (id) => {
       return null;
     }
   } catch (err) {
+    logger.error(err, 'from: get chat by participant id')
     console.error(err);
     return null;
   }
@@ -58,7 +60,7 @@ exports.deleteChatById = async (id) => {
       return null;
     }
   } catch (error) {
-    logger.error(error)
+    logger.error(error, 'from: delete-chat')
     console.log(error)
   }
 }

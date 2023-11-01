@@ -90,7 +90,7 @@ const signUp = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'user', message:req.t( 'Error creating user') }));
   }
 };
@@ -171,7 +171,7 @@ const signIn = async (req, res) => {
     res.status(200).json(response({ statusCode: 200, message:req.t('User logged in successfully'), status: "OK", type: "user", data: user, token: accessToken }));
   } catch (error) {
     console.error(error);
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     res.status(500).json(response({ statusCode: 200, message:req.t('Error logging in user'), status: "OK", error }));
   }
 };
@@ -226,7 +226,7 @@ const processForgetPassword = async (req, res) => {
 
     res.status(201).json(response({ message:req.t('resetpassword'), status: "OK", statusCode: 200 }));
   } catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     res.status(500).json(response({ message:req.t('Error processing forget password'), statusCode: 200, status: "OK" }));
   }
 };
@@ -277,7 +277,7 @@ const resendOneTimeCode = async (req, res) => {
 
     res.status(201).json(response({ message:req.t(`${topic}`), status: "OK", statusCode: 200 }));
   } catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     res.status(500).json(response({ message:req.t(`${topic}error`), statusCode: 200, status: "OK" }));
   }
 }
@@ -339,7 +339,7 @@ const verifyOneTimeCode = async (req, res) => {
       res.status(406).json(response({ message:req.t('Requirements not fulfilled in verifying OTC'), status: "Error", statusCode: 406 }));
     }
   } catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     res.status(500).json(response({ message:req.t('Error verifying OTC'), status: "OK", statusCode: 500 }));
   }
 };
@@ -372,7 +372,7 @@ const updatePassword = async (req, res) => {
       res.status(200).json(response({ message:req.t('Something went wrong, try forget password again'), status: "OK", statusCode: 200 }));
     }
   } catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     res.status(500).json(response({ message:req.t('Error updating password'), status: "OK", statusCode: 200 }));
   }
 };
@@ -435,7 +435,7 @@ const updateProfile = async (req, res) => {
     return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'user', message:req.t( 'User profile edited successfully'), data: result }));
   }
   catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     //providing the image path saved in the server
     if (req.file) {
       unlinkImages(req.file.path)
@@ -477,7 +477,7 @@ const userDetails = async (req, res) => {
       })
     );
   } catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     console.log(error);
     return res.status(500).json(
       response({
@@ -567,7 +567,7 @@ const allUser = async (req, res) => {
       })
     );
   } catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     console.log(error);
     return res.status(500).json(
       response({
@@ -632,7 +632,7 @@ const changePassword = async (req, res) => {
       })
     );
   } catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     console.log(error)
     return res.status(500).json(response({ status: 'Edited', statusCode: '500', type: 'user', message:req.t('An error occurred while changing password') }));
   }

@@ -39,7 +39,7 @@ const socketIO = (io) => {
         io.to('room' + data?.sender).emit('chat-error', 'Must provide a valid message')
       }
       console.log('new message---------> ', message)
-      const allMessages = await getMessageByChatId(message.chat)
+      const allMessages = await getMessageByChatId(message?.chat)
       console.log('all messages list----> ', allMessages)
       io.to('room' + message?.chat).emit('all-messages', allMessages)
     })

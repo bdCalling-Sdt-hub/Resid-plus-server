@@ -12,7 +12,7 @@ const allActivity = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -25,7 +25,7 @@ const allActivity = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '401',
-          message: 'You are not authorised to get login activity',
+          message: req.t('You are not authorised to get login activity'),
         })
       );
     }
@@ -42,7 +42,7 @@ const allActivity = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'activity',
-        message: 'Activitys retrieved successfully',
+        message: req.t('Activitys retrieved successfully'),
         data: {
           activitys,
           pagination: {
@@ -56,13 +56,13 @@ const allActivity = async (req, res) => {
       })
     );
   } catch (error) {
-    logger.error(error);
+    logger.error(error, req.originalUrl);
     console.log(error);
     return res.status(500).json(
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting activitys',
+        message: req.t('Error getting activitys'),
       })
     );
   }
@@ -74,24 +74,24 @@ const deleteActivity = async (req, res) => {
     //extracting the deleteActivity id from param that is going to be deleted
     const id = req.params.id
     if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkUser.role !== 'admin') {
       return res.status(401).json(
         response({
           status: 'Error',
           statusCode: '401',
-          message: 'You are not authorised to delete login activity',
+          message: req.t('You are not authorised to delete login activity'),
         })
       );
     }
     const deleteActivity = await Activity.findOneAndDelete(id);
-    return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'activity', message: 'Activity deleted successfully.', data: deleteActivity }));
+    return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'activity', message: req.t('Activity deleted successfully.'), data: deleteActivity }));
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'activity',message: 'Error deleted deleteActivity' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'activity',message: req.t('Error deleted deleteActivity') }));
   }
 }
 

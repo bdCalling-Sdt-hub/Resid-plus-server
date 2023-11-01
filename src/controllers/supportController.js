@@ -39,7 +39,7 @@ const createSupport = async (req, res) => {
     await support.save();
     return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'support', message: 'About us content updated successfully', data: support }));
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'support', message: 'Server error'}));
   }
@@ -68,7 +68,7 @@ const getAll = async (req, res) => {
     //const supportContentWithoutTags = support.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'support', message: 'About us content retrieved successfully', data: support }));
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error.message);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'support', message: 'Server Error' }));
   }

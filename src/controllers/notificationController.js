@@ -17,18 +17,17 @@ async function addNotification(data) {
     console.log('hello---->', data1)
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, 'from: add-notification')
     console.error("Error adding notification:", error);
   }
 }
 async function addManyNotifications(data) {
   try {
-
     // Create a new notification using the data provided
     await Notification.insertMany(data);
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, 'from: add-multiple-notification')
     console.error("Error adding notification:", error);
   }
 }
@@ -68,9 +67,9 @@ async function getAllNotification(role, limit = 10, page = 1, receiverId = null)
     return data
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, 'from: get all notification')
     console.error("Error adding notification:", error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server error in retriving notifications' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Server error in retriving notifications') }));
   }
 }
 
@@ -80,7 +79,7 @@ const allNotifications = async (req, res) => {
     const checkUser = await User.findById(req.body.userId);
     //extracting the notification id from param that is going to be edited
     if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -111,7 +110,7 @@ const allNotifications = async (req, res) => {
           status: 'Error',
           statusCode: '500',
           type: 'notifications',
-          message: 'Role not specified for notifications',
+          message: req.t('Role not specified for notifications'),
         })
       );
     }
@@ -137,19 +136,19 @@ const allNotifications = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'notification',
-        message: 'Notifications retrieved successfully',
+        message: req.t('Notifications retrieved successfully'),
         data: data
       })
     );
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error);
     return res.status(500).json(
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting notifications',
+        message: req.t('Error getting notifications'),
       })
     );
   }
@@ -164,7 +163,7 @@ const getNotificationDetails = async (req, res) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const notification = await Notification.findById(id)
     if (!notification.viewStatus) {
@@ -208,14 +207,14 @@ const getNotificationDetails = async (req, res) => {
       io.to('room' + req.body.userId).emit(`${role}-notification`, data)
     }
     console.log('details api response ----------------->', details)
-    return res.status(200).json(response({ status: 'OK', statusCode: '200', type: type, message: 'Notifications retrieved successfully', data: details }))
+    return res.status(200).json(response({ status: 'OK', statusCode: '200', type: type, message: req.t('Notifications retrieved successfully'), data: details }))
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
     //deleting the images if something went wrong
 
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error changing notification view-status' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error changing notification view-status') }));
   }
 };
 
@@ -228,7 +227,7 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
     const page = Number(pages) || 1;
     const limit = Number(limits) || 10;
     if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const notification = await Notification.findById(id)
     if (!notification.viewStatus) {
@@ -257,11 +256,11 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
     io.emit('admin-notification', data)
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, 'from: update-notification')
     console.error(error);
     //deleting the images if something went wrong
 
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error changing notification view-status' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error changing notification view-status') }));
   }
 };
 

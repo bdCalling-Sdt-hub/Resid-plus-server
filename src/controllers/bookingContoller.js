@@ -26,7 +26,7 @@ const calculateTimeAndPrice = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -41,7 +41,7 @@ const calculateTimeAndPrice = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'Residence not found',
+          message: req.t('Residence not found'),
         })
       );
     }
@@ -54,7 +54,7 @@ const calculateTimeAndPrice = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'Check-in time must be greater than check-out time',
+          message: req.t('Check-in time must be greater than check-out time'),
         })
       );
     }
@@ -66,7 +66,7 @@ const calculateTimeAndPrice = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'Total stay must be greater than 5 hours',
+          message: req.t('Total stay must be greater than 5 hours'),
         })
       );
     }
@@ -80,7 +80,7 @@ const calculateTimeAndPrice = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'booking',
-        message: 'Booking Time retrieved successfully',
+        message: req.t('Booking Time retrieved successfully'),
         data: {
           checkInTime,
           checkOutTime,
@@ -91,7 +91,7 @@ const calculateTimeAndPrice = async (req, res) => {
     );
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error)
   }
 }
@@ -114,7 +114,7 @@ const addBooking = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '403',
-          message: 'Please fill all the fields',
+          message: req.t('Please fill all the fields'),
         })
       );
     }
@@ -128,7 +128,7 @@ const addBooking = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'Check-in time must be grater than check-out time',
+          message: req.t('Check-in time must be grater than check-out time'),
         })
       );
     }
@@ -139,14 +139,14 @@ const addBooking = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
 
     const residence_details = await Residence.findById(residenceId).populate(`hostId`);
     if (!residence_details || residence_details.isDeleted) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Residence not found') }));
     }
     //checking there a booking reques exists in the date
     const existingBookings = await Booking.findOne({
@@ -169,7 +169,7 @@ const addBooking = async (req, res) => {
     });
 
     if (existingBookings) {
-      return res.status(409).json(response({ status: 'Error', statusCode: '409', message: 'Residence is already booked for the requested time.' }));
+      return res.status(409).json(response({ status: 'Error', statusCode: '409', message: req.t('Residence is already booked for the requested time.') }));
     }
 
     const old_request = await Booking.findOne({
@@ -187,7 +187,7 @@ const addBooking = async (req, res) => {
 
     console.log(old_request)
     if (old_request) {
-      return res.status(409).json(response({ status: 'Error', statusCode: '409', message: 'The request already exists, wait for confirmation' }));
+      return res.status(409).json(response({ status: 'Error', statusCode: '409', message: req.t('The request already exists, wait for confirmation') }));
     }
 
     if (checkUser.role === 'user') {
@@ -227,15 +227,15 @@ const addBooking = async (req, res) => {
       io.to('room' + booking.hostId).emit('host-notification', notification);
 
       console.log('add booking successfull --------->', booking)
-      return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: 'Booking added successfully.', data: booking }));
+      return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: req.t('Booking added successfully.'), data: booking }));
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to add booking') }));
     }
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added booking' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error added booking') }));
   }
 };
 
@@ -248,7 +248,7 @@ const allBooking = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -369,7 +369,7 @@ const allBooking = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'booking',
-        message: 'Bookings retrieved successfully',
+        message: req.t('Bookings retrieved successfully'),
         data: {
           bookings,
           pagination: {
@@ -383,13 +383,13 @@ const allBooking = async (req, res) => {
       })
     );
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error);
     return res.status(500).json(
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting bookings',
+        message: req.t('Error getting bookings'),
       })
     );
   }
@@ -408,20 +408,20 @@ const updateBooking = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '403',
-          message: 'Please fill all the fields',
+          message: req.t('Please fill all the fields'),
         })
       );
     }
     if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
     if (!bookingDetails || bookingDetails.isDeleted) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: 'Booking not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: req.t('Booking not found') }));
     }
     if (checkUser.role === 'host') {
       if (bookingDetails.hostId._id.toString() !== checkUser._id.toString()) {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'This is not your residence' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: req.t('This is not your residence') }));
       }
       if (status === 'reserved') {
         if (bookingDetails.status === 'pending') {
@@ -457,10 +457,10 @@ const updateBooking = async (req, res) => {
           console.log(adminNotification, userNotification)
           io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
 
-          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
-          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: 'Your booking-request update credentials not match' }));
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: req.t('Your booking-request update credentials not match') }));
         }
       }
       else if (status === 'cancelled') {
@@ -487,20 +487,20 @@ const updateBooking = async (req, res) => {
           console.log(userNotification)
           io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
 
-          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
-          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: 'Your booking-request update credentials not match' }));
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: req.t('Your booking-request update credentials not match') }));
         }
       }
       else {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: "booking-request", message: 'Your booking-request update credentials not match' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: "booking-request", message: req.t('Your booking-request update credentials not match') }));
       }
       //----->end
     }
     else if (checkUser.role === 'user') {
       if (bookingDetails.userId._id.toString() !== checkUser._id.toString()) {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: 'You are not authorised to access this booking request' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: req.t('You are not authorised to access this booking request') }));
       }
       if (status === 'check-in') {
         if (bookingDetails.paymentTypes !== 'unknown' && bookingDetails.status === 'reserved') {
@@ -521,10 +521,10 @@ const updateBooking = async (req, res) => {
           console.log(hostNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
 
-          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
-          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: "booking-request", message: 'Your booking-request update credentials not match' }));
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: "booking-request", message: req.t('Your booking-request update credentials not match') }));
         }
       }
       else if (status === "check-out") {
@@ -592,23 +592,23 @@ const updateBooking = async (req, res) => {
             }
             res.status(500).json(error)
           })
-          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: 'Booking edited successfully.', data: bookingDetails }));
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
-          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: 'Your booking-request update credentials not match' }));
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: req.t('Your booking-request update credentials not match') }));
         }
       }
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to edit booking' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to edit booking') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
     //deleting the images if something went wrong
 
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added booking' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error added booking') }));
   }
 };
 
@@ -621,7 +621,7 @@ const bookingDetails = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -641,7 +641,7 @@ const bookingDetails = async (req, res) => {
           status: 'OK',
           statusCode: '200',
           type: 'booking',
-          message: 'Booking retrieved successfully',
+          message: req.t('Booking retrieved successfully'),
           data: {
             booking
           },
@@ -653,19 +653,19 @@ const bookingDetails = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'Booking not found',
+          message: req.t('Booking not found'),
           type: 'booking',
         })
       );
     }
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error);
     return res.status(500).json(
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting bookings',
+        message: req.t('Error getting bookings'),
       })
     );
   }
@@ -684,7 +684,7 @@ async function bookingDashboardCount() {
     return count_data;
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error)
   }
 }
@@ -695,7 +695,7 @@ const bookingDashboardRatio = async (req, res) => {
     const year = !req.query.year ? new Date() : new Date(req.query.year)
     const conditionalYear = year.getFullYear()
     if (!checkUser) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
 
     if (checkUser.role === 'admin') {
@@ -724,16 +724,16 @@ const bookingDashboardRatio = async (req, res) => {
         monthlyCounts
       };
 
-      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'booking', message: 'Booking ratio is successfully retrieved', data: data }));
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'booking', message: req.t('Booking ratio is successfully retrieved'), data: data }));
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to get monthly ratio' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to get monthly ratio') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error)
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Server not responding' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Server not responding') }));
   }
 }
 
@@ -747,37 +747,37 @@ const deleteBooking = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '403',
-          message: 'Please fill all the fields',
+          message: req.t('Please fill all the fields'),
         })
       );
     }
     if (!checkHost) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'user') {
       const bookingDetails = await Booking.findOne({ _id: id })
       if (!bookingDetails) {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Booking not found') }));
       }
       console.log(bookingDetails.userId.toString(), req.body.userId.toString())
       if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to delete this booking') }));
       }
       if (!bookingDetails.isDeleted && bookingDetails.status === 'pending') {
         await Booking.findByIdAndDelete(id)
-        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: req.t('Booking deleted successfully.'), data: bookingDetails }));
       }
       else {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: req.t('Delete credentials not match') }));
       }
     } else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to add booking') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted booking' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error deleted booking') }));
   }
 }
 
@@ -791,57 +791,57 @@ const deleteHistory = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '403',
-          message: 'Please fill all the fields',
+          message: req.t('Please fill all the fields'),
         })
       );
     }
     if (!checkHost) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'user') {
       const bookingDetails = await Booking.findOne({ _id: id })
       if (!bookingDetails) {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Booking not found') }));
       }
       //console.log(bookingDetails.userId.toString(), req.body.userId.toString())
       if (bookingDetails.userId.toString() !== req.body.userId.toString()) {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to delete this booking') }));
       }
       if (!bookingDetails.isDeleted && !bookingDetails.isUserHistoryDeleted && bookingDetails.status === 'check-out') {
         bookingDetails.isUserHistoryDeleted = true
         await bookingDetails.save()
-        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: req.t('Booking deleted successfully.'), data: bookingDetails }));
       }
       else {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: req.t('Delete credentials not match') }));
       }
     }
     else if (checkHost.role === 'host') {
       const bookingDetails = await Booking.findOne({ _id: id })
       if (!bookingDetails) {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Booking not found') }));
       }
       //console.log(bookingDetails.userId.toString(), req.body.userId.toString())
       if (bookingDetails.hostId.toString() !== req.body.userId.toString()) {
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorised to delete this booking' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to delete this booking') }));
       }
       if (!bookingDetails.isDeleted && !bookingDetails.isHostHistoryDeleted && bookingDetails.status === 'check-out') {
         bookingDetails.isHostHistoryDeleted = true
         await bookingDetails.save()
-        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: 'Booking deleted successfully.', data: bookingDetails }));
+        return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'booking', message: req.t('Booking deleted successfully.'), data: bookingDetails }));
       }
       else {
-        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: 'Delete credentials not match' }));
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: "booking", message: req.t('Delete credentials not match') }));
       }
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add booking' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to add booking') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error deleted booking' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error deleted booking') }));
   }
 }
 

@@ -15,7 +15,7 @@ const addFavourite = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -25,7 +25,7 @@ const addFavourite = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'Residence not found',
+          message: req.t('Residence not found'),
         })
       );
     }
@@ -37,7 +37,7 @@ const addFavourite = async (req, res) => {
 
     console.log(favouriteItems)
     if (favouriteItems) {
-      return res.status(409).json(response({ status: 'Error', statusCode: '409', message: 'The item alrady exists in favourite list' }));
+      return res.status(409).json(response({ status: 'Error', statusCode: '409', message: req.t('The item alrady exists in favourite list') }));
     }
 
     if (checkUser.role === 'user') {
@@ -46,15 +46,15 @@ const addFavourite = async (req, res) => {
         userId: checkUser._id
       });
       await favourite.save()
-      return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'favourite', message: 'Favourite added successfully.', data: favourite }));
+      return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'favourite', message: req.t('Favourite added successfully.'), data: favourite }));
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to add in favourite' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to add in favourite') }));
     }
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error added favourite' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error added favourite') }));
   }
 };
 
@@ -67,7 +67,7 @@ const allFavourite = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -87,7 +87,7 @@ const allFavourite = async (req, res) => {
       count = await Favourite.countDocuments();
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to view favourite list' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to view favourite list') }));
     }
 
     return res.status(200).json(
@@ -95,7 +95,7 @@ const allFavourite = async (req, res) => {
         status: 'OK',
         statusCode: '200',
         type: 'favourite',
-        message: 'Favourites retrieved successfully',
+        message: req.t('Favourites retrieved successfully'),
         data: {
           favourites,
           pagination: {
@@ -109,13 +109,13 @@ const allFavourite = async (req, res) => {
       })
     );
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.log(error);
     return res.status(500).json(
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting favourites',
+        message: req.t('Error getting favourites'),
       })
     );
   }
@@ -128,19 +128,19 @@ const deleteFavourite = async (req, res) => {
     //extracting the favourite id from param that is going to be deleted
     const id = req.params.id
     if (!checkHost) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'user') {
       const favourite = await Favourite.findOneAndDelete(id);
-      return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'favourite', message: 'Item removed from Favourite successfully.', data: favourite }));
+      return res.status(201).json(response({ status: 'Deleted', statusCode: '201', type: 'favourite', message: req.t('Item removed from Favourite successfully.'), data: favourite }));
     } else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to remove something from favourite' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to remove something from favourite') }));
     }
   }
   catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: 'Error in removing from favourite' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error in removing from favourite') }));
   }
 }
 

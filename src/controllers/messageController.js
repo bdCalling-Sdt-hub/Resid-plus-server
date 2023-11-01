@@ -9,7 +9,7 @@ exports.addMessage = async (messageInfo) => {
     await newMessage.save();
     return newMessage;
   } catch (err) {
-    logger.error(err)
+    logger.error(err, 'from: add-message')
     console.error(err);
     return null;
   }
@@ -20,7 +20,7 @@ exports.getById = async (id) => {
     console.log(id, message)
     return message;
   } catch (err) {
-    logger.error(err)
+    logger.error(err,'from: get a message')
     console.error(err);
     return null;
   }
@@ -31,7 +31,7 @@ exports.getMessageByChatId = async (id) => {
     console.log(id, message)
     return message;
   } catch (err) {
-    logger.error(err)
+    logger.error(err, 'from: get all message')
     console.error(err);
     return null;
   }
@@ -41,7 +41,7 @@ exports.updateMessageById = async  (id, document, options) =>{
     const message = await Message.findByIdAndUpdate(id, document, options)
     return message
   } catch (error) {
-    logger.error(error)
+    logger.error(error, 'from: update-message')
     console.log(error)
   }
 }
@@ -51,7 +51,7 @@ exports.deleteMessageById = async (id) =>{
     console.log(message)
     return message
   } catch (error) {
-    logger.error(error)
+    logger.error(error, 'from: delete-message')
     console.log(error)
   }
 }

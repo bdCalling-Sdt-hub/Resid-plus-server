@@ -14,7 +14,7 @@ const giveReview = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -26,7 +26,7 @@ const giveReview = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'Booking details not found',
+          message: req.t('Booking details not found'),
         })
       );
     }
@@ -36,7 +36,7 @@ const giveReview = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '201',
-          message: 'Review Rating Must be 5*',
+          message: req.t('Review Rating Must be 5*'),
         })
       );
     }
@@ -47,7 +47,7 @@ const giveReview = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '201',
-          message: 'Review already exists',
+          message: req.t('Review already exists'),
         })
       );
     }
@@ -57,7 +57,7 @@ const giveReview = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not authorised to give review',
+          message: req.t('User not authorised to give review'),
         })
       );
     }
@@ -85,19 +85,19 @@ const giveReview = async (req, res) => {
           console.log('No ratings found.');
         }
 
-        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'review', message: 'Review added successfully.', data: review }));
+        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'review', message: req.t('Review added successfully.'), data: review }));
       }
       else{
-        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'review', message: 'You can not review the residence as it is not completed yet' }));
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'review', message: req.t('You can not review the residence as it is not completed yet') }));
       }
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'review', message: 'You are not authorised to review the residence' }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'review', message: req.t('You are not authorised to review the residence') }));
     }
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'review', message: 'Error adding review' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'review', message: req.t('Error adding review') }));
   }
 };
 
@@ -110,7 +110,7 @@ const getAll = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -120,17 +120,17 @@ const getAll = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'You are authorised to view ratings',
+          message: req.t('You are authorised to view ratings'),
         })
       );
     }
     const limit = req.query.limit ? Number(req.query.limit) : 5;
     const reviews = await Review.find({ residenceId: residenceId }).populate('userId','fullName').sort({rating: -1}).limit(limit);
-    return res.status(200).json(response({ status: 'Success', statusCode: '200', type: 'review', message: 'Review retrived successfully', data: reviews }));
+    return res.status(200).json(response({ status: 'Success', statusCode: '200', type: 'review', message: req.t('Review retrived successfully'), data: reviews }));
   } catch (error) {
-    logger.error(error)
+    logger.error(error, req.originalUrl)
     console.error(error.message);
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'review', message: 'Error in getting reviews' }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'review', message: req.t('Error in getting reviews') }));
   }
 };
 
