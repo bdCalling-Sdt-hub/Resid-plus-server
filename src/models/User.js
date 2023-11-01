@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: [true, 'Password must be given'], set: (v) => bcrypt.hashSync(v, bcrypt.genSaltSync(10)) },
   image: {
     type: Object, required: false, default: {
-      publicFileUrl: `http://${process.env.API_SEVER_IP}:3000/uploads/users/user-1695552693976.jpg`,
+      publicFileUrl: `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/users/user-1695552693976.jpg`,
       path: 'public\\uploads\\users\\user-1695552693976.jpg'
     }
   },
