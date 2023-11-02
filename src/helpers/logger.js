@@ -4,11 +4,13 @@ const path = require('path');
 const logFilePath = path.join(__dirname, '../../app.log');
 
 function logMessage(level, message, errorPath) {
-  let logEntry = `${new Date().toISOString()} [${level}] ${message}\n`;
+  let logEntry = `${new Date().toISOString()} [${level}] ${message}`;
 
   if (errorPath) {
-    logEntry += `(Error Path: ${errorPath})\n`;
+    logEntry += ` (Error Path: ${errorPath})`;
   }
+
+  logEntry += '\n';
 
   fs.appendFile(logFilePath, logEntry, (err) => {
     if (err) {

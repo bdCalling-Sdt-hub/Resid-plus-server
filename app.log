@@ -1,9 +1,0 @@
-
-2023-11-02T09:47:14.241Z [ERROR] Error: Requested content not found for path: /favicon.ico
-(Error Path: /favicon.ico)
-2023-11-02T09:47:14.244Z [ERROR] Error: Requested content not found for path: /favicon.ico
-(Error Path: /favicon.ico)
-2023-11-02T10:06:53.935Z [ERROR] Sign up validation error
-(Error Path: sign-up middleware)
-2023-11-02T10:07:22.952Z [ERROR] Sign up validation error
-(Error Path: sign-up middleware)

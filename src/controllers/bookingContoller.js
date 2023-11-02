@@ -35,6 +35,8 @@ const calculateTimeAndPrice = async (req, res) => {
       checkOutTime,
       residenceId
     } = req.body;
+
+    console.log('-------->', req.body)
     if (!checkInTime || !checkOutTime || !residenceId) {
       return res.status(404).json(
         response({
@@ -129,16 +131,16 @@ const addBooking = async (req, res) => {
       numberOfGuests
     } = req.body;
 
-    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || !totalDays || !totalHours || !totalAmount || !residenceId) {
-      console.log('Booking requst validation----------->', req.body)
+    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays===null || totalHours===null || totalAmount===null || !residenceId) {
       return res.status(404).json(
         response({
           status: 'Error',
           statusCode: '403',
-          message: req.t('Please fill all the fields'),
+          message: req.t(`Please fill all the fields`),
         })
       );
     }
+    
 
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
