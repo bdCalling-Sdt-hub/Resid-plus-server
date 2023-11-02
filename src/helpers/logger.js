@@ -18,5 +18,6 @@ function logMessage(level, message, errorPath) {
 }
 
 module.exports = {
+  info: (message) => logMessage('INFO', message),
   error: (message, errorPath) => logMessage('ERROR', message, errorPath),
 };

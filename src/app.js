@@ -66,6 +66,13 @@ i18next
 });
 app.use(i18nextMiddleware.handle(i18next));
 
+//initilizing logger
+// const logger = require('./helpers/logger');
+// app.use((req, res, next) => {
+//   logger.info(`Method: ${req.method}, Request URL: ${req.url}`);
+//   next();
+// });
+
 //initilizing API routes
 app.use('/api/users', userRouter);
 app.use('/api/residences', residenceRouter);

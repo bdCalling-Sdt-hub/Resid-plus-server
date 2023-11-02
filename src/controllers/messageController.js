@@ -3,7 +3,6 @@ const Message = require('../models/Message');
 const logger = require("../helpers/logger");
 
 exports.addMessage = async (messageInfo) => {
-  console.log('------------add message hitted----------')
   try {
     const newMessage = new Message(messageInfo);
     await newMessage.save();
@@ -16,8 +15,7 @@ exports.addMessage = async (messageInfo) => {
 };
 exports.getById = async (id) => {
   try {
-    const message = await Message.findById(id);
-    console.log(id, message)
+    const message = await Message.findById(id).populate('sender', 'fullName image role');
     return message;
   } catch (err) {
     logger.error(err,'from: get a message')
@@ -27,8 +25,7 @@ exports.getById = async (id) => {
 };
 exports.getMessageByChatId = async (id) => {
   try {
-    const message = await Message.find({chat: id}).populate('sender');
-    console.log(id, message)
+    const message = await Message.find({chat: id}).populate('sender', 'fullName image role');
     return message;
   } catch (err) {
     logger.error(err, 'from: get all message')
