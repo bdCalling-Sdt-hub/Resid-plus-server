@@ -9,50 +9,50 @@ const validateResidenceMiddleware = (req, res, next) => {
   let errors = [];
 
   if (!residenceName) {
-    errors.push({ field: 'residenceName', error: 'Residence Name must be given' });
+    errors.push({ field: 'residenceName', error: req.t('Residence Name must be given') });
   }
 
   if (isNaN(capacity) || capacity <= 0) {
-    errors.push({ field: 'capacity', error: 'Capacity must be a positive number' });
+    errors.push({ field: 'capacity', error: req.t('Capacity must be a positive number') });
   }
 
   if (isNaN(beds) || beds <= 0) {
-    errors.push({ field: 'beds', error: 'Number of beds must be a positive number' });
+    errors.push({ field: 'beds', error: req.t('Number of beds must be a positive number') });
   }
 
   if (isNaN(baths) || baths <= 0) {
-    errors.push({ field: 'baths', error: 'Number of baths must be a positive number' });
+    errors.push({ field: 'baths', error: req.t('Number of baths must be a positive number') });
   }
 
   if (!address) {
-    errors.push({ field: 'address', error: 'Address must be provided' });
+    errors.push({ field: 'address', error: req.t('Address must be provided') });
   }
 
   if (!city) {
-    errors.push({ field: 'city', error: 'City must be provided' });
+    errors.push({ field: 'city', error: req.t('City must be provided') });
   }
 
   if (!municipality) {
-    errors.push({ field: 'municipality', error: 'Municipality must be provided' });
+    errors.push({ field: 'municipality', error: req.t('Municipality must be provided') });
   }
 
   if (!quirtier) {
-    errors.push({ field: 'quirtier', error: 'Quirtier must be provided' });
+    errors.push({ field: 'quirtier', error: req.t('Quirtier must be provided') });
   }
 
   if (isNaN(hourlyAmount) || hourlyAmount <= 0) {
-    errors.push({ field: 'hourlyAmount', error: 'Hourly amount must be a positive number' });
+    errors.push({ field: 'hourlyAmount', error: req.t('Hourly amount must be a positive number') });
   }
 
   const validCategories = ['hotel', 'residence', 'personal-house'];
   if (!validCategories.includes(category)) {
-    errors.push({ field: 'category', error: 'Invalid category' });
+    errors.push({ field: 'category', error: req.t('Invalid category') });
   }
 
   // Check if amenities is defined and is an array
   if (!Array.isArray(amenities)) {
     console.log(amenities);
-    errors.push({ field: 'amenities', error: 'Amenities must be an array' });
+    errors.push({ field: 'amenities', error: req.t('Amenities must be an array') });
   } else {
     const validAmenities = [
       "wifi", "air-conditioner", "heating", "parking", "pets",
@@ -62,7 +62,7 @@ const validateResidenceMiddleware = (req, res, next) => {
     console.log(amenities);
     for (var amenity of amenities) {
       if (!validAmenities.includes(amenity)) {
-        errors.push({ field: 'amenities', error: 'Invalid amenities' });
+        errors.push({ field: 'amenities', error: req.t('Invalid amenities') });
         break;
       }
     }

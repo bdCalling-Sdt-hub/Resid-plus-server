@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Activity = require('../models/Activity')
 const response = require("../helpers/response");
+const logger = require('../helpers/logger');
 
 
 const isValidUser = async (req, res, next) => {
@@ -21,19 +22,20 @@ const isValidUser = async (req, res, next) => {
             }
         }
         if (decodedData.role === 'admin' && activity === null) {
-            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: 'You are not authorised to sign in now' }));
+            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: req.t('You are not authorised to sign in now') }));
         }
         else if (!authorization) {
-            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: 'Unauthorised' }));
+            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: req.t('Unauthorised') }));
         }
         else if (!decodedData) {
-            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: 'Unauthorised' }));
+            return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: req.t('Unauthorised') }));
         }
         req.body.userId = decodedData._id;
         next();
     } catch (error) {
         console.log("Middleware Error", error.message)
-        return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: 'Error authorization' }));
+        logger.error(error, req.originalUrl);
+        return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: req.t('Error authorization') }));
     }
 };
 

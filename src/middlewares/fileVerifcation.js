@@ -1,14 +1,16 @@
 const upload = require('./fileUpload')
-const response = require('../helpers/response')
+const response = require('../helpers/response');
+const logger = require('../helpers/logger');
 const imageVerification = (req, res, next) => {
   const files = req.files || [];
 
   if (files.length === 0) {
-    res.status(500).json({
+    logger.error('Images not found', 'image verification middleware');
+    res.status(403).json(response({
       status: 'Error',
-      statusCode: '404',
-      message: 'Images not found'
-    });
+      statusCode: '403',
+      message: req.t('Images not found')
+    }));
   } else {
     next();
   }
