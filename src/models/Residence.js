@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
+const residenceSchema = new mongoose.Schema({
   residenceName: { type: String, required: [true, 'Residence Name must be given'], trim: true },
   photo: { type: Object, required: false },
   capacity: { type: Number, required: [true, 'Capacity is must be given'] },
@@ -12,8 +12,8 @@ const userSchema = new mongoose.Schema({
   quirtier: { type: String, reqiured: true },
   aboutResidence: { type: String, reqiured: false },
   hourlyAmount: { type: Number, reqiured: true },
-  popularity: { type: Number, default:0 },
-  ratings: { type: Number, default:0 },
+  popularity: { type: Number, default: 0 },
+  ratings: { type: Number, default: 0 },
   dailyAmount: { type: Number, reqiured: false },
   amenities: {
     type: Array,
@@ -29,14 +29,13 @@ const userSchema = new mongoose.Schema({
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   aboutOwner: { type: String, required: false },
   status: { type: String, enum: ['reserved', 'active', 'inactive'], default: 'active' },
-  category:{ type: String, enum: ['hotel','residence', 'personal-house'], default: 'residence', required:false },
+  category: { type: String, enum: ['hotel', 'residence', 'personal-house'], default: 'residence', required: false },
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
-
 const amenities = [
   "wifi", "air-conditioner", "heating", "parking", "pets",
   "kitchen", "tv", "internet", "washing-machine", "dryer", "refrigerator",
   "air-conditioner", "heating", "parking"
 ];
 
-module.exports = mongoose.model('Residence', userSchema);
+module.exports = mongoose.model('Residence', residenceSchema);

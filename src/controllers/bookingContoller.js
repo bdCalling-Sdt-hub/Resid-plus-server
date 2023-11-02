@@ -35,6 +35,15 @@ const calculateTimeAndPrice = async (req, res) => {
       checkOutTime,
       residenceId
     } = req.body;
+    if (!checkInTime || !checkOutTime || !residenceId) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: req.t('Please fill all the fields'),
+        })
+      );
+    }
     const residence_details = await Residence.findById(residenceId);
     if (!residence_details) {
       return res.status(404).json(
@@ -59,9 +68,10 @@ const calculateTimeAndPrice = async (req, res) => {
       );
     }
 
-    const hourlyAmount = residence_details.hourlyAmount / 5 //as we are charging for 5 hours minimum
-    const totalHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
-    if (totalHours < 5) {
+    const hourlyAmount = residence_details.hourlyAmount / 12 // as hourly amount is given for 12 hours or half day
+    const dailyAmount = residence_details.dailyAmount
+    const calculatedHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
+    if (calculatedHours < 5) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -70,10 +80,19 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
+    const totalDays = Math.floor(calculatedHours / 24);
+    const hoursCalculated = calculatedHours % 24;
+    const totalHours = parseFloat(hoursCalculated.toFixed(2));
 
-    const initialAmount = totalHours * hourlyAmount
-    //charging 6%, 3% for admin and 3% for payout charge
-    const totalAmount = Math.ceil(initialAmount + (0.06 * initialAmount))
+    // Calculate total amount for days and remaining hours
+    const totalAmountForDays = totalDays * dailyAmount;
+    const totalAmountForHours = totalHours * hourlyAmount;
+
+    // Calculate total amount
+    const initialAmount = totalAmountForDays + totalAmountForHours;
+    const totalAmount = Math.ceil(initialAmount + (0.06 * initialAmount));
+
+    console.log('booking calculation---->', 'checkInTime', checkInTime, 'checkOutTime', checkOutTime, 'hourlyAmount', hourlyAmount, 'dailyAmount', dailyAmount, 'calculatedHours', calculatedHours, 'totalDays', totalDays, 'totalHours', totalHours, 'initialAmount', initialAmount, 'totalAmountForDays', totalAmountForDays, 'totalAmountForHours', totalAmountForHours, totalAmount)
 
     return res.status(200).json(
       response({
@@ -85,6 +104,7 @@ const calculateTimeAndPrice = async (req, res) => {
           checkInTime,
           checkOutTime,
           totalHours,
+          totalDays,
           totalAmount
         },
       })
@@ -103,12 +123,13 @@ const addBooking = async (req, res) => {
       checkInTime,
       checkOutTime,
       totalHours,
+      totalDays,
       totalAmount,
       guestTypes,
       numberOfGuests
     } = req.body;
 
-    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || !totalHours || !totalAmount || !residenceId) {
+    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || !totalDays || !totalHours || !totalAmount || !residenceId) {
       console.log('Booking requst validation----------->', req.body)
       return res.status(404).json(
         response({
@@ -198,7 +219,10 @@ const addBooking = async (req, res) => {
         checkOutTime,
         userId: req.body.userId,
         hostId: residence_details.hostId,
-        totalHours,
+        totalTime: {
+          days: totalDays,
+          hours: totalHours
+        },
         totalAmount,
         userContactNumber: checkUser.phoneNumber,
         guestTypes,
@@ -635,7 +659,7 @@ const bookingDetails = async (req, res) => {
     else if (checkUser.role === 'host' || checkUser.role === 'user') {
       booking = await Booking.findById(id).populate('hostId userId residenceId').exec();
     }
-    if (!booking.isDeleted) {
+    if (booking && !booking?.isDeleted) {
       return res.status(200).json(
         response({
           status: 'OK',

@@ -1,0 +1,11 @@
+2023-11-02T05:13:27.946Z [ERROR] sign up validation error in middleware
+2023-11-02T05:25:58.468Z [ERROR] TypeError: Cannot read properties of null (reading 'isDeleted')
+(Error Path: /api/bookings/6530ee69384465e4a6d9f940)
+2023-11-02T05:26:05.654Z [ERROR] TypeError: Cannot read properties of null (reading 'isDeleted')
+(Error Path: /api/bookings/6530ee69384465e4a6d9f940)
+2023-11-02T05:58:01.444Z [ERROR] Error: Requested content not found for path: //api/bookings/6530ee69384465e4a6d9f940
+(Error Path: //api/bookings/6530ee69384465e4a6d9f940)
+2023-11-02T06:25:35.141Z [ERROR] Error: Requested content not found for path: /favicon.ico
+(Error Path: /favicon.ico)
+2023-11-02T07:05:11.703Z [ERROR] Error: Requested content not found for path: /favicon.ico
+(Error Path: /favicon.ico)

@@ -10,7 +10,6 @@ const validateResidenceMiddleware = require('../middlewares/residence/residenceV
 const UPLOADS_FOLDER_USERS = "./public/uploads/residences";
 const uploadUsers = userFileUploadMiddleware(UPLOADS_FOLDER_USERS);
 
-
 //Add residence
 router.post('/',[uploadUsers.array("photo", 5)], imageVerification, validateResidenceMiddleware,isValidUser, addResidence);
 router.get('/', isValidUser, allResidence);

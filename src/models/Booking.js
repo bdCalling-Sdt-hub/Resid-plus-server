@@ -12,6 +12,10 @@ const bookingSchema = new mongoose.Schema({
   numberOfGuests: { type: Number, default: 1, required: false },
   userContactNumber: { type: String, required: false },
   totalHours: { type: Number, required: false },
+  totalTime: {
+    days: { type: Number, default: 0 },
+    hours: { type: Number, default: 0 }
+  },
   totalAmount: { type: Number, default: 1, required: false },
   checkInTime: { type: Date, required: true },
   checkOutTime: { type: Date, required: true },

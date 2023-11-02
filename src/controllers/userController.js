@@ -526,7 +526,7 @@ const allUser = async (req, res) => {
       users = await User.find(filter)
         .limit(limit)
         .skip((page - 1) * limit)
-        .sort({ popularity: -1 });
+        .sort({ createdAt: -1 });
 
       console.log(users)
       for (const user of users) {
