@@ -20,7 +20,7 @@ const createFaq = async (req, res) => {
     }
 
     if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'faq', message: req.t('You are not Authorization') }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'faq', message: req.t('You are not Authorized') }));
     }
 
     // Check if an faq entry already exists
@@ -61,7 +61,7 @@ const updateFaq = async (req, res) => {
     }
 
     if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'faq', message: req.t('You are not Authorization') }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'faq', message: req.t('You are not Authorized') }));
     }
 
     // Check if an faq entry already exists
@@ -101,7 +101,7 @@ const deleteFaq = async (req, res) => {
     }
 
     if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'faq', message: req.t('You are not Authorization') }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'faq', message: req.t('You are not Authorized') }));
     }
 
     // Check if an faq entry already exists
@@ -136,7 +136,7 @@ const getFaqById = async (req, res) => {
     }
 
     if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'faq', message: req.t('You are not Authorization') }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'faq', message: req.t('You are not Authorized') }));
     }
 
     // Check if an faq entry already exists

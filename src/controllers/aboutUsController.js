@@ -18,7 +18,7 @@ const createAboutUs = async (req, res) => {
     }
 
     if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'about-us', message: req.t('You are not Authorization') }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'about-us', message: req.t('You are not Authorized') }));
     }
 
     // Check if an About us entry already exists

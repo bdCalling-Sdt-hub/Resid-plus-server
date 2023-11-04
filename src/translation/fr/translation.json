@@ -31,7 +31,7 @@
   "Current password is incorrect": "Le mot de passe actuel est incorrect",
   "Password changed successfully": "Mot de passe changé avec succès",
   "An error occurred while changing password": "Une erreur s'est produite lors du changement de mot de passe",
-  "You are not Authorization": "Vous n'êtes pas autorisé",
+  "You are not Authorized": "Vous n'êtes pas autorisé",
   "About-us added successfully.": "À propos de nous ajouté avec succès.",
   "About us content updated successfully": "Le contenu À propos de nous a été mis à jour avec succès",
   "Server error": "Erreur du serveur",
@@ -150,5 +150,21 @@
   "Error Handler": "Gestionnaire d'erreur",
   "Images not found": "Images introuvables",
   "Error": "Erreur",
-  "Internal Server Error": "Erreur interne du serveur"
+  "Internal Server Error": "Erreur interne du serveur",
+  "amenities":{
+    "bathtub": "Baignoire",
+    "iron": "Fer à Repasser",
+    "wifi": "WiFi",
+    "game-console": "Console de Jeu",
+    "fans": "Ventilateurs",
+    "refrigerator": "Réfrigérateur",
+    "swimming-pool": "Piscine",
+    "hot-water": "Eau Chaude",
+    "wardrobe": "Garde-Robe",
+    "tv": "Télévision",
+    "air-conditioner": "Climatiseur",
+    "kitchen": "Cuisine",
+    "microwave": "Four à Micro-Ondes",
+    "spa": "Spa"
+  }
 }

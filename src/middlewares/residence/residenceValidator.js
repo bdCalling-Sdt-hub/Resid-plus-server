@@ -3,7 +3,7 @@ const unlinkImages = require('../../common/image/unlinkImage');
 const validateResidenceMiddleware = (req, res, next) => {
   const {
     residenceName, capacity, beds, baths, address, city,
-    municipality, quirtier, hourlyAmount, amenities, category
+    municipality, quirtier, hourlyAmount, category
   } = req.body;
 
   let errors = [];
@@ -50,23 +50,23 @@ const validateResidenceMiddleware = (req, res, next) => {
   }
 
   // Check if amenities is defined and is an array
-  if (!Array.isArray(amenities)) {
-    console.log(amenities);
-    errors.push({ field: 'amenities', error: req.t('Amenities must be an array') });
-  } else {
-    const validAmenities = [
-      "wifi", "air-conditioner", "heating", "parking", "pets",
-      "kitchen", "tv", "internet", "washing-machine", "dryer", "refrigerator",
-      "air-conditioner", "heating", "parking"
-    ];
-    console.log(amenities);
-    for (var amenity of amenities) {
-      if (!validAmenities.includes(amenity)) {
-        errors.push({ field: 'amenities', error: req.t('Invalid amenities') });
-        break;
-      }
-    }
-  }
+  // if (!Array.isArray(amenities)) {
+  //   console.log(amenities);
+  //   errors.push({ field: 'amenities', error: req.t('Amenities must be an array') });
+  // } else {
+  //   const validAmenities = [
+  //     "wifi", "air-conditioner", "heating", "parking", "pets",
+  //     "kitchen", "tv", "internet", "washing-machine", "dryer", "refrigerator",
+  //     "air-conditioner", "heating", "parking"
+  //   ];
+  //   console.log(amenities);
+  //   for (var amenity of amenities) {
+  //     if (!validAmenities.includes(amenity)) {
+  //       errors.push({ field: 'amenities', error: req.t('Invalid amenities') });
+  //       break;
+  //     }
+  //   }
+  // }
 
   if (errors.length > 0) {
     unlinkImages(req.files.map(file => file.path))

@@ -18,7 +18,7 @@ const createPrivacyPolicy = async (req, res) => {
     }
 
     if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'privacy-policy', message: req.t('You are not Authorization') }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'privacy-policy', message: req.t('You are not Authorized') }));
     }
 
     // Check if an Privacy Policy entry already exists

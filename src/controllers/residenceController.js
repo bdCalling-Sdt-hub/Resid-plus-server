@@ -159,21 +159,24 @@ const allResidence = async (req, res) => {
       if (requestType === 'all') {
         residences = await Residence.find({ isDeleted: false, ...filter })
           .limit(limit)
-          .skip((page - 1) * limit);
+          .skip((page - 1) * limit)
+          .populate('amenities', 'translation');
         count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
         residences = await Residence.find({ status: 'active' ,isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
-          .sort({ createdAt: -1 });
+          .sort({ createdAt: -1 })
+          .populate('amenities', 'translation');;
         count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
         residences = await Residence.find({ status: 'active' ,isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
-          .sort({ popularity: -1 });
+          .sort({ popularity: -1 })
+          .populate('amenities', 'translation');;
         count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
     }
@@ -182,21 +185,24 @@ const allResidence = async (req, res) => {
       if (requestType === 'all') {
         residences = await Residence.find({ hostId: checkUser._id, isDeleted: false, ...filter })
           .limit(limit)
-          .skip((page - 1) * limit);
+          .skip((page - 1) * limit)
+          .populate('amenities', 'translation');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
         residences = await Residence.find({ hostId: checkUser._id, isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
-          .sort({ createdAt: -1 });
+          .sort({ createdAt: -1 })
+          .populate('amenities', 'translation');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
         residences = await Residence.find({ hostId: checkUser._id, isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
-          .sort({ popularity: -1 });
+          .sort({ popularity: -1 })
+          .populate('amenities', 'translation');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
     }

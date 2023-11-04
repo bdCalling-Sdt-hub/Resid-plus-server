@@ -13,6 +13,7 @@ const activityRouter = require('./routes/activityRouter')
 const supportRouter = require('./routes/supportRouter')
 const faqRouter = require('./routes/faqRouter')
 const paymentRouter = require('./routes/paymentRouter')
+const amenitiesRouter = require('./routes/amenitiesRouter')
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -87,6 +88,7 @@ app.use('/api/activities', activityRouter)
 app.use('/api/supports', supportRouter)
 app.use('/api/faqs', faqRouter)
 app.use('/api/payments', paymentRouter)
+app.use('/api/amenities', amenitiesRouter)
 
 
 //testing API is alive

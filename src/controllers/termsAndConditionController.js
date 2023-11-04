@@ -19,7 +19,7 @@ const createTermsAndCondition = async (req, res) => {
     }
 
     if (user.role !== 'admin') {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'terms-and-conditions', message: req.t('You are not Authorization') }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'terms-and-conditions', message: req.t('You are not Authorized') }));
     }
 
     // Check if an Terms and conditions entry already exists

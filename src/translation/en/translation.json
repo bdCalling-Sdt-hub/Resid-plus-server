@@ -31,7 +31,7 @@
   "Current password is incorrect": "Current password is incorrect",
   "Password changed successfully": "Password changed successfully",
   "An error occurred while changing password": "An error occurred while changing password",
-  "You are not Authorization": "You are not Authorization",
+  "You are not Authorized": "You are not Authorized",
   "About-us added successfully.": "About-us added successfully.",
   "About us content updated successfully": "About us content updated successfully",
   "Server error": "Server error",
@@ -150,5 +150,21 @@
   "Error Handler": "Error Handler",
   "Images not found": "Images not found",
   "Error": "Error",
-  "Internal Server Error": "Internal Server Error"
+  "Internal Server Error": "Internal Server Error",
+  "amenities": {
+    "bathtub": "Bathtub",
+    "iron": "Iron",
+    "wifi": "WiFi",
+    "game-console": "Game-console",
+    "fans": "Fans",
+    "refrigerator": "Refrigerator",
+    "swimming-pool": "Swimming-pool",
+    "hot-water": "Hot-water",
+    "wardrobe": "Wardrobe",
+    "tv": "TV",
+    "air-conditioner": "Air-conditioner",
+    "kitchen": "Kitchen",
+    "microwave": "Microwave",
+    "spa": "SPA"
+  }
 }

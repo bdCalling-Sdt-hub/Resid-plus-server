@@ -15,16 +15,11 @@ const residenceSchema = new mongoose.Schema({
   popularity: { type: Number, default: 0 },
   ratings: { type: Number, default: 0 },
   dailyAmount: { type: Number, reqiured: false },
-  amenities: {
-    type: Array,
-    required: true,
-    validate: {
-      validator: function (values) {
-        return values.every(value => amenities.includes(value));
-      },
-      message: 'Invalid amenities.',
-    },
-  },
+  amenities: [{
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Amenity',
+    required: true
+  }],
   ownerName: { type: String, required: false },
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   aboutOwner: { type: String, required: false },
@@ -32,10 +27,5 @@ const residenceSchema = new mongoose.Schema({
   category: { type: String, enum: ['hotel', 'residence', 'personal-house'], default: 'residence', required: false },
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
-const amenities = [
-  "wifi", "air-conditioner", "heating", "parking", "pets",
-  "kitchen", "tv", "internet", "washing-machine", "dryer", "refrigerator",
-  "air-conditioner", "heating", "parking"
-];
 
 module.exports = mongoose.model('Residence', residenceSchema);
