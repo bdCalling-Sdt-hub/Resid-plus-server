@@ -67,7 +67,7 @@ const addAmenity = async (req, res) => {
     }
 
     const { en, fr } = req.body;
-    const key = en.toLowerCase()
+    const key = en.toLowerCase().replace(/ /g, '-'); // Replace spaces with hyphens
 
     if (user.role === 'user') {
       console.log("user.role------------->", user.role)
