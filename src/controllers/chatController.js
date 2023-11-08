@@ -3,13 +3,18 @@ const Chat = require("../models/Chat");
 
 exports.addChat = async (chatInfo) => {
   try {
-    console.log(chatInfo?.participants)
-    const existingChat = await Chat.findOne({ participants: chatInfo?.participants });
+    const existingChat = await Chat.findOne({
+      $and: [
+        { 'participants': chatInfo.participants[0] },
+        { 'participants': chatInfo.participants[1] }
+      ]
+    });
 
     if (existingChat) {
       return existingChat;
     } else {
       const newChat = await Chat.create({ participants: chatInfo.participants });
+      console.log(newChat)
       return newChat;
     }
   } catch (error) {
