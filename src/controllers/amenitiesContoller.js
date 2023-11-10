@@ -1,6 +1,7 @@
 const logger = require("../helpers/logger");
 const response = require("../helpers/response");
 const Amenity = require("../models/Amenity");
+const Category = require("../models/Category");
 const User = require("../models/User");
 
 //All amenitys
@@ -27,16 +28,33 @@ const allAmenity = async (req, res) => {
     //   );
     // }
 
-    const amenitys = await Amenity.find().select('translation');
+    const requestType = !req.query.requestType? 'amenity' : req.query.requestType;
+    var data
+    if(requestType === 'amenity') {
+      data = await Amenity.find().select('translation');
+    }
+    else if(requestType === 'add-category') {
+      const amenities = await Amenity.find().select('translation');
+      const categories = await Category.find().select('translation');
+      data = {amenities, categories}
+    }
+    else {
+      return res.status(400).json(
+        response({
+          status: 'Error',
+          statusCode: '400',
+          message: req.t('Invalid request type'),
+        })
+      );
+    }
 
-    console.log("amenitys------------->", amenitys)
     return res.status(200).json(
       response({
         status: 'OK',
         statusCode: '200',
         type: 'amenity',
         message: req.t('Amenitys retrieved successfully'),
-        data: amenitys,
+        data: data,
       })
     );
   } catch (error) {

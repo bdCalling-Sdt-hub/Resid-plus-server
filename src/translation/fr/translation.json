@@ -151,7 +151,7 @@
   "Images not found": "Images introuvables",
   "Error": "Erreur",
   "Internal Server Error": "Erreur interne du serveur",
-  "amenities":{
+  "amenities": {
     "bathtub": "Baignoire",
     "iron": "Fer à Repasser",
     "wifi": "WiFi",
@@ -166,5 +166,31 @@
     "kitchen": "Cuisine",
     "microwave": "Four à Micro-Ondes",
     "spa": "Spa"
-  }
+  },
+  "Amenities retrieved successfully": "Amenités récupérées avec succès",
+  "Amenity added successfully": "Amenité ajoutée avec succès",
+  "Amenities added successfully": "Aménités ajoutées avec succès",
+  "Amenity deleted successfully": "Amenité supprimée avec succès",
+  "Amenity updated successfully": "Amenité mise à jour avec succès",
+  "Unauthorized to get amenities": "Non autorisé à obtenir les aménités",
+  "Invalid request type": "Type de requête non valide",
+  "Amenity already exists": "L'aménité existe déjà",
+  "Unauthorized to delete amenity": "Non autorisé à supprimer l'aménité",
+  "Error deleting amenity": "Erreur lors de la suppression de l'aménité",
+  "Unauthorized to update amenity": "Non autorisé à mettre à jour l'aménité",
+  "Amenity not found": "Amenité non trouvée",
+  "Error updating amenity": "Erreur lors de la mise à jour de l'aménité",
+  "OK": "OK",
+  "Categorys retrieved successfully": "Catégories récupérées avec succès",
+  "Error getting categorys": "Erreur lors de la récupération des catégories",
+  "Category added successfully.": "Catégorie ajoutée avec succès.",
+  "Category already exists": "La catégorie existe déjà",
+  "Categories added successfully": "Catégories ajoutées avec succès",
+  "Error deleted deleteCategory": "Erreur lors de la suppression de la catégorie",
+  "Deleted": "Supprimé",
+  "Category deleted successfully.": "Catégorie supprimée avec succès.",
+  "Error updating category": "Erreur lors de la mise à jour de la catégorie",
+  "Updated": "Mis à jour",
+  "Category updated successfully.": "Catégorie mise à jour avec succès.",
+  "Error getting categories": "Erreur lors de la récupération des catégories"
 }

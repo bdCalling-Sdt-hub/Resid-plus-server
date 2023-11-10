@@ -3,7 +3,7 @@ const unlinkImages = require('../../common/image/unlinkImage');
 const validateResidenceMiddleware = (req, res, next) => {
   const {
     residenceName, capacity, beds, baths, address, city,
-    municipality, quirtier, hourlyAmount, category
+    municipality, quirtier, hourlyAmount
   } = req.body;
 
   let errors = [];
@@ -42,11 +42,6 @@ const validateResidenceMiddleware = (req, res, next) => {
 
   if (isNaN(hourlyAmount) || hourlyAmount <= 0) {
     errors.push({ field: 'hourlyAmount', error: req.t('Hourly amount must be a positive number') });
-  }
-
-  const validCategories = ['hotel', 'residence', 'personal-house'];
-  if (!validCategories.includes(category)) {
-    errors.push({ field: 'category', error: req.t('Invalid category') });
   }
 
   // Check if amenities is defined and is an array

@@ -24,7 +24,11 @@ const residenceSchema = new mongoose.Schema({
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   aboutOwner: { type: String, required: false },
   status: { type: String, enum: ['reserved', 'active', 'inactive'], default: 'active' },
-  category: { type: String, enum: ['hotel', 'residence', 'personal-house'], default: 'residence', required: false },
+  category: {
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Category',
+    required: true
+  },
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 

@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const unlinkImages = require('../common/image/unlinkImage');
 const { addNotification, getAllNotification } = require("./notificationController");
 const logger = require("../helpers/logger");
+const Category = require("../models/Category");
 
 //Add residence
 const addResidence = async (req, res) => {
@@ -70,6 +71,22 @@ const addResidence = async (req, res) => {
         hostId: req.body.userId,
         category
       });
+
+      const existingResidence = await Residence.findOne({ residenceName: residenceName, hostId: req.body.userId, capacity: capacity, beds: beds, baths: baths, address: address, city: city, municipality: municipality, quirtier: quirtier, aboutResidence: aboutResidence, hourlyAmount: hourlyAmount, dailyAmount: dailyAmount, amenities: amenities, ownerName: ownerName, aboutOwner: aboutOwner, category: category });
+      if(existingResidence && !existingResidence.isDeleted) {
+        //deleting the images if residence already exists
+        unlinkImages(req.files.map(file => file.path))
+        return res.status(409).json(response({ status: 'Error', statusCode: '409', message: req.t('Residence already exists') }));
+      }
+      else if(existingResidence && existingResidence.isDeleted) {
+        //deleting the images if residence already exists
+        const paths = existingResidence.photo.map(photoObject => photoObject.path).flat();
+        unlinkImages(paths)
+        existingResidence.photo = files;
+        existingResidence.isDeleted = false;
+        existingResidence.save();
+        return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'residence', message: req.t('Residence added successfully.'), data: existingResidence }));
+      }
 
       await residence.save();
       const message = checkHost.fullName + ' has added ' + residence.residenceName
@@ -160,7 +177,9 @@ const allResidence = async (req, res) => {
         residences = await Residence.find({ isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
-          .populate('amenities', 'translation');
+          .populate('amenities', 'translation')
+          .populate('category', 'translation');
+          
         count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
@@ -168,7 +187,8 @@ const allResidence = async (req, res) => {
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ createdAt: -1 })
-          .populate('amenities', 'translation');;
+          .populate('amenities', 'translation')
+          .populate('category', 'translation');
         count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
@@ -176,7 +196,8 @@ const allResidence = async (req, res) => {
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ popularity: -1 })
-          .populate('amenities', 'translation');;
+          .populate('amenities', 'translation')
+          .populate('category', 'translation');;
         count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
       }
     }
@@ -186,7 +207,8 @@ const allResidence = async (req, res) => {
         residences = await Residence.find({ hostId: checkUser._id, isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
-          .populate('amenities', 'translation');
+          .populate('amenities', 'translation')
+          .populate('category', 'translation');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
@@ -194,7 +216,8 @@ const allResidence = async (req, res) => {
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ createdAt: -1 })
-          .populate('amenities', 'translation');
+          .populate('amenities', 'translation')
+          .populate('category', 'translation');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
@@ -202,7 +225,8 @@ const allResidence = async (req, res) => {
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ popularity: -1 })
-          .populate('amenities', 'translation');
+          .populate('amenities', 'translation')
+          .populate('category', 'translation');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
     }
@@ -385,7 +409,8 @@ const updateResidence = async (req, res) => {
       amenities,
       ownerName,
       aboutOwner,
-      status
+      status,
+      category
     } = req.body;
 
     if (!checkHost) {
@@ -394,6 +419,13 @@ const updateResidence = async (req, res) => {
       }
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
+    if(category) {
+      const existingCategory = await Category.findById(category);
+      if(!existingCategory) {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Category not found') }));
+      }
+    }
+    
     const existingResidence = await Residence.findById(id);
     if (checkHost.role === 'host' && checkHost._id.toString() === existingResidence.hostId.toString()) {
       const updatedResidence = {
@@ -411,6 +443,7 @@ const updateResidence = async (req, res) => {
         amenities: !amenities ? existingResidence.amenities : amenities,
         ownerName: !ownerName ? existingResidence.ownerName : ownerName,
         aboutOwner: !aboutOwner ? existingResidence.aboutOwner : aboutOwner,
+        category: !category ? existingResidence.category : category,
         hostId: req.body.userId,
       };
       if (status) {
@@ -458,7 +491,7 @@ const updateResidence = async (req, res) => {
     if (req.files) {
       unlinkImages(req.files.map(file => file.path))
     }
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error in edited residence') }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
   }
 }
 
