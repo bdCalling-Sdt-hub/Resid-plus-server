@@ -1,11 +1,9 @@
 const mongoose = require('mongoose');
 
 const incomeSchema = new mongoose.Schema({
-    totalIncome: { type: Number, required: false },
-    hostTotalPayment: { type: String },
-    hostPercentage: { type: Number, required: false },
-    hostPendingPercentage: { type: String },
-    paymentList: { type: String },
+    totalIncome: { type: Number, default: 0, required: false },
+    hostPercentage: { type: Number, default: 0, required: false },
+    hostPendingAmount: { type: Number, default: 0, required: false },
     hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 },
     { timestamps: true },

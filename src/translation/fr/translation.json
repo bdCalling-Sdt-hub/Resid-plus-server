@@ -45,7 +45,7 @@
   "You are not authorised to delete login activity": "Vous n'êtes pas autorisé à supprimer l'activité de connexion",
   "Activity deleted successfully.": "Activité supprimée avec succès.",
   "Residence not found": "Résidence non trouvée",
-  "Check-in time must be greater than check-out time": "L'heure d'arrivée doit être supérieure à l'heure de départ",
+  "Check-in time must be less than check-out time": "L’heure d’arrivée doit être inférieure à l’heure de départ",
   "Total stay must be greater than 5 hours": "Le séjour total doit être supérieur à 5 heures",
   "Please fill all the fields": "Veuillez remplir tous les champs",
   "Residence is already booked for the requested time.": "La résidence est déjà réservée pour le créneau demandé",

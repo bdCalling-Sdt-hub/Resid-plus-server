@@ -45,7 +45,7 @@
   "You are not authorised to delete login activity": "You are not authorised to delete login activity",
   "Activity deleted successfully.": "Activity deleted successfully.",
   "Residence not found": "Residence not found",
-  "Check-in time must be greater than check-out time": "Check-in time must be greater than check-out time",
+  "Check-in time must be less than check-out time": "Check-in time must be less than check-out time",
   "Total stay must be greater than 5 hours": "Total stay must be greater than 5 hours",
   "Please fill all the fields": "Please fill all the fields",
   "Residence is already booked for the requested time.": "Residence is already booked for the requested time.",

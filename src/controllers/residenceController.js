@@ -510,7 +510,7 @@ const residenceDetails = async (req, res) => {
       );
     }
 
-    const residences = await Residence.findById(id);
+    const residences = await Residence.findById(id).populate('amenities', 'translation').populate('category', 'translation');
 
     return res.status(200).json(
       response({

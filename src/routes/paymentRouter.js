@@ -1,11 +1,13 @@
 const express = require('express');
-const {  addPayment, allPayment, refund  } = require('../controllers/paymentController');
+const {  addPayment, allPayment, createPayInToken, payInAmount  } = require('../controllers/paymentController');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 
 //Add payment
-router.post('/', isValidUser,addPayment);
+router.post('/get-payment-token', isValidUser,createPayInToken);
+router.post('/make-payment', isValidUser,payInAmount);
 router.get('/', isValidUser,allPayment);
+
 
 
 module.exports = router;

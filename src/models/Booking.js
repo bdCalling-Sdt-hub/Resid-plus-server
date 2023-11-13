@@ -17,6 +17,7 @@ const bookingSchema = new mongoose.Schema({
     hours: { type: Number, default: 0 }
   },
   totalAmount: { type: Number, default: 1, required: false },
+  serviceCharge: { type: Number, default: 1, required: false },
   checkInTime: { type: Date, required: true },
   checkOutTime: { type: Date, required: true },
   status: { type: String, enum: ['reserved', 'cancelled', 'pending','check-in','check-out'], default: 'pending' },

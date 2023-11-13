@@ -1,157 +1,322 @@
 const response = require("../helpers/response");
+require("dotenv").config();
 const Payment = require("../models/Payment");
 const Booking = require('../models/Booking')
 const User = require("../models/User");
-const kkiapay = require('kkiapay-nodejs-sdk')
 const axios = require('axios')
 const { addNotification, getAllNotification } = require('./notificationController');
 const logger = require("../helpers/logger");
 
-// const payInTokenUrl = 'https://app.paydunya.com/api/v1/checkout-invoice/create'
-// const payInUrlCard = 'https://app.paydunya.com/api/v1/softpay/card'
-// const payoutdisburseTokenUrl = 'https://app.paydunya.com/api/v1/disburse/get-invoice'
-// const payoutDisburseAmountUrl = 'https://app.paydunya.com/api/v1/disburse/submit-invoice'
-// const headers = {
-//   'Content-Type': 'application/json',
-//   'PAYDUNYA-MASTER-KEY': process.env.PAYDUNYA_MASTER_KEY,
-//   'PAYDUNYA-PRIVATE-KEY': process.env.PAYDUNYA_PRIVATE_KEY,
-//   'PAYDUNYA-TOKEN': process.env.PAYDUNYA_TOKEN
-// }
+var payInTokenUrl;
+if (process.env.NODE_ENV === 'production') {
+  payInTokenUrl = 'https://app.paydunya.com/api/v1/checkout-invoice/create'
+}
+else if (process.env.NODE_ENV === 'development') {
+  payInTokenUrl = 'https://app.paydunya.com/sandbox-api/v1/checkout-invoice/create'
+}
 
-// const k = kkiapay({
-//   privatekey: process.env.KKIAPAY_PRKEY,
-//   publickey: process.env.KKIAPAY_PBKEY,
-//   secretkey: process.env.KKIAPAY_SCKEY,
-//   sandbox: true
-// })
+//only accesible in production mode
+const payoutdisburseTokenUrl = 'https://app.paydunya.com/api/v1/disburse/get-invoice'
+const payoutDisburseAmountUrl = 'https://app.paydunya.com/api/v1/disburse/submit-invoice'
 
-// const createPayInToken = async (req, res) => {
-//   try {
-//     const checkUser = await User.findById(req.body.userId);
+const privateKey = process.env.NODE_ENV === 'production' ? process.env.PAYDUNYA_PRIVATE_KEY : process.env.PAYDUNYA_PRIVATE_TEST_KEY
+const token = process.env.NODE_ENV === 'production' ? process.env.PAYDUNYA_TOKEN : process.env.PAYDUNYA_TEST_TOKEN
 
-//     if (!checkUser) {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
-//     };
+const headers = {
+  'Content-Type': 'application/json',
+  'PAYDUNYA-MASTER-KEY': process.env.PAYDUNYA_MASTER_KEY,
+  'PAYDUNYA-PRIVATE-KEY': privateKey,
+  'PAYDUNYA-TOKEN': token,
+}
 
-//     const {
-//       bookingId,
-//       paymentTypes
-//     } = req.body;
+const createPayInToken = async (req, res) => {
+  try {
+    const checkUser = await User.findById(req.body.userId);
 
-//     if (paymentTypes !== 'half-payment' && paymentTypes !== 'full-payment') {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment status not not appropiate' }));
-//     }
-//     const bookingDetails = await Booking.findById(bookingId).populate('residenceId userId');
-//     console.log("bookingDetails--------->", bookingDetails, bookingId)
-//     if (!bookingDetails) {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
-//     };
+    if (!checkUser) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
+    };
 
-//     if (bookingDetails.status === 'cancelled') {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking is cancelled' }));
-//     }
+    const {
+      bookingId,
+      paymentTypes
+    } = req.body;
 
-//     if (bookingDetails.paymentTypes === 'full-payment') {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment is already done' }));
-//     }
+    if (paymentTypes !== 'half-payment' && paymentTypes !== 'full-payment') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment status not not appropiate' }));
+    }
+    const bookingDetails = await Booking.findById(bookingId).populate('residenceId userId');
+    console.log("bookingDetails--------->", bookingDetails, bookingId)
+    if (!bookingDetails) {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
+    };
 
-//     if (checkUser.role === 'user' && bookingDetails.userId.toString() === req.body.userId) {
-//       let paymentAmount = bookingDetails.totalAmount
-//       if ((bookingDetails.paymentTypes === 'unknown' && paymentTypes === 'half-payment' || bookingDetails.paymentTypes === 'half-payment' && paymentTypes === 'full-payment')) {
-//         paymentAmount = Math.ceil(paymentAmount / 2)
-//       }
-//       const payload =
-//       {
-//         "invoice": {
-//           "total_amount": paymentAmount,
-//           "description": bookingDetails._id
-//         },
-//         "store": {
-//           "name": bookingDetails.userId.fullName,
-//           "phone": bookingDetails.userId.phoneNumber,
-//         }
-//       }
-//       const response = await axios.post(payInTokenUrl, payload, { headers });
-//       if (response.data.response_code === '00') {
-//         return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment token created successfully.', data: response.data }));
-//       }
-//       else {
-//         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: response.data }));
-//       }
-//     }
-//     else {
-//       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are Not authorize to do payment now' }));
-//     }
+    if (bookingDetails.status === 'cancelled') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking is cancelled' }));
+    }
 
-//   } catch (error) {
-//     logger.error(error)
-//     console.error(error);
-//     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
-//   }
-// }
+    if (bookingDetails.paymentTypes === 'full-payment') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment is already done' }));
+    }
 
-// const createDisburseToken = async (data) => {
-//   try {
-//     const bookingDetails = await Booking.findById(data.bookingId).populate('residenceId hostId');
-//     console.log("bookingDetails--------->", bookingDetails, data.bookingId)
-//     if (!bookingDetails) {
-//       return {message: 'Booking not found' }
-//     };
+    if (checkUser.role === 'user' && bookingDetails.userId._id.toString() === req.body.userId) {
+      let paymentAmount = bookingDetails.totalAmount
+      if ((bookingDetails.paymentTypes === 'unknown' && paymentTypes === 'half-payment' || bookingDetails.paymentTypes === 'half-payment' && paymentTypes === 'full-payment')) {
+        paymentAmount = Math.ceil(paymentAmount / 2)
+      }
+      const description = bookingDetails.userId.fullName + ' wants to ' + paymentTypes + ' for ' + bookingDetails.residenceId.residenceName + ' for ' + bookingDetails.totalTime.days + ' days and ' + bookingDetails.totalTime.hours + ' hours'
 
-//     if (bookingDetails.status === 'cancelled') {
-//       return {message: 'Booking is cancelled' }
-//     }
+      const payload =
+      {
+        "invoice": {
+          "total_amount": paymentAmount,
+          "description": description,
+        },
+        "store": {
+          "name": bookingDetails.userId.fullName,
+          "postal_address": bookingDetails.userId.address,
+          "phone": bookingDetails.userId.phoneNumber,
+        },
+        "custom_data": {
+          "residence_name": bookingDetails.residenceId.residenceName,
+          "booking_id": bookingDetails.bookingId,
+          "total_time": bookingDetails.totalTime
+        }
+      }
+      const paydunyaResponse = await axios.post(payInTokenUrl, payload, { headers });
+      if (paydunyaResponse.data.response_code === '00') {
+        const newPayment = new Payment({
+          bookingId,
+          userId: req.body.userId,
+          hostId: bookingDetails.hostId,
+          residenceId: bookingDetails.residenceId._id,
+          status: 'pending',
+          paymentData :{
+            token: paydunyaResponse.data.token,
+            amount: paymentAmount,
+          }
+        });
+        await newPayment.save();
+        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment token created successfully.', data: paydunyaResponse.data }));
+      }
+      else {
+        logger.error(response.data, req.originalUrl)
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: paydunyaResponse.data }));
+      }
+    }
+    else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: 'You are not authorized to do payment now' }));
+    }
 
-//     if (bookingDetails.paymentTypes !== 'full-payment') {
-//       return {message: 'Full payment not done yet' }
-//     }
+  } catch (error) {
+    logger.error(error)
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
+  }
+}
 
-//     if (bookingDetails.status !== 'cancelled' && bookingDetails.status!=='pending' && bookingDetails.paymentTypes === 'full-payment') {
-//       const disburseAmount = bookingDetails.totalAmount*0.94
-//       const payload =
-//       {
-//         account_alias: data.account_alias,
-//         amount: disburseAmount,
-//         withdraw_mode: data?.withdraw_mode
-//       }
-//       const response = await axios.post(createDisburseToken, payload, { headers });
-//       if (response?.data?.response_code === '00') {
-//         return response.data;
-//       }
-//       else {
-//         return response.data;
-//       }
-//     }
-//     else {
-//       return {message: 'You are Not authorize to do payment now' };
-//     }
+const payInAmount = async (req, res) => {
+  try {
+    const paymentTypes = req.query.paymentTypes
+    var payload;
+    var payInURL;
+    if (process.env.NODE_ENV === 'development') {
+      if (paymentTypes === 'test') {
+        const { phoneNumber, email, password, token } = req.body
+        payload = {
+          "phone_phone": phoneNumber,
+          "customer_email": email,
+          "password": password,
+          "invoice_token": token
+        }
+        payInURL = 'https://app.paydunya.com/sandbox-api/v1/softpay/checkout/make-payment'
 
-//   } catch (error) {
-//     logger.error(error)
-//     console.error(error);
-//     return error.message;
-//   }
-// }
+        console.log("payload---------->", payload, payInURL, process.env.NODE_ENV)
+        const paydunyaResponse = await axios.post(payInURL, payload, { headers });
 
-// const payoutDisburseAmount = async (data) => {
-//   try{
-//     if(!data.disburse_invoice){
-//       return {message: 'Disburse invoice not found'}
-//     }
-//     const payload = {"disburse_invoice": data.disburse_invoice, "disburse_id": data?.bookingId }
-//     const response = await axios.post(payoutDisburseAmountUrl, payload, { headers });
-//     if (response?.data?.response_code === '00') {
-//       return response.data;
-//     }
-//     else {
-//       return response.data;
-//     }
-//   }
-//   catch(error){
-//     console.error(error);
-//     return error.message
-//   }
-// }
+        if (paydunyaResponse.data.success) {
+          return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
+        }
+        else {
+          console.log("paydunyaResponse---------->", paydunyaResponse)
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: paydunyaResponse}));
+        }
+      }
+      else {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Payment type not found' }));
+      }
+    }
+    else if (process.env.NODE_ENV === 'production') {
+      if (paymentTypes === 'card') {
+        console.log("card hitted------------------------------------->")
+        const { cardNumber, cardCvv, cardExpiredDateYear, cardExpiredDateMonth, token, email, fullName } = req.body
+        if (!cardNumber || !cardCvv || !cardExpiredDateYear || !cardExpiredDateMonth || !token || !email || !fullName) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Card details not found' }));
+        }
+        payload = {
+          "full_name": fullName,
+          "email": email,
+          "card_number": cardNumber,
+          "card_cvv": cardCvv,
+          "card_expired_date_year": cardExpiredDateYear,
+          "card_expired_date_month": cardExpiredDateMonth,
+          "token": token
+        }
+        payInURL = 'https://app.paydunya.com/api/v1/softpay/card'
+      }
+      else if (paymentTypes === 'orange-money-ci') {
+        const { fullname, email, phoneNumber, otp, token } = req.body
+        if (!fullname || !email || !phoneNumber || !otp || !token) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Orange Money details not found' }));
+        }
+        payload = {
+          "orange_money_ci_customer_fullname": fullname,
+          "orange_money_ci_email": email,
+          "orange_money_ci_phone_number": phoneNumber,
+          "orange_money_ci_otp": otp,
+          "payment_token": token
+        }
+        payInURL = 'https://app.paydunya.com/api/v1/softpay/orange-money-ci'
+      }
+      else if (paymentTypes === 'mtn-ci') {
+        const { fullname, email, phoneNumber, provider, token } = req.body
+        if (!fullname || !email || !phoneNumber || !provider || !token) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required MTN details not found' }));
+        }
+        payload = {
+          "mtn_ci_customer_fullname": fullname,
+          "mtn_ci_email": email,
+          "mtn_ci_phone_number": phoneNumber,
+          "mtn_ci_wallet_provider": provider,
+          "payment_token": token
+        }
+        payInURL = 'https://app.paydunya.com/api/v1/softpay/mtn-ci'
+      }
+      else if (paymentTypes === 'moov-ci') {
+        const { fullname, email, phoneNumber, token } = req.body
+        if (!fullname || !email || !phoneNumber || !token) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Moov details not found' }));
+        }
+        payload = {
+          "moov_ci_customer_fullname": fullname,
+          "moov_ci_email": email,
+          "moov_ci_phone_number": phoneNumber,
+          "payment_token": token
+        }
+        payInURL = 'https://app.paydunya.com/api/v1/softpay/moov-ci'
+      }
+      else if (paymentTypes === 'wave-ci') {
+        const { fullName, email, phoneNumber, token } = req.body
+        if (!fullName || !email || !phoneNumber || !token) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Wave details not found' }));
+        }
+        payload = {
+          "wave_ci_fullName": fullName,
+          "wave_ci_email": email,
+          "wave_ci_phone": phoneNumber,
+          "wave_ci_payment_token": token
+        }
+        payInURL = 'https://app.paydunya.com/api/v1/softpay/wave-ci'
+      }
+      else if (paymentTypes === 'paydunya') {
+        const { fullName, email, phoneNumber, password, token } = req.body
+        if (!fullName || !email || !phoneNumber || !password || !token) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Paydunya details not found' }));
+        }
+        payload = {
+          "customer_name": fullName,
+          "customer_email": email,
+          "phone_phone": phoneNumber,
+          "password": password,
+          "invoice_token": token
+        }
+        payInURL = 'https://app.paydunya.com/api/v1/softpay/paydunya'
+      }
+      else{
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Payment type not found' }));
+      }
+      console.log("payload---------->", payload, payInURL)
+      const paydunyaResponse = await axios.post(payInURL, payload);
+      if (paydunyaResponse.data.success) {
+        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
+      }
+      else {
+        console.log("paydunyaResponse---------->", paydunyaResponse.data, paydunyaResponse.data.response_code)
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: paydunyaResponse.data }));
+      }
+    }
+    else {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Payment not allowed without system moode defined' }));
+    }
+  }
+  catch (error) {
+    logger.error(error, req.originalUrl)
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
+  }
+}
+
+const createDisburseToken = async (data) => {
+  try {
+    const bookingDetails = await Booking.findById(data.bookingId).populate('residenceId hostId');
+    console.log("bookingDetails--------->", bookingDetails, data.bookingId)
+    if (!bookingDetails) {
+      return { message: 'Booking not found' }
+    };
+
+    if (bookingDetails.status === 'cancelled') {
+      return { message: 'Booking is cancelled' }
+    }
+
+    if (bookingDetails.paymentTypes !== 'full-payment') {
+      return { message: 'Full payment not done yet' }
+    }
+
+    if (bookingDetails.status !== 'cancelled' && bookingDetails.status !== 'pending' && bookingDetails.paymentTypes === 'full-payment') {
+      const disburseAmount = bookingDetails.totalAmount * 0.94
+      const payload =
+      {
+        account_alias: data.account_alias,
+        amount: disburseAmount,
+        withdraw_mode: data?.withdraw_mode
+      }
+      const response = await axios.post(createDisburseToken, payload, { headers });
+      if (response?.data?.response_code === '00') {
+        return response.data;
+      }
+      else {
+        return response.data;
+      }
+    }
+    else {
+      return { message: 'You are Not authorize to do payment now' };
+    }
+
+  } catch (error) {
+    logger.error(error)
+    console.error(error);
+    return error.message;
+  }
+}
+
+const payoutDisburseAmount = async (data) => {
+  try {
+    if (!data.disburse_invoice) {
+      return { message: 'Disburse invoice not found' }
+    }
+    const payload = { "disburse_invoice": data.disburse_invoice, "disburse_id": data?.bookingId }
+    const response = await axios.post(payoutDisburseAmountUrl, payload, { headers });
+    if (response?.data?.response_code === '00') {
+      return response.data;
+    }
+    else {
+      return response.data;
+    }
+  }
+  catch (error) {
+    console.error(error);
+    return error.message
+  }
+}
 
 //Add payment
 const addPayment = async (req, res) => {
@@ -397,4 +562,4 @@ const allPayment = async (req, res) => {
 // }
 
 
-module.exports = { addPayment, allPayment };
+module.exports = { addPayment, allPayment, createPayInToken, payInAmount };

@@ -8,15 +8,10 @@ const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
 const User = require("../models/User");
 const { addNotification, addManyNotifications, getAllNotification } = require("./notificationController");
 const options = { new: true };
-const kkiapay = require('kkiapay-nodejs-sdk');
 const logger = require("../helpers/logger");
-const k = kkiapay({
-  privatekey: process.env.KKIAPAY_PRKEY,
-  publickey: process.env.KKIAPAY_PBKEY,
-  secretkey: process.env.KKIAPAY_SCKEY,
-  sandbox: true
-})
-
+const axios = require('axios');
+const sendSMS = require("../helpers/sendMessage");
+require('dotenv').config()
 
 const calculateTimeAndPrice = async (req, res) => {
   try {
@@ -57,10 +52,11 @@ const calculateTimeAndPrice = async (req, res) => {
       );
     }
 
+    const today = new Date()
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
 
-    if (checkInTime > checkOutTime) {
+    if (checkInTime > checkOutTime && checkInTime < today) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -131,7 +127,7 @@ const addBooking = async (req, res) => {
       numberOfGuests
     } = req.body;
 
-    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays===null || totalHours===null || totalAmount===null || !residenceId) {
+    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays === null || totalHours === null || totalAmount === null || !residenceId) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -140,10 +136,30 @@ const addBooking = async (req, res) => {
         })
       );
     }
-    
+
 
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
+    const today = new Date()
+    if (checkInTime < today) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: req.t('Check-in time must be greater than today'),
+        })
+      );
+    }
+    if (checkInTime > checkOutTime) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: req.t('Check-in time must be less than check-out time'),
+        })
+      );
+    }
+
     console.log('add booking called ------------------->', req.body)
 
     if (checkInTime > checkOutTime) {
@@ -532,7 +548,8 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes !== 'unknown' && bookingDetails.status === 'reserved') {
           bookingDetails.status = status
           bookingDetails.save()
-          const hostMessage = bookingDetails.userId.fullName + ' checked-in to ' + bookingDetails.residenceId.residenceName + ', please do the payment'
+
+          const hostMessage = bookingDetails.userId.fullName + ' checked-in and waiting for the key for ' + bookingDetails.residenceId.residenceName + ', please provide him the key'
 
           const newNotification = {
             message: hostMessage,
@@ -546,6 +563,13 @@ const updateBooking = async (req, res) => {
           const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
           console.log(hostNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
+
+          const accessToken = process.env.ORANGE_ACCESS_KEY
+          const senderNumber = process.env.ORANGE_SENDER_NUMBER
+          const receiverNumber = bookingDetails.hostId.phoneNumber
+          const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
+
+          await sendSMS(url,senderNumber, receiverNumber, hostMessage, accessToken)
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
