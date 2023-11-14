@@ -11,6 +11,7 @@ const options = { new: true };
 const logger = require("../helpers/logger");
 const axios = require('axios');
 const sendSMS = require("../helpers/sendMessage");
+const { createDisburseToken } = require("./paymentController");
 require('dotenv').config()
 
 const calculateTimeAndPrice = async (req, res) => {
@@ -56,7 +57,17 @@ const calculateTimeAndPrice = async (req, res) => {
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
 
-    if (checkInTime > checkOutTime && checkInTime < today) {
+    if (checkInTime < today) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: req.t('Check-in time already expired'),
+        })
+      );
+    }
+
+    if (checkInTime > checkOutTime) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -146,7 +157,7 @@ const addBooking = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: req.t('Check-in time must be greater than today'),
+          message: req.t('Check-in time already expired'),
         })
       );
     }
@@ -569,7 +580,7 @@ const updateBooking = async (req, res) => {
           const receiverNumber = bookingDetails.hostId.phoneNumber
           const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
 
-          await sendSMS(url,senderNumber, receiverNumber, hostMessage, accessToken)
+          await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
@@ -581,6 +592,25 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
           bookingDetails.status = status
           bookingDetails.save()
+
+          // const sendingAmount = Math.ceil(0.92 * bookingDetails.totalAmount)
+          // if (sendingAmount > 200) {
+          //   const data = {
+          //     totalAmount: sendingAmount,
+          //     withdraw_mode: bookingDetails.hostId.withdrawMode,
+          //     account_alias: bookingDetails.hostId.accountAlias,
+          //   }
+          //   const disburseToken = await createDisburseToken(data)
+          //   if (disburseToken) {
+          //   }
+          //   else {
+          //     //send host notification that account infomation is wrong
+          //   }
+          // }
+          // else {
+          //   //send host notification that amount is less than 200, so wait till it becomes 200+
+          //   //call income part here and add the amount to host pending amount
+          // }
 
           const residence = await Residence.findById(bookingDetails.residenceId)
           residence.status = 'active'
@@ -599,49 +629,6 @@ const updateBooking = async (req, res) => {
           const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
           console.log(hostNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
-          const sendingAmount = Math.ceil(0.96 * bookingDetails.totalAmount)
-          k.setup_payout({
-            algorithm: "roof",
-            send_notification: true,
-            destination_type: "MOBILE_MONEY",
-            roof_amount: sendingAmount,
-            destination: bookingDetails.hostId.phoneNumber
-          }).then(async (response) => {
-            const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', payment is transferred to your KKiapay account no-' + bookingDetails.hostId.phoneNumber
-            const adminMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', payment is transferred to host KKiapay account no-' + bookingDetails.hostId.phoneNumber
-            const newNotification = [{
-              message: hostMessage,
-              receiverId: bookingDetails.hostId._id,
-              image: bookingDetails.userId.image,
-              linkId: bookingDetails._id,
-              type: 'booking',
-              role: 'host'
-            }, {
-              message: adminMessage,
-              image: bookingDetails.userId.image,
-              linkId: bookingDetails._id,
-              type: 'booking',
-              role: 'host'
-            }]
-            await Notification.add
-            const adminNotification = await getAllNotification('admin')
-            io.emit('admin-notification', adminNotification);
-            const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
-            console.log(adminNotification, userNotification)
-            io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
-            res.status(200).json(response)
-          }).catch((error) => {
-            const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', '
-            const newNotification = {
-              message: hostMessage,
-              receiverId: bookingDetails.hostId._id,
-              image: bookingDetails.userId.image,
-              linkId: bookingDetails._id,
-              type: 'booking',
-              role: 'host'
-            }
-            res.status(500).json(error)
-          })
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {

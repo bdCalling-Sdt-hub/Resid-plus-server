@@ -1,5 +1,5 @@
 const express = require('express');
-const {  addPayment, allPayment, createPayInToken, payInAmount  } = require('../controllers/paymentController');
+const {  allPayment, createPayInToken, payInAmount  } = require('../controllers/paymentController');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 

@@ -9,3 +9,5 @@
 2023-11-13T09:55:09.922Z [ERROR] AxiosError: Request failed with status code 401 (Error Path: -SMS sending error)
 2023-11-13T09:56:22.913Z [ERROR] AxiosError: Request failed with status code 401 (Error Path: -SMS sending error)
 2023-11-13T10:00:34.554Z [ERROR] AxiosError: Request failed with status code 401 (Error Path: -SMS sending error)
+2023-11-13T10:08:04.024Z [ERROR] AxiosError: Request failed with status code 401 (Error Path: -SMS sending error)
+2023-11-13T11:23:04.185Z [ERROR] AxiosError: Request failed with status code 403 (Error Path: /api/payments/make-payment?paymentTypes=card)

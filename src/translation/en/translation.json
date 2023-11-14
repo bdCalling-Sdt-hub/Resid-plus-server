@@ -98,6 +98,7 @@
   "You are Not authorize to add residence": "You are Not authorize to add residence",
   "Residence added successfully.": "Residence added successfully.",
   "Residences retrieved successfully": "Residences retrieved successfully",
+  "Check-in time already expired":"Check-in time already expired",
   "You cant delete residence while it is reserved": "You cant delete residence while it is reserved",
   "Residence deleted successfully.": "Residence deleted successfully.",
   "Delete credentials not match": "Delete credentials not match",

@@ -18,7 +18,7 @@ async function sendSMS(url,senderAddress, receiverAddress, message, accessToken)
       },
       {
         headers: {
-          'Authorization': `Bearer ${accessToken}`, // Replace with your access token
+          'authorization': `Bearer ${accessToken}`, // Replace with your access token
           'Content-Type': 'application/json',
         },
       }

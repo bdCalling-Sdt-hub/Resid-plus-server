@@ -55,6 +55,7 @@
   "You are not authorised to access this booking request": "Vous n'êtes pas autorisé à accéder à cette demande de réservation",
   "Your booking-request update credentials not match": "Vos identifiants de mise à jour de demande de réservation ne correspondent pas",
   "Booking edited successfully.": "Réservation modifiée avec succès",
+  "Check-in time already expired":"L'heure d'arrivée est déjà expirée",
   "Booking not found": "Réservation non trouvée",
   "Server not responding": "Serveur non disponible",
   "You are not authorised to get monthly ratio": "Vous n'êtes pas autorisé à obtenir le ratio mensuel",
