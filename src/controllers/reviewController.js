@@ -115,7 +115,7 @@ const getAll = async (req, res) => {
       );
     }
 
-    if (checkUser.role === 'admin') {
+    if (checkUser.role === 'super-admin') {
       return res.status(401).json(
         response({
           status: 'Error',

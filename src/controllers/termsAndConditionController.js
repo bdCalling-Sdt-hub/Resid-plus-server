@@ -18,7 +18,7 @@ const createTermsAndCondition = async (req, res) => {
       );
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'super-admin') {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'terms-and-conditions', message: req.t('You are not Authorized') }));
     }
 

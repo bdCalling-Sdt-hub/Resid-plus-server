@@ -17,11 +17,11 @@ const isValidUser = async (req, res, next) => {
             //console.log(token);
             decodedData = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
             console.log(decodedData);
-            if (decodedData.role === 'admin' && decodedData.activityId!==null) {
+            if (decodedData.role === 'super-admin' && decodedData.activityId!==null) {
                 activity = await Activity.findById(decodedData.activityId)
             }
         }
-        if (decodedData.role === 'admin' && activity === null) {
+        if (decodedData.role === 'super-admin' && activity === null) {
             return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: req.t('You are not authorised to sign in now') }));
         }
         else if (!authorization) {

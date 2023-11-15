@@ -27,11 +27,13 @@ const userSchema = new mongoose.Schema({
       path: 'public\\uploads\\users\\user-1695552693976.jpg'
     }
   },
-  role: { type: String, enum: ['user', 'admin', 'unknown', 'host'], default: 'unknown' },
+  role: { type: String, enum: ['user', 'super-admin', 'admin', 'unknown', 'host'], default: 'unknown' },
   emailVerified: { type: Boolean, default: false },
   //emailVerificationAttemps: { type: Number, default: 0 },
   oneTimeCode: { type: String, required: false },
   //isDeleted: { type: Boolean, default: false },
+  accountInformation: { type: Object, required: false },
+  status: { type: String, enum: ['accepted', 'banned', 'suspended', 'deleted'], default: 'accepted' },
 }, { timestamps: true }, {
   toJSON: {
     transform(doc, ret) {

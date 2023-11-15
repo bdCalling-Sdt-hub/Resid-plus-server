@@ -7,7 +7,7 @@ const User = require("../models/User");
 const allActivity = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser) {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -20,7 +20,7 @@ const allActivity = async (req, res) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    if (checkUser.role !== 'admin') {
+    if (checkUser.role !== 'super-admin') {
       return res.status(401).json(
         response({
           status: 'Error',
@@ -73,10 +73,10 @@ const deleteActivity = async (req, res) => {
     const checkUser = await User.findById(req.body.userId);
     //extracting the deleteActivity id from param that is going to be deleted
     const id = req.params.id
-    if (!checkUser) {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
-    if (checkUser.role !== 'admin') {
+    if (checkUser.role !== 'super-admin') {
       return res.status(401).json(
         response({
           status: 'Error',

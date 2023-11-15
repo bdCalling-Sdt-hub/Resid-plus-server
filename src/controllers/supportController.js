@@ -20,7 +20,7 @@ const createSupport = async (req, res) => {
       );
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'super-admin') {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'support', message: req.t('You are not Authorized') }));
     }
 

@@ -11,6 +11,7 @@ const unlinkImages = require('../common/image/unlinkImage')
 const Activity = require('../models/Activity');
 const { addNotification, getAllNotification } = require("./notificationController");
 const logger = require("../helpers/logger");
+const Residence = require("../models/Residence");
 const options = { new: true };
 
 function validatePassword(password) {
@@ -33,7 +34,7 @@ const signUp = async (req, res) => {
     }
 
     //role as admin is not allowed to be signed-up
-    // if(role==='admin'){
+    // if(role==='super-admin'){
     //   return res.status(409).json(response({ statusCode: 200, message:req.t('You are not authorized to sign-up'), status: "OK" }));
     // }
     const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
@@ -108,6 +109,14 @@ const signIn = async (req, res) => {
     if (!user) {
       return res.status(404).json(response({ statusCode: 200, message:req.t('User does not exists'), status: "OK" }));
     }
+    if (user.status !== 'accepted') {
+      if (user && user.status === 'banned') {
+        return res.status(401).json(response({ statusCode: 200, message: 'Your account is banned', status: "OK" }));
+      }
+      if (user && user.status === 'suspended') {
+        return res.status(401).json(response({ statusCode: 200, message: 'Your account is suspended', status: "OK" }));
+      }
+    }
 
     // Compare the provided password with the stored hashed password
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -117,7 +126,7 @@ const signIn = async (req, res) => {
     }
 
     let activityId = null
-    if (user.role === 'admin') {
+    if (user.role === 'super-admin') {
       function extractDeviceModel(userAgent) {
         console.log('User Activity coming-------------->', userAgent)
         const regex = /\(([^)]+)\)/;
@@ -183,7 +192,7 @@ const processForgetPassword = async (req, res) => {
 
     // Check if the user already exists
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(400).json(response({ statusCode: 200, message:req.t('User does not exists'), status: "OK" }));
     }
 
@@ -235,7 +244,7 @@ const resendOneTimeCode = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(400).json(response({ statusCode: 200, message:req.t('User does not exist'), status: "OK" }));
     }
     const requestType = !req.query.requestType ? 'resetPassword' : req.query.requestType;
@@ -291,7 +300,7 @@ const verifyOneTimeCode = async (req, res) => {
     console.log(email);
     const user = await User.findOne({ email });
     const currentTime = new Date();
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(40).json(response({ message:req.t('User does not exist'), status: "OK", statusCode: 200 }));
     }
     // else if(user.emailVerificationAttemps >= 3){
@@ -314,11 +323,11 @@ const verifyOneTimeCode = async (req, res) => {
           image: user.image,
           linkId: user._id,
           type: 'user',
-          role: 'admin'
+          role: 'super-admin'
         }
         console.log('add noitification called--->')
         await addNotification(newNotification)
-        const notification = await getAllNotification('admin', 10, 1)
+        const notification = await getAllNotification('super-admin', 10, 1)
         io.emit('admin-notification', notification);
         console.log('email verify---------------->', user)
         res.status(200).json(response({ message:req.t('Email verified successfully'), status: "OK", type: "email verification", statusCode: 200, data: user }));
@@ -359,7 +368,7 @@ const updatePassword = async (req, res) => {
     }
     console.log(email);
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(400).json(response({ message:req.t('User does not exist'), status: "OK", statusCode: 200 }));
     }
     else if (user.oneTimeCode === 'verified') {
@@ -400,7 +409,7 @@ const updateProfile = async (req, res) => {
     }
     // Check if the user already exists
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       if (req.file) {
         unlinkImages(req.file.path)
       }
@@ -449,7 +458,7 @@ const userDetails = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
     const id = req.params.id
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       if (req.file) {
         unlinkImages(req.file.path)
       }
@@ -492,7 +501,7 @@ const userDetails = async (req, res) => {
 const allUser = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -503,6 +512,7 @@ const allUser = async (req, res) => {
     }
     const search = req.query.search || '';
     const userType = req.query.userType || 'user'
+    const userAccountStatus = !req.query.userAccountStatus ? 'accepted' : req.query.userAccountStatus;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const searchRegExp = new RegExp('.*' + search + '.*', 'i');
@@ -517,12 +527,16 @@ const allUser = async (req, res) => {
       filter.$and = filter.$and || [];
       filter.$and.push({ role: userType })
     }
+    if (userAccountStatus) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ accountInformation: userAccountStatus })
+    }
 
     let users = [];
     let completed = {}
     let count = 0;
 
-    if (checkUser.role === 'admin') {
+    if (checkUser.role === 'super-admin') {
       users = await User.find(filter)
         .limit(limit)
         .skip((page - 1) * limit)
@@ -596,7 +610,7 @@ const changePassword = async (req, res) => {
 
     const checkUser = await User.findOne({ _id: req.body.userId });
 
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -638,5 +652,162 @@ const changePassword = async (req, res) => {
   }
 }
 
+const updateUserStatus = async (req, res) => {
+  try {
+    const checkUser = await User.findOne({ _id: req.body.userId });
+    if (!checkUser || checkUser.status!=='accepted') {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+    const id = req.params.id
+    const existingUser = await User.findById(id)
+    if (!existingUser) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: 'User not found',
+        })
+      );
+    }
+    const requestType = !req.query.requestType ? 'accept' : req.query.requestType;
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json(
+        response({
+          status: 'Error',
+          statusCode: '400',
+          message: 'Status is required',
+        })
+      );
+    }
+    if (checkUser.role === 'super-admin') {
+      if (requestType === 'accept') {
+        if (status === 'accepted' && existingUser.status !== 'deleted' && existingUser.emailVerified === true) {
+          existingUser.status = status
+          await existingUser.save()
+          await Residence.updateMany({ hostId: id, acceptanceStatus: 'blocked' }, { acceptanceStatus: 'reserved' }, { new: true })
+          return res.status(200).json(
+            response({
+              status: 'OK',
+              statusCode: '200',
+              type: 'user',
+              message: 'User status updated successfully',
+              data: {
+                user: existingUser
+              },
+            })
+          );
+        }
+        else {
+          return res.status(400).json(
+            response({
+              status: 'Error',
+              statusCode: '400',
+              message: 'User update credentials not fulfilled',
+            })
+          );
+        }
+      }
+      else {
+        const existingResidence = await Residence.findOne({ hostId: id, status: 'reserved' })
+        if (existingResidence) {
+          return res.status(400).json(
+            response({
+              status: 'Error',
+              statusCode: '400',
+              message: 'Update users status failed due to having reserved residence',
+            })
+          );
+        }
+        if (requestType === 'suspend') {
+          if (status === 'suspended' && existingUser.status !== 'deleted') {
+            existingUser.status = status
+            await existingUser.save()
+            await Residence.updateMany({ hostId: id }, { acceptanceStatus: 'blocked' }, { new: true })
+          }
+          else {
+            return res.status(400).json(
+              response({
+                status: 'Error',
+                statusCode: '400',
+                message: 'User update credentials not fulfilled',
+              })
+            );
+          }
+        }
+        else if (requestType === 'ban') {
+          if (status === 'banned' && existingUser.status !== 'deleted') {
+            existingUser.status = status
+            await existingUser.save()
+            await Residence.updateMany({ hostId: id }, { acceptanceStatus: 'blocked' }, { new: true })
+          }
+          else {
+            return res.status(400).json(
+              response({
+                status: 'Error',
+                statusCode: '400',
+                message: 'User update credentials not fulfilled',
+              })
+            );
+          }
+        }
+        else if (requestType === 'delete') {
+          if (status === 'deleted' && existingUser.status !== 'deleted') {
+            existingUser.status = status
+            await existingUser.save()
+            await Residence.updateMany({ hostId: id }, { acceptanceStatus: 'deleted' }, { new: true })
+          }
+          else {
+            return res.status(400).json(
+              response({
+                status: 'Error',
+                statusCode: '400',
+                message: 'User update credentials not fulfilled',
+              })
+            );
+          }
+        }
+        else {
+          return res.status(400).json(
+            response({
+              status: 'Error',
+              statusCode: '400',
+              message: 'Request type not defined properly',
+            })
+          );
+        }
+      }
+      return res.status(200).json(
+        response({
+          status: 'OK',
+          statusCode: '200',
+          type: 'user',
+          message: 'User status updated successfully',
+          data: existingUser
+        })
+      );
+    }
+    else {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'user', message: 'You are not authorised to get all user details', data: null }));
+    }
+  }
+  catch (error) {
+    console.log(error);
+    return res.status(500).json(
+      response({
+        status: 'Error',
+        statusCode: '500',
+        message: 'Error getting users',
+      })
+    );
+  }
+};
 
-module.exports = { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser, resendOneTimeCode }
+
+module.exports = { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser, resendOneTimeCode, updateUserStatus }

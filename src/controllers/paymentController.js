@@ -91,13 +91,14 @@ const createPayInToken = async (req, res) => {
           hostId: bookingDetails.hostId,
           residenceId: bookingDetails.residenceId._id,
           status: 'pending',
+          paymentTypes,
           paymentData: {
             token: paydunyaResponse.data.token,
             amount: paymentAmount,
           }
         });
         await newPayment.save();
-        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment token created successfully.', data: paydunyaResponse.data }));
+        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment token created successfully.', data: newPayment }));
       }
       else {
         logger.error(response.data, req.originalUrl)
@@ -118,28 +119,25 @@ const createPayInToken = async (req, res) => {
 const payInAmount = async (req, res) => {
   try {
     const paymentTypes = req.query.paymentTypes
+    const {paymentId} = req.body
+    if (!paymentId ) {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Payment id not found' }));
+    }
+    const paymentDetails = await Payment.findById(paymentId).populate('bookingId residenceId userId');
+    if(!paymentDetails){
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment not found' }));
+    }
+    if(paymentDetails.status === 'success'){
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Payment is already done' }));
+    }
     var payload;
     var payInURL;
     if (paymentTypes === 'test' && process.env.NODE_ENV === 'development') {
       const { phoneNumber, email, password, token } = req.body
-      payload = {
-        "phone_phone": phoneNumber,
-        "customer_email": email,
-        "password": password,
-        "invoice_token": token
+      if (!phoneNumber || !email || !password || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required test details not found' }));
       }
-      payInURL = 'https://app.paydunya.com/sandbox-api/v1/softpay/checkout/make-payment'
-
-      console.log("payload---------->", payload, payInURL, process.env.NODE_ENV)
-      const paydunyaResponse = await axios.post(payInURL, payload, { headers });
-
-      if (paydunyaResponse.data.success) {
-        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
-      }
-      else {
-        console.log("paydunyaResponse---------->", paydunyaResponse)
-        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: paydunyaResponse }));
-      }
+      paydunyaResponse.data.success = true
     }
     else if (paymentTypes === 'card') {
       console.log("card hitted------------------------------------->")
@@ -159,12 +157,12 @@ const payInAmount = async (req, res) => {
       payInURL = 'https://app.paydunya.com/api/v1/softpay/card'
     }
     else if (paymentTypes === 'orange-money-ci') {
-      const { fullname, email, phoneNumber, otp, token } = req.body
-      if (!fullname || !email || !phoneNumber || !otp || !token) {
+      const { fullName, email, phoneNumber, otp, token } = req.body
+      if (!fullName || !email || !phoneNumber || !otp || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Orange Money details not found' }));
       }
       payload = {
-        "orange_money_ci_customer_fullname": fullname,
+        "orange_money_ci_customer_fullname": fullName,
         "orange_money_ci_email": email,
         "orange_money_ci_phone_number": phoneNumber,
         "orange_money_ci_otp": otp,
@@ -173,12 +171,12 @@ const payInAmount = async (req, res) => {
       payInURL = 'https://app.paydunya.com/api/v1/softpay/orange-money-ci'
     }
     else if (paymentTypes === 'mtn-ci') {
-      const { fullname, email, phoneNumber, provider, token } = req.body
-      if (!fullname || !email || !phoneNumber || !provider || !token) {
+      const { fullName, email, phoneNumber, provider, token } = req.body
+      if (!fullName || !email || !phoneNumber || !provider || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required MTN details not found' }));
       }
       payload = {
-        "mtn_ci_customer_fullname": fullname,
+        "mtn_ci_customer_fullname": fullName,
         "mtn_ci_email": email,
         "mtn_ci_phone_number": phoneNumber,
         "mtn_ci_wallet_provider": provider,
@@ -187,12 +185,12 @@ const payInAmount = async (req, res) => {
       payInURL = 'https://app.paydunya.com/api/v1/softpay/mtn-ci'
     }
     else if (paymentTypes === 'moov-ci') {
-      const { fullname, email, phoneNumber, token } = req.body
-      if (!fullname || !email || !phoneNumber || !token) {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Moov details not found' }));
       }
       payload = {
-        "moov_ci_customer_fullname": fullname,
+        "moov_ci_customer_fullname": fullName,
         "moov_ci_email": email,
         "moov_ci_phone_number": phoneNumber,
         "payment_token": token
@@ -232,10 +230,19 @@ const payInAmount = async (req, res) => {
     console.log("payload---------->", payload, payInURL)
     const paydunyaResponse = await axios.post(payInURL, payload);
     if (paydunyaResponse.data.success) {
+      paymentDetails.status = 'success'
+      await paymentDetails.save()
+      const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
+      bookingDetails.paymentTypes = paymentDetails.paymentTypes
+      await bookingDetails.save()
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
     }
     else {
       console.log("paydunyaResponse---------->", paydunyaResponse.data, paydunyaResponse.data.response_code)
+      if(!paydunyaResponse.data.success){
+        paymentDetails.status = 'failed'
+        await paymentDetails.save()
+      }
       return res.status(400).json(response({ status: 'Error', statusCode: '400', message: paydunyaResponse.data }));
     }
   }
@@ -247,11 +254,10 @@ const payInAmount = async (req, res) => {
 
 const createDisburseToken = async (data) => {
   try {
-    const disburseAmount = data?.totalAmount * 0.94
     const payload =
     {
       account_alias: data?.account_alias,
-      amount: disburseAmount,
+      amount: data?.amount,
       withdraw_mode: data?.withdraw_mode
     }
     const response = await axios.post(payoutdisburseTokenUrl, payload, { headers });
@@ -263,7 +269,7 @@ const createDisburseToken = async (data) => {
     }
 
   } catch (error) {
-    logger.error(error, '-Disburse token creation error')
+    logger.error(error, 'Disburse token creation error')
     console.error(error);
     return error.message;
   }
@@ -277,10 +283,10 @@ const payoutDisburseAmount = async (data) => {
     const payload = { "disburse_invoice": data.disburse_invoice, "disburse_id": data?.bookingId }
     const response = await axios.post(payoutDisburseAmountUrl, payload, { headers });
     if (response?.data?.response_code === '00') {
-      return response.data;
+      return true;
     }
     else {
-      return response.data;
+      return false;
     }
   }
   catch (error) {
@@ -288,107 +294,6 @@ const payoutDisburseAmount = async (data) => {
     return error.message
   }
 }
-
-//Add payment
-// const addPayment = async (req, res) => {
-//   try {
-//     const {
-//       paymentData,
-//       bookingId,
-//       paymentTypes
-//     } = req.body;
-//     const checkUser = await User.findById(req.body.userId);
-
-//     if (!checkUser) {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
-//     };
-
-//     //console.log("paymentTypes----------->", paymentTypes)
-//     if (paymentTypes !== 'half-payment' && paymentTypes !== 'full-payment') {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Payment status not not appropiate') }));
-//     }
-//     const bookingDetails = await Booking.findById(bookingId).populate('residenceId');
-//     console.log("bookingDetails--------->", bookingDetails, bookingId)
-//     if (!bookingDetails) {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Booking not found') }));
-//     };
-
-//     if (bookingDetails.status === 'cancelled') {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Booking is cancelled') }));
-//     }
-
-//     if (bookingDetails.paymentTypes === 'full-payment') {
-//       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Payment is already done') }));
-//     }
-
-//     if (checkUser.role === 'user' && bookingDetails.userId.toString() === req.body.userId) {
-//       k.verify(paymentData.transactionId).
-//         then(async (paymentResponse) => {
-//           console.log('payment info---------->', req.body)
-//           let amount = bookingDetails.totalAmount
-//           var paidAmount = paymentResponse.amount
-//           if ((paymentTypes === 'half-payment' && bookingDetails.paymentTypes === 'unknown') || (paymentTypes === 'full-payment' && bookingDetails.paymentTypes === 'half-payment')) {
-//             amount = Math.ceil(amount / 2)
-//           }
-//           if (paymentResponse === null) {
-//             return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Invalid payment data') }));
-//           }
-//           //enable it if running on production
-//           else if (paymentResponse?.state === 'Fake data' && process.env.NODE_ENV === 'production') {
-//             return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('Fake data is not allowed in production level') }));
-//           }
-
-//           else if (paidAmount !== amount) {
-//             return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('Invalid payment amount'), data: { paidAmount, amount } }));
-//           }
-
-//           else if (bookingDetails.paymentTypes === paymentTypes) {
-//             return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('Payment is already done'), data: { paidAmount, amount } }));
-//           }
-
-//           else {
-//             const newPayment = new Payment({
-//               paymentData: paymentResponse,
-//               bookingId,
-//               userId: req.body.userId,
-//               hostId: bookingDetails.hostId,
-//               residenceId: bookingDetails.residenceId
-//             });
-
-//             await newPayment.save();
-//             bookingDetails.paymentTypes = paymentTypes;
-//             await bookingDetails.save();
-
-//             const message = checkUser.fullName + ' has completed ' + paymentTypes + ' for ' + bookingDetails.residenceId.residenceName
-//             const newNotification = {
-//               message: message,
-//               receiverId: bookingDetails.hostId,
-//               image: checkUser.image,
-//               linkId: bookingDetails._id,
-//               type: 'host'
-//             }
-//             await addNotification(newNotification)
-//             const notification = await getAllNotification('host', 10, 1, bookingDetails.hostId)
-//             io.to('room' + bookingDetails.hostId).emit('host-notification', notification);
-//             return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'payment', message: req.t('Payment added successfully.'), data: newPayment }));
-//           }
-//         }).
-//         catch((error) => {
-//           logger.error(error, req.originalUrl)
-//           console.log("error---------->", error)
-//           return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
-//         })
-//     }
-//     else {
-//       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are Not authorize to do payment now') }));
-//     }
-
-//   } catch (error) {
-//     logger.error(error, req.originalUrl)
-//     console.error(error);
-//     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
-//   }
-// };
 
 //All payments
 const allPayment = async (req, res) => {

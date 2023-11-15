@@ -8,7 +8,7 @@ const User = require("../models/User");
 const allAmenity = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser) {
+    if (!checkUser  || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -18,7 +18,7 @@ const allAmenity = async (req, res) => {
       );
     }
 
-    // if (checkUser.role !== 'user' && checkUser.role !== 'admin') {
+    // if (checkUser.role !== 'user' && checkUser.role !== 'super-admin') {
     //   return res.status(401).json(
     //     response({
     //       status: 'Error',
@@ -74,7 +74,7 @@ const addAmenity = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -123,7 +123,7 @@ const addManyAmenity = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -158,10 +158,10 @@ const deleteAmenity = async (req, res) => {
     const checkUser = await User.findById(req.body.userId);
     //extracting the deleteAmenity id from param that is going to be deleted
     const id = req.params.id
-    if (!checkUser) {
+    if (!checkUser  || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
-    if (checkUser.role !== 'admin') {
+    if (checkUser.role !== 'super-admin') {
       return res.status(401).json(
         response({
           status: 'Error',
@@ -184,7 +184,7 @@ const updateAmenity = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -193,7 +193,7 @@ const updateAmenity = async (req, res) => {
         })
       );
     }
-    if (user.role !== 'admin') {
+    if (user.role !== 'super-admin') {
       return res.status(401).json(
         response({
           status: 'Error',

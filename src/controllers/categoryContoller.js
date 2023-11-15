@@ -17,7 +17,7 @@ const allCategory = async (req, res) => {
       );
     }
 
-    // if (checkUser.role !== 'user' && checkUser.role !== 'admin') {
+    // if (checkUser.role !== 'user' && checkUser.role !== 'super-admin') {
     //   return res.status(401).json(
     //     response({
     //       status: 'Error',
@@ -142,7 +142,7 @@ const deleteCategory = async (req, res) => {
     if (!checkUser) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
-    if (checkUser.role !== 'admin') {
+    if (checkUser.role !== 'super-admin') {
       return res.status(401).json(
         response({
           status: 'Error',
@@ -174,7 +174,7 @@ const updateCategory = async (req, res) => {
         })
       );
     }
-    if (user.role !== 'admin') {
+    if (user.role !== 'super-admin') {
       return res.status(401).json(
         response({
           status: 'Error',

@@ -32,7 +32,7 @@ const addResidence = async (req, res) => {
 
     const checkHost = await User.findById(req.body.userId);
 
-    if (!checkHost) {
+    if (!checkHost || checkHost.status !=='accepted') {
       //deleting the images if user is not valid
       unlinkImages(req.files.map(file => file.path))
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
@@ -95,10 +95,10 @@ const addResidence = async (req, res) => {
         image: checkHost.image,
         linkId: residence._id,
         type: 'residence',
-        role: 'admin'
+        role: 'super-admin'
       }
       await addNotification(newNotification)
-      const notification = await getAllNotification('admin', 10, 1)
+      const notification = await getAllNotification('super-admin', 10, 1)
       io.emit('admin-notification', notification);
 
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'residence', message: req.t('Residence added successfully.'), data: residence }));
@@ -122,11 +122,22 @@ const allResidence = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
 
+    if(!checkUser || checkUser.status!=='accepted'){
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: req.t('User not found'),
+        })
+      );
+    }
     const search = req.query.search || '';
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const category = req.query.category || ''
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
+    const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
+    const reUploaded = req.query.reUpload || 'no'
 
     //minPrice must be greater or equal 1
     const minPrice = Number(req.query.minPrice) || '';
@@ -158,14 +169,15 @@ const allResidence = async (req, res) => {
       filter.$and.push({ beds: numberOfBeds });
     }
 
-    if (!checkUser) {
-      return res.status(404).json(
-        response({
-          status: 'Error',
-          statusCode: '404',
-          message: req.t('User not found'),
-        })
-      );
+    if(acceptanceStatus) {
+      console.log('Acceptance Status------>', acceptanceStatus)
+      filter.$and = filter.$and || [];
+      filter.$and.push({ acceptanceStatus: acceptanceStatus });
+    }
+
+    if(reUploaded==='yes') {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ reUpload: true });
     }
 
     let residences = [];
@@ -231,13 +243,13 @@ const allResidence = async (req, res) => {
       }
     }
 
-    // //-> placed to residence dashboard API
-    // else if (checkUser.role === 'admin') {
-    //   residences = await Residence.find()
-    //     .limit(limit)
-    //     .skip((page - 1) * limit);
-    //   count = await Residence.countDocuments();
-    // }
+    //-> placed to residence dashboard API
+    else if (checkUser.role === 'admin') {
+      residences = await Residence.find({...filter})
+        .limit(limit)
+        .skip((page - 1) * limit);
+      count = await Residence.countDocuments({...filter});
+    }
 
     return res.status(200).json(
       response({
@@ -273,7 +285,7 @@ const allResidence = async (req, res) => {
 const searchCredentials = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -340,7 +352,7 @@ const deleteResidence = async (req, res) => {
     const checkHost = await User.findById(req.body.userId);
     //extracting the residence id from param that is going to be deleted
     const id = req.params.id
-    if (!checkHost) {
+    if (!checkHost || checkHost.status !=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'host') {
@@ -413,7 +425,7 @@ const updateResidence = async (req, res) => {
       category
     } = req.body;
 
-    if (!checkHost) {
+    if (!checkHost || checkHost.status !=='accepted') {
       if (req.files.length > 0) {
         unlinkImages(req.files.map(file => file.path))
       }
@@ -428,6 +440,7 @@ const updateResidence = async (req, res) => {
     
     const existingResidence = await Residence.findById(id);
     if (checkHost.role === 'host' && checkHost._id.toString() === existingResidence.hostId.toString()) {
+      const updateType = req.query.updateType || 'general'
       const updatedResidence = {
         residenceName: !residenceName ? existingResidence.residenceName : residenceName,
         capacity: !capacity ? existingResidence.capacity : capacity,
@@ -475,9 +488,123 @@ const updateResidence = async (req, res) => {
         });
         updatedResidence.photo = files;
       }
+      if(updateType === 'admin-suggessions'){
+        updatedResidence.reUpload = true;
+      }
       const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
+
+      if(updateType === 'admin-suggessions') {
+        const message = checkHost.fullName + ' has updated ' + existingResidence.residenceName + ' . Your feedBack was: ' + existingResidence.feedBack
+
+        const newNotification = {
+          message: message,
+          image: checkHost.image,
+          linkId: existingResidence._id,
+          type: 'residence',
+          role: 'host'
+        }
+        await addNotification(newNotification)
+        const notification = await getAllNotification('admin', 10, 1)
+        io.emit('admin-notification', notification);
+      }
       return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: req.t('Residence edited successfully.'), data: updatedData }));
-    } else {
+    }
+    else if (checkHost.role === 'admin' || checkHost.role === 'super-admin') {
+      const { acceptanceStatus } = req.body
+      if (!acceptanceStatus) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Acceptance status must be given' }));
+      }
+      if (acceptanceStatus === 'accepted') {
+        if (existingResidence.acceptanceStatus !== 'deleted') {
+          const message = checkHost.fullName + ' has accepted ' + existingResidence.residenceName + ' from being ' + existingResidence.acceptanceStatus
+
+          existingResidence.acceptanceStatus = acceptanceStatus;
+          existingResidence.reUpload = false;
+          existingResidence.feedBack = null;
+          existingResidence.save();
+
+          const newNotification = {
+            receiverId: existingResidence.hostId,
+            message: message,
+            image: checkHost.image,
+            linkId: existingResidence._id,
+            type: 'residence',
+            role: 'host'
+          }
+          await addNotification(newNotification)
+          const notification = await getAllNotification('host', 10, 1, existingResidence.hostId)
+          io.to('room'+existingResidence.hostId).emit('host-notification', notification);
+
+        }
+        else {
+          return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence accepting requirements not fulfilled' }));
+        }
+      }
+      else {
+        const bookingStatus = await Booking.findOne({ residenceId: existingResidence._id, isDeleted: false, status: { $nin: ['pending', 'cancelled'] }})
+        if (bookingStatus) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: `Cannot reject or delete residence with when it is booked, please try this on ${bookingStatus.checkOutTime}` }));
+        }
+        if (acceptanceStatus === 'blocked') {
+          if (existingResidence.acceptanceStatus !== 'deleted') {
+            const {feedBack} = req.body
+            if(!feedBack) {
+              return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Feedback must be given' }));
+            }
+            const message = 'Admin has blocked ' + existingResidence.residenceName + ' from being ' + existingResidence.acceptanceStatus + ' . Reason: ' + feedBack
+
+            existingResidence.feedBack = feedBack;
+            existingResidence.reUpload = false;
+            existingResidence.acceptanceStatus = acceptanceStatus;
+            existingResidence.save();
+
+            const newNotification = {
+              receiverId: existingResidence.hostId,
+              message: message,
+              image: checkHost.image,
+              linkId: existingResidence._id,
+              type: 'residence',
+              role: 'host'
+            }
+            await addNotification(newNotification)
+            const notification = await getAllNotification('host', 10, 1, existingResidence.hostId)
+            io.to('roon'+existingResidence.hostId).emit('host-notification', notification);
+          }
+          else {
+            return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence rejection requirements not fulfilled' }));
+          }
+        }
+        else if (acceptanceStatus === 'deleted') {
+          if (existingResidence.acceptanceStatus !== 'deleted') {
+            const message = checkHost.fullName + ' has deleted ' + existingResidence.residenceName + ' from being ' + existingResidence.acceptanceStatus
+
+            existingResidence.acceptanceStatus = acceptanceStatus;
+            existingResidence.save();
+
+            const newNotification = {
+              message: message,
+              image: checkHost.image,
+              linkId: existingResidence._id,
+              type: 'residence',
+              role: 'host'
+            }
+            await addNotification(newNotification)
+            const notification = await getAllNotification('host', 10, 1, existingResidence.hostId)
+            io.emit('host-notification', notification);
+
+          }
+          else {
+            return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence deletion requirements not fulfilled' }));
+          }
+        }
+        else{
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Acceptance status not defined' }));
+        }
+      }
+      return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: 'Residence edited successfully.', data: existingResidence }));
+    }
+    
+    else {
       if (req.files.length > 0) {
         unlinkImages(req.files.map(file => file.path))
       }
@@ -500,7 +627,7 @@ const residenceDetails = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
     const id = req.params.id
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -539,11 +666,11 @@ const residenceDetails = async (req, res) => {
 const residenceDashboard = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
 
-    if (checkUser.role === 'admin') {
+    if (checkUser.role === 'super-admin') {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
       const residences = await Residence.find()

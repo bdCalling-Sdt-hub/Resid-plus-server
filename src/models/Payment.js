@@ -6,6 +6,7 @@ const paymentSchema = new mongoose.Schema({
     residenceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Residence' },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    paymentTypes: { type: String, enum: ['half-payment', 'full-payment', 'pending'], default: 'pending' },
     status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
 },
     { timestamps: true },

@@ -11,13 +11,13 @@ const options = { new: true };
 const logger = require("../helpers/logger");
 const axios = require('axios');
 const sendSMS = require("../helpers/sendMessage");
-const { createDisburseToken } = require("./paymentController");
+const { createDisburseToken, payoutDisburseAmount } = require("./paymentController");
 require('dotenv').config()
 
 const calculateTimeAndPrice = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser) {
+    if (!checkUser || checkHost.status !=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -184,7 +184,7 @@ const addBooking = async (req, res) => {
     }
 
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser) {
+    if (!checkUser || checkHost.status !=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -296,7 +296,7 @@ const addBooking = async (req, res) => {
 const allBooking = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser) {
+    if (!checkUser || checkHost.status !=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -312,7 +312,7 @@ const allBooking = async (req, res) => {
     var bookings;
     let count = 0;
 
-    if (checkUser.role === 'admin') {
+    if (checkUser.role === 'super-admin') {
       var data = {}
       data.status = await bookingDashboardCount()
       //format: 2023-09
@@ -465,7 +465,7 @@ const updateBooking = async (req, res) => {
         })
       );
     }
-    if (!checkUser) {
+    if (!checkUser || checkHost.status !=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
@@ -493,7 +493,7 @@ const updateBooking = async (req, res) => {
             message: adminMessage,
             image: bookingDetails.userId.image,
             linkId: bookingDetails._id,
-            role: 'admin',
+            role: 'super-admin',
             type: 'booking'
           }, {
             message: userMessage,
@@ -504,7 +504,7 @@ const updateBooking = async (req, res) => {
             type: 'booking'
           }]
           await addManyNotifications(newNotification)
-          const adminNotification = await getAllNotification('admin')
+          const adminNotification = await getAllNotification('super-admin')
           io.emit('admin-notification', adminNotification);
           const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
           console.log(adminNotification, userNotification)
@@ -575,13 +575,12 @@ const updateBooking = async (req, res) => {
           console.log(hostNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
 
-          const accessToken = process.env.ORANGE_ACCESS_KEY
-          const senderNumber = process.env.ORANGE_SENDER_NUMBER
-          const receiverNumber = bookingDetails.hostId.phoneNumber
-          const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
+          // const accessToken = process.env.ORANGE_ACCESS_KEY
+          // const senderNumber = process.env.ORANGE_SENDER_NUMBER
+          // const receiverNumber = bookingDetails.hostId.phoneNumber
+          // const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
 
-          await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
-
+          // await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
@@ -593,24 +592,41 @@ const updateBooking = async (req, res) => {
           bookingDetails.status = status
           bookingDetails.save()
 
-          // const sendingAmount = Math.ceil(0.92 * bookingDetails.totalAmount)
-          // if (sendingAmount > 200) {
-          //   const data = {
-          //     totalAmount: sendingAmount,
-          //     withdraw_mode: bookingDetails.hostId.withdrawMode,
-          //     account_alias: bookingDetails.hostId.accountAlias,
-          //   }
-          //   const disburseToken = await createDisburseToken(data)
-          //   if (disburseToken) {
-          //   }
-          //   else {
-          //     //send host notification that account infomation is wrong
-          //   }
-          // }
-          // else {
-          //   //send host notification that amount is less than 200, so wait till it becomes 200+
-          //   //call income part here and add the amount to host pending amount
-          // }
+          const sendingAmount = Math.ceil(0.92 * bookingDetails.totalAmount)
+          if (sendingAmount > 200) {
+            const userDetails = await User.findById(bookingDetails.hostId._id)
+            if (userDetails.accountInformation !== null) {
+
+            }
+
+            const data = {
+              totalAmount: sendingAmount,
+              withdraw_mode: userDetails.accountInformation.withdraw_mode,
+              account_alias: userDetails.accountInformation.account_alias,
+            }
+            const disburseToken = await createDisburseToken(data)
+            if (disburseToken) {
+              const data = {
+                bookingId: bookingDetails._id,
+                disburse_invoice: disburseToken
+              }
+              const payment = await payoutDisburseAmount(data)
+              if (payment) {
+                //subtract amount from user pending amount
+              }
+              else{
+                //add notification that payment is not done
+                //add in income section
+              }
+            }
+            else {
+              //send host notification that account infomation is wrong
+            }
+          }
+          else {
+            //send host notification that amount is less than 200, so wait till it becomes 200+
+            //call income part here and add the amount to host pending amount
+          }
 
           const residence = await Residence.findById(bookingDetails.residenceId)
           residence.status = 'active'
@@ -653,7 +669,7 @@ const updateBooking = async (req, res) => {
 const bookingDetails = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser) {
+    if (!checkUser || checkHost.status !=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -666,7 +682,7 @@ const bookingDetails = async (req, res) => {
     const id = req.params.id
 
     var booking
-    if (checkUser.role === 'admin') {
+    if (checkUser.role === 'super-admin') {
       booking = await Booking.findById(id).populate('hostId userId').exec();
     }
     else if (checkUser.role === 'host' || checkUser.role === 'user') {
@@ -731,11 +747,11 @@ const bookingDashboardRatio = async (req, res) => {
     const checkUser = await User.findById(req.body.userId);
     const year = !req.query.year ? new Date() : new Date(req.query.year)
     const conditionalYear = year.getFullYear()
-    if (!checkUser) {
+    if (!checkUser || checkHost.status !=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
 
-    if (checkUser.role === 'admin') {
+    if (checkUser.role === 'super-admin') {
       const status = await bookingDashboardCount();
       const bookings = await Booking.find({ status: 'completed' });
 
@@ -788,7 +804,7 @@ const deleteBooking = async (req, res) => {
         })
       );
     }
-    if (!checkHost) {
+    if (!checkHost || checkHost.status!=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'user') {
@@ -832,7 +848,7 @@ const deleteHistory = async (req, res) => {
         })
       );
     }
-    if (!checkHost) {
+    if (!checkHost || checkHost.status!=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'user') {

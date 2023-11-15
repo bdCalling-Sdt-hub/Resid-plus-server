@@ -37,7 +37,7 @@ async function getAllNotification(role, limit = 10, page = 1, receiverId = null)
     var allNotification
     var notViewed
     var count
-    if (role === 'admin') {
+    if (role === 'super-admin') {
       allNotification = await Notification.find({ role: role })
         .limit(limit)
         .skip((page - 1) * limit)
@@ -88,7 +88,7 @@ const allNotifications = async (req, res) => {
     var allNotification
     var notViewed
     var count
-    if (role === 'admin') {
+    if (role === 'super-admin') {
       allNotification = await Notification.find({ role: role })
         .limit(limit)
         .skip((page - 1) * limit)
@@ -125,7 +125,7 @@ const allNotifications = async (req, res) => {
         nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
     }
-    if (role === 'admin') {
+    if (role === 'super-admin') {
       io.emit('admin-notification', data)
     }
     else {
@@ -200,7 +200,7 @@ const getNotificationDetails = async (req, res) => {
         nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
     }
-    if (role === 'admin') {
+    if (role === 'super-admin') {
       io.emit('admin-notification', data)
     }
     else if (role === 'user' || role === 'host') {

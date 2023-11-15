@@ -7,7 +7,7 @@ const createAboutUs = async (req, res) => {
   const { content } = req.body;
   try {
     const user = await User.findById(req.body.userId);
-    if (!user) {
+    if (!user || user.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -17,7 +17,7 @@ const createAboutUs = async (req, res) => {
       );
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'super-admin') {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'about-us', message: req.t('You are not Authorized') }));
     }
 
@@ -46,7 +46,7 @@ const getAll = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -75,7 +75,7 @@ const getAllForWebSite = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',

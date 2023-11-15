@@ -30,6 +30,15 @@ const residenceSchema = new mongoose.Schema({
     required: true
   },
   isDeleted: { type: Boolean, default: false },
+  acceptanceStatus: { type: String, enum: ['accepted', 'pending', 'deleted', 'blocked'], default: 'pending' },
+  feedBack:{
+    type: String,
+    required: false
+  },
+  reUpload:{
+    type: Boolean,
+    required: false
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Residence', residenceSchema);
