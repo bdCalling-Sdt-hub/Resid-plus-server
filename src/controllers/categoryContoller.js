@@ -7,7 +7,7 @@ const User = require("../models/User");
 const allCategory = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -56,7 +56,7 @@ const addCategory = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -105,7 +105,7 @@ const addManyCategory = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -139,7 +139,7 @@ const deleteCategory = async (req, res) => {
     const checkUser = await User.findById(req.body.userId);
     //extracting the deleteCategory id from param that is going to be deleted
     const id = req.params.id
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkUser.role !== 'super-admin') {
@@ -165,7 +165,7 @@ const updateCategory = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',

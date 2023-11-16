@@ -78,7 +78,7 @@ const allNotifications = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
     //extracting the notification id from param that is going to be edited
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const page = Number(req.query.page) || 1;
@@ -162,7 +162,7 @@ const getNotificationDetails = async (req, res) => {
     const id = req.params.id
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const notification = await Notification.findById(id)
@@ -226,7 +226,7 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
     const id = notificationId
     const page = Number(pages) || 1;
     const limit = Number(limits) || 10;
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const notification = await Notification.findById(id)

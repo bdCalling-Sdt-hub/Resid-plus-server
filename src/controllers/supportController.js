@@ -10,7 +10,7 @@ const createSupport = async (req, res) => {
 
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -49,7 +49,7 @@ const getAll = async (req, res) => {
   try {
     const user = await User.findById(req.body.userId);
 
-    if (!user) {
+    if (!user || user.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',

@@ -10,7 +10,7 @@ const addFavourite = async (req, res) => {
   try {
     const { residenceId } = req.body;
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -62,7 +62,7 @@ const addFavourite = async (req, res) => {
 const allFavourite = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId })
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -127,7 +127,7 @@ const deleteFavourite = async (req, res) => {
     const checkHost = await User.findById(req.body.userId);
     //extracting the favourite id from param that is going to be deleted
     const id = req.params.id
-    if (!checkHost) {
+    if (!checkHost || checkHost.status!=='accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'user') {

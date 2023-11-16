@@ -9,7 +9,7 @@ const giveReview = async (req, res) => {
   try {
     const { bookingId,rating } = req.body;
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -105,7 +105,7 @@ const getAll = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
     const residenceId = req.params.residenceId
-    if (!checkUser) {
+    if (!checkUser || checkUser.status!=='accepted') {
       return res.status(404).json(
         response({
           status: 'Error',

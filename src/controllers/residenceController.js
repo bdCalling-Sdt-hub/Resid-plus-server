@@ -89,7 +89,7 @@ const addResidence = async (req, res) => {
       }
 
       await residence.save();
-      const message = checkHost.fullName + ' has added ' + residence.residenceName
+      const message = checkHost.fullName + ' has added ' + residence.residenceName+', please check and give your feedback'
       const newNotification = {
         message: message,
         image: checkHost.image,
