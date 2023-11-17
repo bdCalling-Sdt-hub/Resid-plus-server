@@ -505,7 +505,7 @@ const updateBooking = async (req, res) => {
           }]
           await addManyNotifications(newNotification)
           const adminNotification = await getAllNotification('super-admin')
-          io.emit('admin-notification', adminNotification);
+          io.emit('super-admin-notification', adminNotification);
           const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
           console.log(adminNotification, userNotification)
           io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);

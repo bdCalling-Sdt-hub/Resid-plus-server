@@ -18,3 +18,5 @@
 2023-11-16T09:20:59.989Z [ERROR] MongoBulkWriteError: E11000 duplicate key error collection: resid+.amenities index: key_1 dup key: { key: "wifi" } (Error Path: /api/amenities/add-multiple)
 2023-11-16T09:21:33.346Z [ERROR] MongoBulkWriteError: E11000 duplicate key error collection: resid+.categories index: key_1 dup key: { key: "hotel" } (Error Path: /api/categories/add-multiple)
 2023-11-16T09:21:38.895Z [ERROR] MongoBulkWriteError: E11000 duplicate key error collection: resid+.categories index: key_1 dup key: { key: "hotel" } (Error Path: /api/categories/add-multiple)
+2023-11-17T05:31:07.929Z [ERROR] Images not found (Error Path: image verification middleware)
+2023-11-17T05:31:25.232Z [ERROR] CastError: Cast to ObjectId failed for value "personal-house" (type string) at path "category" for model "Residence" (Error Path: /api/residences)

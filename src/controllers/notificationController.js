@@ -37,13 +37,20 @@ async function getAllNotification(role, limit = 10, page = 1, receiverId = null)
     var allNotification
     var notViewed
     var count
-    if (role === 'super-admin') {
-      allNotification = await Notification.find({ role: role })
+    if (role === 'super-admin' || role === 'admin') {
+      var filter
+      if (role === 'super-admin') {
+        filter = { role: { $in: ['admin', 'super-admin'] } }
+      }
+      if (role === 'admin') {
+        filter = { role: 'common-admin', type: 'residence' }
+      }
+      allNotification = await Notification.find({ role: role, ...filter })
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
-      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role });
-      count = await Notification.countDocuments({ role: role });
+      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role, ...filter });
+      count = await Notification.countDocuments({ role: role, ...filter });
     }
     else if (role === 'user' || role === 'host') {
       allNotification = await Notification.find({ receiverId: receiverId, role: role })
@@ -78,7 +85,7 @@ const allNotifications = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
     //extracting the notification id from param that is going to be edited
-    if (!checkUser || checkUser.status!=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const page = Number(req.query.page) || 1;
@@ -88,13 +95,20 @@ const allNotifications = async (req, res) => {
     var allNotification
     var notViewed
     var count
-    if (role === 'super-admin') {
-      allNotification = await Notification.find({ role: role })
+    if (role === 'super-admin' || role === 'admin') {
+      var filter
+      if (role === 'super-admin') {
+        filter = { role: { $in: ['admin', 'super-admin'] } }
+      }
+      if (role === 'admin') {
+        filter = { role: 'common-admin', type: 'residence' }
+      }
+      allNotification = await Notification.find({ role: role, ...filter })
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
-      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role });
-      count = await Notification.countDocuments({ role: role });
+      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role, ...filter });
+      count = await Notification.countDocuments({ role: role, ...filter });
     }
     else if (role === 'user' || role === 'host') {
       allNotification = await Notification.find({ receiverId: req.body.userId, role: role })
@@ -126,7 +140,7 @@ const allNotifications = async (req, res) => {
       },
     }
     if (role === 'super-admin') {
-      io.emit('admin-notification', data)
+      io.emit('super-admin-notification', data)
     }
     else {
       io.to('room' + req.body.userId).emit(`${role}-notification`, data)
@@ -162,7 +176,7 @@ const getNotificationDetails = async (req, res) => {
     const id = req.params.id
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-    if (!checkUser || checkUser.status!=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const notification = await Notification.findById(id)
@@ -179,7 +193,7 @@ const getNotificationDetails = async (req, res) => {
     else if (type === 'residence') {
       details = await Residence.findById(notification.linkId).populate('hostId')
     }
-    else if(type === 'user'){
+    else if (type === 'user') {
       details = await User.findById(notification.linkId)
     }
     //retriving all notifications
@@ -201,7 +215,7 @@ const getNotificationDetails = async (req, res) => {
       },
     }
     if (role === 'super-admin') {
-      io.emit('admin-notification', data)
+      io.emit('super-admin-notification', data)
     }
     else if (role === 'user' || role === 'host') {
       io.to('room' + req.body.userId).emit(`${role}-notification`, data)
@@ -226,7 +240,7 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
     const id = notificationId
     const page = Number(pages) || 1;
     const limit = Number(limits) || 10;
-    if (!checkUser || checkUser.status!=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const notification = await Notification.findById(id)
@@ -253,7 +267,7 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
         nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
     }
-    io.emit('admin-notification', data)
+    io.emit('super-admin-notification', data)
   }
   catch (error) {
     logger.error(error, 'from: update-notification')

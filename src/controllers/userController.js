@@ -388,7 +388,7 @@ const verifyOneTimeCode = async (req, res) => {
         console.log('add noitification called--->')
         await addNotification(newNotification)
         const notification = await getAllNotification('super-admin', 10, 1)
-        io.emit('admin-notification', notification);
+        io.emit('super-admin-notification', notification);
         console.log('email verify---------------->', user)
         res.status(200).json(response({ message: req.t('Email verified successfully'), status: "OK", type: "email verification", statusCode: 200, data: user }));
       }

@@ -4,17 +4,14 @@ const Chat = require("../models/Chat");
 exports.addChat = async (chatInfo) => {
   try {
     const existingChat = await Chat.findOne({
-      $and: [
-        { 'participants': chatInfo.participants[0] },
-        { 'participants': chatInfo.participants[1] }
-      ]
+      'participants': chatInfo.participants[0],
+      'participants': chatInfo.participants[1]
     });
 
     if (existingChat) {
       return existingChat;
     } else {
       const newChat = await Chat.create({ participants: chatInfo.participants });
-      console.log(newChat)
       return newChat;
     }
   } catch (error) {
@@ -26,7 +23,6 @@ exports.addChat = async (chatInfo) => {
 exports.getChatById = async (id) => {
   try {
     const chat = await Chat.findById(id);
-    console.log(id, chat)
     if (chat) {
       return chat;
     }
@@ -43,7 +39,6 @@ exports.getChatByParticipantId = async (id) => {
   try {
     const chat = await Chat.find({ participants: id })
       .populate('participants')
-    console.log(id, chat)
     if (chat.length > 0) {
       return chat;
     }

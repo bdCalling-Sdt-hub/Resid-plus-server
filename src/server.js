@@ -5,7 +5,7 @@ require('dotenv').config();
 const port = process.env.PORT || 3001;
 
 const server = app.listen(port, process.env.API_SERVER_IP,() => {
-  console.log(`Resid+ is listening on port: ${port}`)
+  console.log(`Resid+ Server is listening on port: ${port}`)
 });
 
 //initializing socket io
@@ -20,5 +20,5 @@ socketIO(io);
 global.io = io
 const socketIOPort = process.env.PORT
 server.listen(socketIOPort, process.env.API_SERVER_IP,() => {
-  console.log(`Server is listening on port: ${socketIOPort}`);
+  console.log(`Socket Server is listening on port: ${socketIOPort}`);
 });

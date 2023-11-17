@@ -95,11 +95,14 @@ const addResidence = async (req, res) => {
         image: checkHost.image,
         linkId: residence._id,
         type: 'residence',
-        role: 'super-admin'
+        role: 'common-admin'
       }
       await addNotification(newNotification)
       const notification = await getAllNotification('super-admin', 10, 1)
-      io.emit('admin-notification', notification);
+      io.emit('super-admin-notification', notification);
+
+      const commonNotif = await getAllNotification('admin', 10, 1)
+      io.emit('admin-notification', commonNotif);
 
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'residence', message: req.t('Residence added successfully.'), data: residence }));
     } else {
@@ -504,8 +507,11 @@ const updateResidence = async (req, res) => {
           role: 'host'
         }
         await addNotification(newNotification)
-        const notification = await getAllNotification('admin', 10, 1)
-        io.emit('admin-notification', notification);
+        const notification = await getAllNotification('super-admin', 10, 1)
+        io.emit('super-admin-notification', notification);
+
+        const commonNotif = await getAllNotification('admin', 10, 1)
+        io.emit('super-admin-notification', commonNotif);
       }
       return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: req.t('Residence edited successfully.'), data: updatedData }));
     }
