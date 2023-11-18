@@ -123,8 +123,8 @@ const createUser = async (req, res) => {
     email,
     subject: 'User login credentials',
     html: `
-        <h3>Welcome ${user.fullName} to Resid+</h3>
-        <p><b>Your login info:</b></p>
+        <h3>Welcome ${user.fullName} to Resid+ as ${user.role}</h3>
+        <p><b>Your login credentials:</b></p>
         <hr>
         <table>
           <tr>

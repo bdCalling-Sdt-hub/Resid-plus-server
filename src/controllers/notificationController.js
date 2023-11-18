@@ -43,7 +43,7 @@ async function getAllNotification(role, limit = 10, page = 1, receiverId = null)
         filter = { role: { $in: ['admin', 'super-admin'] } }
       }
       if (role === 'admin') {
-        filter = { role: 'common-admin', type: 'residence' }
+        filter = { role: 'admin', type: 'residence' }
       }
       allNotification = await Notification.find({ role: role, ...filter })
         .limit(limit)
@@ -101,7 +101,7 @@ const allNotifications = async (req, res) => {
         filter = { role: { $in: ['admin', 'super-admin'] } }
       }
       if (role === 'admin') {
-        filter = { role: 'common-admin', type: 'residence' }
+        filter = { role: 'admin', type: 'residence' }
       }
       allNotification = await Notification.find({ role: role, ...filter })
         .limit(limit)

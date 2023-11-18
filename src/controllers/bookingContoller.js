@@ -17,7 +17,7 @@ require('dotenv').config()
 const calculateTimeAndPrice = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser || checkHost.status !=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -29,7 +29,8 @@ const calculateTimeAndPrice = async (req, res) => {
     let {
       checkInTime,
       checkOutTime,
-      residenceId
+      residenceId,
+      promoCodeId
     } = req.body;
 
     console.log('-------->', req.body)
@@ -42,7 +43,7 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
-    const residence_details = await Residence.findById(residenceId);
+    const residence_details = await Residence.findById(residenceId).populate('category');
     if (!residence_details) {
       return res.status(404).json(
         response({
@@ -76,16 +77,36 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
-
-    const hourlyAmount = residence_details.hourlyAmount / 12 // as hourly amount is given for 12 hours or half day
-    const dailyAmount = residence_details.dailyAmount
+    var baseAmount;
+    if (residence_details.category.name === 'hotel') {
+      baseAmount = residence_details.hourlyAmount / 12 // as hourly amount is given for 12 hours or half day
+    }
+    else {
+      baseAmount = residence_details.dailyAmount
+    }
     const calculatedHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
-    if (calculatedHours < 5) {
+    var calculatedTime;
+    if (residence_details.category.name === 'hotel') {
+      calculatedTime = calculatedHours
+    }
+    else {
+      calculatedTime = Math.ceil(calculatedHours / 24)
+    }
+    if (calculatedTime < 1 && residence_details.category.name === 'hotel') {
       return res.status(404).json(
         response({
           status: 'Error',
           statusCode: '404',
-          message: req.t('Total stay must be greater than 5 hours'),
+          message: req.t('Total stay must be greater than 1 hours for hotel'),
+        })
+      );
+    }
+    if (calculatedTime < 1 && residence_details.category.name !== 'hostel') {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: req.t('Total stay must be greater than 1 day for personal House or residence'),
         })
       );
     }
@@ -94,14 +115,11 @@ const calculateTimeAndPrice = async (req, res) => {
     const totalHours = parseFloat(hoursCalculated.toFixed(2));
 
     // Calculate total amount for days and remaining hours
-    const totalAmountForDays = totalDays * dailyAmount;
-    const totalAmountForHours = totalHours * hourlyAmount;
+    const hostAmount = baseAmount * calculatedTime;
+    const serviceCharge = Math.ceil(0.08 * hostAmount);
 
     // Calculate total amount
-    const initialAmount = totalAmountForDays + totalAmountForHours;
-    const totalAmount = Math.ceil(initialAmount + (0.06 * initialAmount));
-
-    console.log('booking calculation---->', 'checkInTime', checkInTime, 'checkOutTime', checkOutTime, 'hourlyAmount', hourlyAmount, 'dailyAmount', dailyAmount, 'calculatedHours', calculatedHours, 'totalDays', totalDays, 'totalHours', totalHours, 'initialAmount', initialAmount, 'totalAmountForDays', totalAmountForDays, 'totalAmountForHours', totalAmountForHours, totalAmount)
+    const totalAmount = hostAmount + serviceCharge;
 
     return res.status(200).json(
       response({
@@ -114,7 +132,9 @@ const calculateTimeAndPrice = async (req, res) => {
           checkOutTime,
           totalHours,
           totalDays,
-          totalAmount
+          hostAmount,
+          serviceCharge,
+          totalAmount,
         },
       })
     );
@@ -135,10 +155,12 @@ const addBooking = async (req, res) => {
       totalDays,
       totalAmount,
       guestTypes,
-      numberOfGuests
+      numberOfGuests,
+      hostAmount,
+      serviceCharge,
     } = req.body;
 
-    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays === null || totalHours === null || totalAmount === null || !residenceId) {
+    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays === null || totalHours === null || totalAmount === null || !residenceId || hostAmount===null || serviceCharge===null) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -184,7 +206,7 @@ const addBooking = async (req, res) => {
     }
 
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser || checkHost.status !=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -255,7 +277,9 @@ const addBooking = async (req, res) => {
         totalAmount,
         userContactNumber: checkUser.phoneNumber,
         guestTypes,
-        numberOfGuests
+        numberOfGuests,
+        hostAmount,
+        serviceCharge,
       });
       await booking.save();
       let popularity = residence_details.popularity
@@ -296,7 +320,7 @@ const addBooking = async (req, res) => {
 const allBooking = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser || checkHost.status !=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -465,7 +489,7 @@ const updateBooking = async (req, res) => {
         })
       );
     }
-    if (!checkUser || checkHost.status !=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
@@ -614,7 +638,7 @@ const updateBooking = async (req, res) => {
               if (payment) {
                 //subtract amount from user pending amount
               }
-              else{
+              else {
                 //add notification that payment is not done
                 //add in income section
               }
@@ -669,7 +693,7 @@ const updateBooking = async (req, res) => {
 const bookingDetails = async (req, res) => {
   try {
     const checkUser = await User.findOne({ _id: req.body.userId });
-    if (!checkUser || checkHost.status !=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -747,7 +771,7 @@ const bookingDashboardRatio = async (req, res) => {
     const checkUser = await User.findById(req.body.userId);
     const year = !req.query.year ? new Date() : new Date(req.query.year)
     const conditionalYear = year.getFullYear()
-    if (!checkUser || checkHost.status !=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
 
@@ -804,7 +828,7 @@ const deleteBooking = async (req, res) => {
         })
       );
     }
-    if (!checkHost || checkHost.status!=='accepted') {
+    if (!checkHost || checkHost.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'user') {
@@ -848,7 +872,7 @@ const deleteHistory = async (req, res) => {
         })
       );
     }
-    if (!checkHost || checkHost.status!=='accepted') {
+    if (!checkHost || checkHost.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'user') {

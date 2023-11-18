@@ -95,7 +95,7 @@ const addResidence = async (req, res) => {
         image: checkHost.image,
         linkId: residence._id,
         type: 'residence',
-        role: 'common-admin'
+        role: 'admin'
       }
       await addNotification(newNotification)
       const notification = await getAllNotification('super-admin', 10, 1)
