@@ -275,8 +275,7 @@ const addBooking = async (req, res) => {
         type: 'booking',
         role: 'host'
       }
-      await addNotification(newNotification)
-      const notification = await getAllNotification('host', 30, 1, booking.hostId)
+      const notification = await addNotification(newNotification)
       io.to('room' + booking.hostId).emit('host-notification', notification);
 
       console.log('add booking successfull --------->', booking)
@@ -503,11 +502,9 @@ const updateBooking = async (req, res) => {
             role: 'user',
             type: 'booking'
           }]
-          await addManyNotifications(newNotification)
+          const userNotification = await addManyNotifications(newNotification)
           const adminNotification = await getAllNotification('admin')
           io.emit('admin-notification', adminNotification);
-          const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
-          console.log(adminNotification, userNotification)
           io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
@@ -535,9 +532,7 @@ const updateBooking = async (req, res) => {
             role: 'user',
             type: 'booking'
           }
-          await addNotification(newNotification)
-          const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
-          console.log(userNotification)
+          const userNotification = await addNotification(newNotification)
           io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
@@ -570,17 +565,8 @@ const updateBooking = async (req, res) => {
             role: 'host',
             type: 'booking'
           }
-          await addNotification(newNotification)
-          const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
-          console.log(hostNotification)
+          const hostNotification =await addNotification(newNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
-
-          const accessToken = process.env.ORANGE_ACCESS_KEY
-          const senderNumber = process.env.ORANGE_SENDER_NUMBER
-          const receiverNumber = bookingDetails.hostId.phoneNumber
-          const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
-
-          await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
@@ -625,9 +611,7 @@ const updateBooking = async (req, res) => {
             type: 'booking',
             role: 'host'
           }
-          await addNotification(newNotification)
-          const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
-          console.log(hostNotification)
+          const hostNotification =await addNotification(newNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }

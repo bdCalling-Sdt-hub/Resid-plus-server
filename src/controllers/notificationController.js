@@ -13,8 +13,8 @@ async function addNotification(data) {
     const newNotification = new Notification(data);
 
     // Save the notification to the database
-    const data1 = await newNotification.save();
-    console.log('hello---->', data1)
+    const notif = await newNotification.save();
+    return notif;
   }
   catch (error) {
     logger.error(error, 'from: add-notification')
@@ -24,7 +24,12 @@ async function addNotification(data) {
 async function addManyNotifications(data) {
   try {
     // Create a new notification using the data provided
-    await Notification.insertMany(data);
+    const insertedNotifications = await Notification.insertMany(data);
+    const userHostNotifications = insertedNotifications.filter(notification =>
+      notification.role === 'user' || notification.role === 'host'
+    );
+
+    return userHostNotifications;
   }
   catch (error) {
     logger.error(error, 'from: add-multiple-notification')
@@ -37,13 +42,20 @@ async function getAllNotification(role, limit = 10, page = 1, receiverId = null)
     var allNotification
     var notViewed
     var count
-    if (role === 'admin') {
-      allNotification = await Notification.find({ role: role })
+    if (role === 'super-admin' || role === 'admin') {
+      var filter
+      if (role === 'super-admin') {
+        filter = { role: { $in: ['admin', 'super-admin'] } }
+      }
+      if (role === 'admin') {
+        filter = { role: 'admin', type: 'residence' }
+      }
+      allNotification = await Notification.find({ role: role, ...filter })
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
-      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role });
-      count = await Notification.countDocuments({ role: role });
+      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role, ...filter });
+      count = await Notification.countDocuments({ role: role, ...filter });
     }
     else if (role === 'user' || role === 'host') {
       allNotification = await Notification.find({ receiverId: receiverId, role: role })
@@ -78,7 +90,7 @@ const allNotifications = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
     //extracting the notification id from param that is going to be edited
-    if (!checkUser) {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const page = Number(req.query.page) || 1;
@@ -88,13 +100,20 @@ const allNotifications = async (req, res) => {
     var allNotification
     var notViewed
     var count
-    if (role === 'admin') {
-      allNotification = await Notification.find({ role: role })
+    if (role === 'super-admin' || role === 'admin') {
+      var filter
+      if (role === 'super-admin') {
+        filter = { role: { $in: ['admin', 'super-admin'] } }
+      }
+      if (role === 'admin') {
+        filter = { role: 'admin', type: 'residence' }
+      }
+      allNotification = await Notification.find({ role: role, ...filter })
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
-      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role });
-      count = await Notification.countDocuments({ role: role });
+      notViewed = await Notification.countDocuments({ viewStatus: 'false', role: role, ...filter });
+      count = await Notification.countDocuments({ role: role, ...filter });
     }
     else if (role === 'user' || role === 'host') {
       allNotification = await Notification.find({ receiverId: req.body.userId, role: role })
@@ -125,8 +144,8 @@ const allNotifications = async (req, res) => {
         nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
     }
-    if (role === 'admin') {
-      io.emit('admin-notification', data)
+    if (role === 'super-admin') {
+      io.emit('super-admin-notification', data)
     }
     else {
       io.to('room' + req.body.userId).emit(`${role}-notification`, data)
@@ -162,7 +181,7 @@ const getNotificationDetails = async (req, res) => {
     const id = req.params.id
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-    if (!checkUser) {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const notification = await Notification.findById(id)
@@ -179,7 +198,7 @@ const getNotificationDetails = async (req, res) => {
     else if (type === 'residence') {
       details = await Residence.findById(notification.linkId).populate('hostId')
     }
-    else if(type === 'user'){
+    else if (type === 'user') {
       details = await User.findById(notification.linkId)
     }
     //retriving all notifications
@@ -200,8 +219,8 @@ const getNotificationDetails = async (req, res) => {
         nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
     }
-    if (role === 'admin') {
-      io.emit('admin-notification', data)
+    if (role === 'super-admin') {
+      io.emit('super-admin-notification', data)
     }
     else if (role === 'user' || role === 'host') {
       io.to('room' + req.body.userId).emit(`${role}-notification`, data)
@@ -226,7 +245,7 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
     const id = notificationId
     const page = Number(pages) || 1;
     const limit = Number(limits) || 10;
-    if (!checkUser) {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     const notification = await Notification.findById(id)
@@ -253,7 +272,7 @@ async function updateAndGetNotificationDetails(userId, notificationId, pages = 1
         nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
       },
     }
-    io.emit('admin-notification', data)
+    io.emit('super-admin-notification', data)
   }
   catch (error) {
     logger.error(error, 'from: update-notification')
