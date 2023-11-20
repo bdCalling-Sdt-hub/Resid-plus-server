@@ -1,1 +1,5 @@
 2023-11-20T04:59:19.607Z [ERROR] TokenExpiredError: jwt expired (Error Path: /api/users)
+2023-11-20T05:30:02.647Z [ERROR] TypeError: Cannot read properties of undefined (reading 'role') (Error Path: /api/users/signin)
+2023-11-20T05:30:02.882Z [ERROR] Error: Requested content not found for path: /favicon.ico (Error Path: /favicon.ico)
+2023-11-20T05:30:41.342Z [ERROR] TypeError: Cannot read properties of undefined (reading 'role') (Error Path: /api/users/signin)
+2023-11-20T05:30:41.618Z [ERROR] Error: Requested content not found for path: /favicon.ico (Error Path: /favicon.ico)

@@ -13,8 +13,8 @@ async function addNotification(data) {
     const newNotification = new Notification(data);
 
     // Save the notification to the database
-    const data = await newNotification.save();
-    return data
+    const notif = await newNotification.save();
+    return notif;
   }
   catch (error) {
     logger.error(error, 'from: add-notification')

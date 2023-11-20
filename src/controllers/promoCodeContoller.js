@@ -244,8 +244,7 @@ const applyPromoCodes = async (req, res) => {
       promoCode: promoCode._id,
     });
     await appliedPromoCode.save();
-    return res.status(201).json(response({ status: 'Updated', statusCode: '201', type: 'promoCode', message: req.t('PromoCode applied successfully.'), data: promoCode }));
-    
+    return res.status(201).json(response({ status: 'Updated', statusCode: '201', type: 'promoCode', message: req.t('PromoCode applied successfully.'), data: bookingDetails }));
   }
   catch (error) {
     logger.error(error, req.originalUrl)
@@ -254,4 +253,4 @@ const applyPromoCodes = async (req, res) => {
   }
 }
 
-module.exports = { allPromoCodes, deletePromoCode, updatePromoCode, addPromoCode };
+module.exports = { allPromoCodes, deletePromoCode, updatePromoCode, addPromoCode, applyPromoCodes };

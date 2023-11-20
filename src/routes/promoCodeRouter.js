@@ -1,5 +1,5 @@
 const express = require('express');
-const { allPromoCodes, deletePromoCode, updatePromoCode, addPromoCode } = require('../controllers/promoCodeContoller');
+const { allPromoCodes, deletePromoCode, updatePromoCode, addPromoCode, applyPromoCodes } = require('../controllers/promoCodeContoller');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 
@@ -8,5 +8,7 @@ router.post('/',isValidUser, addPromoCode);
 router.get('/', isValidUser, allPromoCodes);
 router.put('/:id', isValidUser, updatePromoCode);
 router.delete('/:id', isValidUser, deletePromoCode);
+router.post('/apply', isValidUser, applyPromoCodes);
+
 
 module.exports = router;
