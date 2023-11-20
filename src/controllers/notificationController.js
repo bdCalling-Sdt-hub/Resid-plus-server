@@ -13,8 +13,8 @@ async function addNotification(data) {
     const newNotification = new Notification(data);
 
     // Save the notification to the database
-    const data1 = await newNotification.save();
-    console.log('hello---->', data1)
+    const data = await newNotification.save();
+    return data
   }
   catch (error) {
     logger.error(error, 'from: add-notification')
@@ -24,7 +24,12 @@ async function addNotification(data) {
 async function addManyNotifications(data) {
   try {
     // Create a new notification using the data provided
-    await Notification.insertMany(data);
+    const insertedNotifications = await Notification.insertMany(data);
+    const userHostNotifications = insertedNotifications.filter(notification =>
+      notification.role === 'user' || notification.role === 'host'
+    );
+
+    return userHostNotifications;
   }
   catch (error) {
     logger.error(error, 'from: add-multiple-notification')

@@ -589,7 +589,7 @@ const allUser = async (req, res) => {
     }
     if (userAccountStatus) {
       filter.$and = filter.$and || [];
-      filter.$and.push({ accountInformation: userAccountStatus })
+      filter.$and.push({ status: userAccountStatus })
     }
 
     let users = [];
@@ -602,7 +602,7 @@ const allUser = async (req, res) => {
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 });
 
-      console.log(users)
+      //console.log(users)
       for (const user of users) {
         const uid = user._id
 

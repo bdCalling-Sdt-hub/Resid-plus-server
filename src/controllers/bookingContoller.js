@@ -2,6 +2,7 @@ const response = require("../helpers/response");
 const Booking = require("../models/Booking");
 const Residence = require("../models/Residence");
 const Payment = require("../models/Payment");
+const Income = require("../models/Income")
 const generateCustomID = require('../helpers/generateCustomId');
 //a helper function to calculate hours between two date-time
 const calculateTotalHoursBetween = require('../helpers/calculateTotalHours')
@@ -299,8 +300,7 @@ const addBooking = async (req, res) => {
         type: 'booking',
         role: 'host'
       }
-      await addNotification(newNotification)
-      const notification = await getAllNotification('host', 30, 1, booking.hostId)
+      const notification = await addNotification(newNotification)
       io.to('room' + booking.hostId).emit('host-notification', notification);
 
       console.log('add booking successfull --------->', booking)
@@ -527,11 +527,9 @@ const updateBooking = async (req, res) => {
             role: 'user',
             type: 'booking'
           }]
-          await addManyNotifications(newNotification)
+          const userNotification =await addManyNotifications(newNotification)
           const adminNotification = await getAllNotification('super-admin')
           io.emit('super-admin-notification', adminNotification);
-          const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
-          console.log(adminNotification, userNotification)
           io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
@@ -559,9 +557,7 @@ const updateBooking = async (req, res) => {
             role: 'user',
             type: 'booking'
           }
-          await addNotification(newNotification)
-          const userNotification = await getAllNotification('user', 6, 1, bookingDetails.userId._id)
-          console.log(userNotification)
+          const userNotification =await addNotification(newNotification)
           io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
@@ -594,8 +590,7 @@ const updateBooking = async (req, res) => {
             role: 'host',
             type: 'booking'
           }
-          await addNotification(newNotification)
-          const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
+          const hostNotification = await addNotification(newNotification)
           console.log(hostNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
 
@@ -615,14 +610,35 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
           bookingDetails.status = status
           bookingDetails.save()
-
+          var hostIncome;
+          hostIncome = await Income.findOne({hostId: bookingDetails.hostId._id})
+          if(!hostIncome){
+            hostIncome = new Income({
+              hostId: bookingDetails.hostId._id,
+              totalIncome: bookingDetails.totalAmount,
+              hostPendingAmount: 0
+            })
+          }
           const sendingAmount = Math.ceil(0.92 * bookingDetails.totalAmount)
           if (sendingAmount > 200) {
             const userDetails = await User.findById(bookingDetails.hostId._id)
-            if (userDetails.accountInformation !== null) {
+            if (!userDetails || !userDetails.accountInformation) {
+              //send host notification that account infomation is not added
+              const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', but as your account information is not added, so payment is not transferred to your account. Please add your account information to get payment'
+              const newNotification = {
+                message: hostMessage,
+                receiverId: bookingDetails.hostId._id,
+                image: bookingDetails.userId.image,
+                linkId: bookingDetails._id,
+                type: 'booking',
+                role: 'host'
+              }
+              const hostNotification = await addNotification(newNotification)
+              io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
 
+              hostIncome.hostPendingAmount += bookingDetails.totalAmount
+              await hostIncome.save()
             }
-
             const data = {
               totalAmount: sendingAmount,
               withdraw_mode: userDetails.accountInformation.withdraw_mode,
@@ -650,6 +666,20 @@ const updateBooking = async (req, res) => {
           else {
             //send host notification that amount is less than 200, so wait till it becomes 200+
             //call income part here and add the amount to host pending amount
+            const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', but as payment is less than 200, so it is added to your pending amount. Please wait till it becomes 200+'
+            const newNotification = {
+              message: hostMessage,
+              receiverId: bookingDetails.hostId._id,
+              image: bookingDetails.userId.image,
+              linkId: bookingDetails._id,
+              type: 'booking',
+              role: 'host'
+            }
+            const hostNotification = await addNotification(newNotification)
+            io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
+
+            hostIncome.hostPendingAmount += bookingDetails.totalAmount
+            await hostIncome.save()
           }
 
           const residence = await Residence.findById(bookingDetails.residenceId)
@@ -665,9 +695,7 @@ const updateBooking = async (req, res) => {
             type: 'booking',
             role: 'host'
           }
-          await addNotification(newNotification)
-          const hostNotification = await getAllNotification('host', 6, 1, bookingDetails.hostId._id)
-          console.log(hostNotification)
+          const hostNotification = await addNotification(newNotification)
           io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }

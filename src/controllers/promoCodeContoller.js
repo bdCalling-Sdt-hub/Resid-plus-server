@@ -1,5 +1,7 @@
 const logger = require("../helpers/logger");
 const response = require("../helpers/response");
+const AppliedPromoCodes = require("../models/AppliedPromoCodes");
+const Booking = require("../models/Booking");
 const PromoCode = require("../models/PromoCode");
 const User = require("../models/User");
 
@@ -190,6 +192,60 @@ const updatePromoCode = async (req, res) => {
       await PromoCode.findByIdAndUpdate(id, promoCode, { new: true });
       return res.status(201).json(response({ status: 'Updated', statusCode: '201', type: 'promoCode', message: req.t('PromoCode updated successfully.'), data: promoCode }));
     }
+  }
+  catch (error) {
+    logger.error(error, req.originalUrl)
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'promoCode', message: req.t('Error on updating promoCode') }));
+  }
+}
+
+const applyPromoCodes = async (req, res) => {
+  try{
+    const { couponCode, bookingId } = req.body;
+    const checkUser = await User.findById(req.body.userId);
+    if (!checkUser || checkUser.status !== 'accepted') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
+    };
+    if(!checkUser.role !== 'user'){
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to apply promoCode') }));
+    }
+
+    //only user can apply promoCode
+    if(!couponCode || !bookingId){
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Please fill required fields') }));
+    }
+
+    const bookingDetails = await Booking.findById(bookingId);
+    const promoCode = await PromoCode.findOne({ couponCode: couponCode });
+    if(!bookingDetails){
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Booking not found') }));
+    }
+
+    if(!promoCode){
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Promo-code not found') }));
+    }
+
+    const currentDate = new Date();
+    const expiryDate = new Date(promoCode.expiryDate);
+    if(expiryDate < currentDate || !promoCode.isActive){
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Promo-code already expired') }));
+    }
+
+    const discountPercentage = promoCode.discountPercentage;
+    const totalAmount = bookingDetails.totalAmount;
+    const discountAmount = Math.ceil((totalAmount * discountPercentage)/100);
+    bookingDetails.discount = discountAmount;
+    bookingDetails.totalAmount = totalAmount - discountAmount;
+    await bookingDetails.save();
+
+    const appliedPromoCode = new AppliedPromoCodes({
+      user: req.body.userId,
+      promoCode: promoCode._id,
+    });
+    await appliedPromoCode.save();
+    return res.status(201).json(response({ status: 'Updated', statusCode: '201', type: 'promoCode', message: req.t('PromoCode applied successfully.'), data: promoCode }));
+    
   }
   catch (error) {
     logger.error(error, req.originalUrl)

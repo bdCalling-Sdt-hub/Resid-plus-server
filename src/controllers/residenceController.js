@@ -537,8 +537,7 @@ const updateResidence = async (req, res) => {
             type: 'residence',
             role: 'host'
           }
-          await addNotification(newNotification)
-          const notification = await getAllNotification('host', 10, 1, existingResidence.hostId)
+          const notification =await addNotification(newNotification)
           io.to('room'+existingResidence.hostId).emit('host-notification', notification);
 
         }
@@ -572,8 +571,7 @@ const updateResidence = async (req, res) => {
               type: 'residence',
               role: 'host'
             }
-            await addNotification(newNotification)
-            const notification = await getAllNotification('host', 10, 1, existingResidence.hostId)
+            const notification =await addNotification(newNotification)
             io.to('roon'+existingResidence.hostId).emit('host-notification', notification);
           }
           else {
@@ -594,9 +592,8 @@ const updateResidence = async (req, res) => {
               type: 'residence',
               role: 'host'
             }
-            await addNotification(newNotification)
-            const notification = await getAllNotification('host', 10, 1, existingResidence.hostId)
-            io.emit('host-notification', notification);
+            const notification = await addNotification(newNotification)
+            io.to('roon'+existingResidence.hostId).emit('host-notification', notification);
 
           }
           else {
