@@ -32,7 +32,7 @@ const addResidence = async (req, res) => {
 
     const checkHost = await User.findById(req.body.userId);
 
-    if (!checkHost || checkHost.status !=='accepted') {
+    if (!checkHost || checkHost.status !== 'accepted') {
       //deleting the images if user is not valid
       unlinkImages(req.files.map(file => file.path))
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
@@ -73,12 +73,12 @@ const addResidence = async (req, res) => {
       });
 
       const existingResidence = await Residence.findOne({ residenceName: residenceName, hostId: req.body.userId, capacity: capacity, beds: beds, baths: baths, address: address, city: city, municipality: municipality, quirtier: quirtier, aboutResidence: aboutResidence, hourlyAmount: hourlyAmount, dailyAmount: dailyAmount, amenities: amenities, ownerName: ownerName, aboutOwner: aboutOwner, category: category });
-      if(existingResidence && !existingResidence.isDeleted) {
+      if (existingResidence && !existingResidence.isDeleted) {
         //deleting the images if residence already exists
         unlinkImages(req.files.map(file => file.path))
         return res.status(409).json(response({ status: 'Error', statusCode: '409', message: req.t('Residence already exists') }));
       }
-      else if(existingResidence && existingResidence.isDeleted) {
+      else if (existingResidence && existingResidence.isDeleted) {
         //deleting the images if residence already exists
         const paths = existingResidence.photo.map(photoObject => photoObject.path).flat();
         unlinkImages(paths)
@@ -89,7 +89,7 @@ const addResidence = async (req, res) => {
       }
 
       await residence.save();
-      const message = checkHost.fullName + ' has added ' + residence.residenceName+', please check and give your feedback'
+      const message = checkHost.fullName + ' has added ' + residence.residenceName + ', please check and give your feedback'
       const newNotification = {
         message: message,
         image: checkHost.image,
@@ -125,7 +125,7 @@ const allResidence = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
 
-    if(!checkUser || checkUser.status!=='accepted'){
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -172,13 +172,13 @@ const allResidence = async (req, res) => {
       filter.$and.push({ beds: numberOfBeds });
     }
 
-    if(acceptanceStatus) {
+    if (acceptanceStatus && acceptanceStatus !== 'all') {
       console.log('Acceptance Status------>', acceptanceStatus)
       filter.$and = filter.$and || [];
       filter.$and.push({ acceptanceStatus: acceptanceStatus });
     }
 
-    if(reUploaded==='yes') {
+    if (reUploaded === 'yes') {
       filter.$and = filter.$and || [];
       filter.$and.push({ reUpload: true });
     }
@@ -194,26 +194,26 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit)
           .populate('amenities', 'translation')
           .populate('category', 'translation');
-          
-        count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
+
+        count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
-        residences = await Residence.find({ status: 'active' ,isDeleted: false, ...filter })
+        residences = await Residence.find({ status: 'active', isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ createdAt: -1 })
           .populate('amenities', 'translation')
           .populate('category', 'translation');
-        count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
+        count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
-        residences = await Residence.find({ status: 'active' ,isDeleted: false, ...filter })
+        residences = await Residence.find({ status: 'active', isDeleted: false, ...filter })
           .limit(limit)
           .skip((page - 1) * limit)
           .sort({ popularity: -1 })
           .populate('amenities', 'translation')
           .populate('category', 'translation');;
-        count = await Residence.countDocuments({ status: 'active' ,isDeleted: false, ...filter });
+        count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
       }
     }
     else if (checkUser.role === 'host') {
@@ -245,13 +245,24 @@ const allResidence = async (req, res) => {
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
     }
-
     //-> placed to residence dashboard API
     else if (checkUser.role === 'admin') {
-      residences = await Residence.find({...filter})
+      const data = await Residence.find({ ...filter })
         .limit(limit)
-        .skip((page - 1) * limit);
-      count = await Residence.countDocuments({...filter});
+        .skip((page - 1) * limit)
+        .select('photo residenceName acceptanceStatus')
+      count = await Residence.countDocuments({ ...filter });
+      const accepted = await Residence.countDocuments({ acceptanceStatus: 'accepted' });
+      const pending = await Residence.countDocuments({ acceptanceStatus: 'pending' });
+      const blocked = await Residence.countDocuments({ acceptanceStatus: 'blocked' });
+      residences = {
+        data,
+        count: {
+          accepted,
+          pending,
+          blocked
+        }
+      }
     }
 
     return res.status(200).json(
@@ -288,7 +299,7 @@ const allResidence = async (req, res) => {
 const searchCredentials = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser || checkUser.status!=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -355,7 +366,7 @@ const deleteResidence = async (req, res) => {
     const checkHost = await User.findById(req.body.userId);
     //extracting the residence id from param that is going to be deleted
     const id = req.params.id
-    if (!checkHost || checkHost.status !=='accepted') {
+    if (!checkHost || checkHost.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
     if (checkHost.role === 'host') {
@@ -428,19 +439,19 @@ const updateResidence = async (req, res) => {
       category
     } = req.body;
 
-    if (!checkHost || checkHost.status !=='accepted') {
+    if (!checkHost || checkHost.status !== 'accepted') {
       if (req.files.length > 0) {
         unlinkImages(req.files.map(file => file.path))
       }
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
-    if(category) {
+    if (category) {
       const existingCategory = await Category.findById(category);
-      if(!existingCategory) {
+      if (!existingCategory) {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Category not found') }));
       }
     }
-    
+
     const existingResidence = await Residence.findById(id);
     if (checkHost.role === 'host' && checkHost._id.toString() === existingResidence.hostId.toString()) {
       const updateType = req.query.updateType || 'general'
@@ -463,7 +474,7 @@ const updateResidence = async (req, res) => {
         hostId: req.body.userId,
       };
       if (status) {
-        if (status!=='active' || status!=='inactive') {
+        if (status !== 'active' || status !== 'inactive') {
           return res.status(403).json(response({ status: 'Error', statusCode: '403', message: req.t('Invalid status') }));
         }
         else {
@@ -491,12 +502,12 @@ const updateResidence = async (req, res) => {
         });
         updatedResidence.photo = files;
       }
-      if(updateType === 'admin-suggessions'){
+      if (updateType === 'admin-suggessions') {
         updatedResidence.reUpload = true;
       }
       const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
 
-      if(updateType === 'admin-suggessions') {
+      if (updateType === 'admin-suggessions') {
         const message = checkHost.fullName + ' has updated ' + existingResidence.residenceName + ' . Your feedBack was: ' + existingResidence.feedBack
 
         const newNotification = {
@@ -537,8 +548,8 @@ const updateResidence = async (req, res) => {
             type: 'residence',
             role: 'host'
           }
-          const notification =await addNotification(newNotification)
-          io.to('room'+existingResidence.hostId).emit('host-notification', notification);
+          const notification = await addNotification(newNotification)
+          io.to('room' + existingResidence.hostId).emit('host-notification', notification);
 
         }
         else {
@@ -546,14 +557,14 @@ const updateResidence = async (req, res) => {
         }
       }
       else {
-        const bookingStatus = await Booking.findOne({ residenceId: existingResidence._id, isDeleted: false, status: { $nin: ['pending', 'cancelled'] }})
+        const bookingStatus = await Booking.findOne({ residenceId: existingResidence._id, isDeleted: false, status: { $nin: ['pending', 'cancelled'] } })
         if (bookingStatus) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: `Cannot reject or delete residence with when it is booked, please try this on ${bookingStatus.checkOutTime}` }));
         }
         if (acceptanceStatus === 'blocked') {
           if (existingResidence.acceptanceStatus !== 'deleted') {
-            const {feedBack} = req.body
-            if(!feedBack) {
+            const { feedBack } = req.body
+            if (!feedBack) {
               return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Feedback must be given' }));
             }
             const message = 'Admin has blocked ' + existingResidence.residenceName + ' from being ' + existingResidence.acceptanceStatus + ' . Reason: ' + feedBack
@@ -571,8 +582,8 @@ const updateResidence = async (req, res) => {
               type: 'residence',
               role: 'host'
             }
-            const notification =await addNotification(newNotification)
-            io.to('roon'+existingResidence.hostId).emit('host-notification', notification);
+            const notification = await addNotification(newNotification)
+            io.to('roon' + existingResidence.hostId).emit('host-notification', notification);
           }
           else {
             return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence rejection requirements not fulfilled' }));
@@ -593,20 +604,20 @@ const updateResidence = async (req, res) => {
               role: 'host'
             }
             const notification = await addNotification(newNotification)
-            io.to('roon'+existingResidence.hostId).emit('host-notification', notification);
+            io.to('roon' + existingResidence.hostId).emit('host-notification', notification);
 
           }
           else {
             return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence deletion requirements not fulfilled' }));
           }
         }
-        else{
+        else {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Acceptance status not defined' }));
         }
       }
       return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: 'Residence edited successfully.', data: existingResidence }));
     }
-    
+
     else {
       if (req.files.length > 0) {
         unlinkImages(req.files.map(file => file.path))
@@ -630,7 +641,7 @@ const residenceDetails = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
     const id = req.params.id
-    if (!checkUser || checkUser.status!=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -640,7 +651,7 @@ const residenceDetails = async (req, res) => {
       );
     }
 
-    const residences = await Residence.findById(id).populate('amenities', 'translation').populate('category', 'translation');
+    const residences = await Residence.findById(id).populate('amenities', 'translation').populate('category', 'translation').populate('hostId', 'fullName image phoneNumber email address');
 
     return res.status(200).json(
       response({
@@ -669,16 +680,18 @@ const residenceDetails = async (req, res) => {
 const residenceDashboard = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser || checkUser.status!=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
 
-    if (checkUser.role === 'super-admin') {
+    if (checkUser.role === 'super-admin' || checkUser.role === 'admin') {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
       const residences = await Residence.find()
         .limit(limit)
-        .skip((page - 1) * limit);
+        .skip((page - 1) * limit)
+        .populate('amenities', 'translation')
+        .populate('category', 'translation');
       count = await Residence.countDocuments();
 
       const active = await Residence.countDocuments({ status: 'active' });

@@ -6,6 +6,7 @@ const User = require("../models/User");
 const axios = require('axios')
 const { addNotification, getAllNotification } = require('./notificationController');
 const logger = require("../helpers/logger");
+const Income = require("../models/Income");
 
 var payInTokenUrl;
 if (process.env.NODE_ENV === 'production') {
@@ -231,6 +232,7 @@ const payInAmount = async (req, res) => {
     const paydunyaResponse = await axios.post(payInURL, payload);
     if (paydunyaResponse.data.success) {
       paymentDetails.status = 'success'
+      paymentDetails.paymentMethod = paymentTypes
       await paymentDetails.save()
       const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
@@ -295,6 +297,41 @@ const payoutDisburseAmount = async (data) => {
   }
 }
 
+const takePayment = async (req, res) => {
+  const checkUser = await User.findById(req.body.userId);
+  if(!checkUser || checkUser.status!=='accepted'){
+    return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
+  }
+  const {
+    account_alias,
+    amount,
+    withdraw_mode,
+  } = req.body;
+
+  if (!account_alias || !amount || !withdraw_mode) {
+    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required fields not found') }));
+  }
+
+  const hostIncome = await Income.findOne({ hostId: req.body.userId });
+  if(!hostIncome){
+    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Income not found') }));
+  }
+  if(amount<200 && hostIncome.hostPendingAmount<amount){
+    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Amount should be greater than 200 and less than you pending amount') }));
+  }
+  const disburse_token = await createDisburseToken({ account_alias, amount, withdraw_mode });
+  if (!disburse_token) {
+    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse token not created') }));
+  }
+  const userId = req.body.userId;
+  const payout = await payoutDisburseAmount({disburse_token, userId});
+  if(!payout){
+    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse amount not completed') }));
+  }
+  hostIncome.hostPendingAmount = hostIncome.hostPendingAmount - amount;
+  await hostIncome.save();
+  return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: req.t('Payment token created successfully.') }));
+}
 //All payments
 const allPayment = async (req, res) => {
   try {
@@ -395,4 +432,4 @@ const allPayment = async (req, res) => {
 };
 
 
-module.exports = { allPayment, createPayInToken, payInAmount, createDisburseToken, payoutDisburseAmount };
+module.exports = { allPayment, createPayInToken, payInAmount, createDisburseToken, payoutDisburseAmount, takePayment };

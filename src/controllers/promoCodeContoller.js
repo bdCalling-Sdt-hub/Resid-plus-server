@@ -211,6 +211,12 @@ const applyPromoCodes = async (req, res) => {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to apply promoCode') }));
     }
 
+    const existingAppliedPromoCode = await AppliedPromoCodes.findOne({ user: req.body.userId, promoCode: couponCode });
+
+    if(existingAppliedPromoCode){
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('You have already used this promo-code') }));
+    }
+
     //only user can apply promoCode
     if(!couponCode || !bookingId){
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Please fill required fields') }));

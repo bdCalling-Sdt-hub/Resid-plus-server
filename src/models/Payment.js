@@ -7,6 +7,7 @@ const paymentSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     paymentTypes: { type: String, enum: ['half-payment', 'full-payment', 'pending'], default: 'pending' },
+    paymentMethod : { type: String, required: false },
     status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
 },
     { timestamps: true },

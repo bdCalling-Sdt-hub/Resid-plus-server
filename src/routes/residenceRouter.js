@@ -20,5 +20,4 @@ router.get('/:id', isValidUser, residenceDetails);
 router.get('/dashboard/status', isValidUser, residenceDashboard);
 
 
-
 module.exports = router;
