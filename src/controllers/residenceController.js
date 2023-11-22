@@ -30,6 +30,8 @@ const addResidence = async (req, res) => {
       category
     } = req.body;
 
+    console.log('resid add req ------>',req.body)
+
     const checkHost = await User.findById(req.body.userId);
 
     if (!checkHost || checkHost.status !== 'accepted') {

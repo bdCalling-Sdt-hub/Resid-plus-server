@@ -44,7 +44,11 @@ app.use(express.urlencoded({ extended: true }));
 // Enable CORS
 app.use(cors(
   {
-    origin: [process.env.ALLOWED_CLIENT_URL_DASHBOARD, process.env.ALLOWED_CLIENT_URL_WEB],
+    origin: [
+      process.env.ALLOWED_CLIENT_URL_DASHBOARD,
+      process.env.ALLOWED_CLIENT_URL_SUB_DASHBOARD,
+      process.env.ALLOWED_CLIENT_URL_WEB
+    ],
     optionsSuccessStatus: 200
   }
 ));

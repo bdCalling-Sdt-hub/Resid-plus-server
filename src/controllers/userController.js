@@ -167,7 +167,7 @@ const signIn = async (req, res) => {
     // Find the user by email
     const user = await User.findOne({ email });
 
-    if (!user || user.status !== 'accepted') {
+    if (!user) {
       return res.status(404).json(response({ statusCode: 200, message: req.t('User does not exists'), status: "OK" }));
     }
     if (user.status !== 'accepted') {
