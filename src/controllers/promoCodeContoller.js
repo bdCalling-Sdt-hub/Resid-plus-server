@@ -204,14 +204,15 @@ const applyPromoCodes = async (req, res) => {
   try{
     const { couponCode, bookingId } = req.body;
     const checkUser = await User.findById(req.body.userId);
+    const promoCode = await PromoCode.findOne({ couponCode: couponCode });
     if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
-    if(!checkUser.role !== 'user'){
+    if(checkUser.role !== 'user'){
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to apply promoCode') }));
     }
 
-    const existingAppliedPromoCode = await AppliedPromoCodes.findOne({ user: req.body.userId, promoCode: couponCode });
+    const existingAppliedPromoCode = await AppliedPromoCodes.findOne({ user: req.body.userId, promoCode: promoCode._id });
 
     if(existingAppliedPromoCode){
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('You have already used this promo-code') }));
@@ -223,7 +224,6 @@ const applyPromoCodes = async (req, res) => {
     }
 
     const bookingDetails = await Booking.findById(bookingId);
-    const promoCode = await PromoCode.findOne({ couponCode: couponCode });
     if(!bookingDetails){
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Booking not found') }));
     }
@@ -239,7 +239,7 @@ const applyPromoCodes = async (req, res) => {
     }
 
     const discountPercentage = promoCode.discountPercentage;
-    const totalAmount = bookingDetails.totalAmount;
+    const totalAmount = bookingDetails.serviceCharge;
     const discountAmount = Math.ceil((totalAmount * discountPercentage)/100);
     bookingDetails.discount = discountAmount;
     bookingDetails.totalAmount = totalAmount - discountAmount;

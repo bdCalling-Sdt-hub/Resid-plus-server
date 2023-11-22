@@ -116,11 +116,11 @@ const calculateTimeAndPrice = async (req, res) => {
     const totalHours = parseFloat(hoursCalculated.toFixed(2));
 
     // Calculate total amount for days and remaining hours
-    const hostAmount = baseAmount * calculatedTime;
-    const serviceCharge = Math.ceil(0.08 * hostAmount);
+    const residenceCharge = baseAmount * calculatedTime;
+    const serviceCharge = Math.ceil(0.08 * residenceCharge);
 
     // Calculate total amount
-    const totalAmount = hostAmount + serviceCharge;
+    const totalAmount = residenceCharge + serviceCharge;
 
     return res.status(200).json(
       response({
@@ -133,7 +133,7 @@ const calculateTimeAndPrice = async (req, res) => {
           checkOutTime,
           totalHours,
           totalDays,
-          hostAmount,
+          residenceCharge,
           serviceCharge,
           totalAmount,
         },
@@ -157,11 +157,11 @@ const addBooking = async (req, res) => {
       totalAmount,
       guestTypes,
       numberOfGuests,
-      hostAmount,
+      residenceCharge,
       serviceCharge,
     } = req.body;
 
-    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays === null || totalHours === null || totalAmount === null || !residenceId || hostAmount===null || serviceCharge===null) {
+    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays === null || totalHours === null || totalAmount === null || !residenceId || residenceCharge===null || serviceCharge===null) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -171,10 +171,10 @@ const addBooking = async (req, res) => {
       );
     }
 
-
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
     const today = new Date()
+    
     if (checkInTime < today) {
       return res.status(404).json(
         response({
@@ -193,8 +193,6 @@ const addBooking = async (req, res) => {
         })
       );
     }
-
-    console.log('add booking called ------------------->', req.body)
 
     if (checkInTime > checkOutTime) {
       return res.status(404).json(
@@ -279,7 +277,7 @@ const addBooking = async (req, res) => {
         userContactNumber: checkUser.phoneNumber,
         guestTypes,
         numberOfGuests,
-        hostAmount,
+        residenceCharge,
         serviceCharge,
       });
       await booking.save();
@@ -669,89 +667,24 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
           bookingDetails.status = status
           bookingDetails.save()
-          var hostIncome;
-          hostIncome = await Income.findOne({hostId: bookingDetails.hostId._id})
+          var hostIncome = await Income.findOne({hostId: bookingDetails.hostId._id})
           if(!hostIncome){
             hostIncome = new Income({
               hostId: bookingDetails.hostId._id,
               totalIncome: bookingDetails.totalAmount,
-              hostPendingAmount: 0
+              pendingAmount: 0
             })
           }
-          var sendingAmount = Math.ceil(0.92 * bookingDetails.totalAmount)
-          if(hostIncome.hostPendingAmount>0){
-            sendingAmount += hostIncome.hostPendingAmount
-          }
-          if (sendingAmount > 200) {
-            const userDetails = await User.findById(bookingDetails.hostId._id)
-            if (!userDetails || !userDetails.accountInformation) {
-              //send host notification that account infomation is not added
-              const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', but as your account information is not added, so payment is not transferred to your account. Please add your account information to get payment'
-              const newNotification = {
-                message: hostMessage,
-                receiverId: bookingDetails.hostId._id,
-                image: bookingDetails.userId.image,
-                linkId: bookingDetails._id,
-                type: 'booking',
-                role: 'host'
-              }
-              const hostNotification = await addNotification(newNotification)
-              io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
-
-              hostIncome.hostPendingAmount += bookingDetails.totalAmount
-              await hostIncome.save()
-            }
-            const data = {
-              totalAmount: sendingAmount,
-              withdraw_mode: userDetails.accountInformation.withdraw_mode,
-              account_alias: userDetails.accountInformation.account_alias,
-            }
-            const disburseToken = await createDisburseToken(data)
-            if (disburseToken) {
-              const data = {
-                bookingId: bookingDetails._id,
-                disburse_invoice: disburseToken
-              }
-              const payment = await payoutDisburseAmount(data)
-              if (payment) {
-                hostIncome.totalIncome += bookingDetails.totalAmount
-                
-
-                //subtract amount from user pending amount
-              }
-              else {
-                //add notification that payment is not done
-                //add in income section
-              }
-            }
-            else {
-              //send host notification that account infomation is wrong
-            }
-          }
-          else {
-            //send host notification that amount is less than 200, so wait till it becomes 200+
-            //call income part here and add the amount to host pending amount
-            const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', but as payment is less than 200, so it is added to your pending amount. Please wait till it becomes 200+'
-            const newNotification = {
-              message: hostMessage,
-              receiverId: bookingDetails.hostId._id,
-              image: bookingDetails.userId.image,
-              linkId: bookingDetails._id,
-              type: 'booking',
-              role: 'host'
-            }
-            const hostNotification = await addNotification(newNotification)
-            io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
-
-            hostIncome.hostPendingAmount += bookingDetails.totalAmount
-            await hostIncome.save()
-          }
+          const incomeAmount = bookingDetails.residenceCharge
+          hostIncome.totalIncome += incomeAmount
+          hostIncome.pendingAmount += incomeAmount
+          await hostIncome.save()
 
           const residence = await Residence.findById(bookingDetails.residenceId)
           residence.status = 'active'
           await residence.save()
 
-          const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', and payment is transferred to your account'
+          const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', and payment is transferred to your wallet'
           const newNotification = {
             message: hostMessage,
             receiverId: bookingDetails.hostId._id,

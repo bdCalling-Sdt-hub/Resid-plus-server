@@ -141,7 +141,6 @@ const payInAmount = async (req, res) => {
       paydunyaResponse.data.success = true
     }
     else if (paymentTypes === 'card') {
-      console.log("card hitted------------------------------------->")
       const { cardNumber, cardCvv, cardExpiredDateYear, cardExpiredDateMonth, token, email, fullName } = req.body
       if (!cardNumber || !cardCvv || !cardExpiredDateYear || !cardExpiredDateMonth || !token || !email || !fullName) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Card details not found' }));
@@ -316,7 +315,7 @@ const takePayment = async (req, res) => {
   if(!hostIncome){
     return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Income not found') }));
   }
-  if(amount<200 && hostIncome.hostPendingAmount<amount){
+  if(amount<200 && hostIncome.pendingAmount<amount){
     return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Amount should be greater than 200 and less than you pending amount') }));
   }
   const disburse_token = await createDisburseToken({ account_alias, amount, withdraw_mode });
@@ -328,7 +327,7 @@ const takePayment = async (req, res) => {
   if(!payout){
     return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse amount not completed') }));
   }
-  hostIncome.hostPendingAmount = hostIncome.hostPendingAmount - amount;
+  hostIncome.pendingAmount = hostIncome.pendingAmount - amount;
   await hostIncome.save();
   return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: req.t('Payment token created successfully.') }));
 }

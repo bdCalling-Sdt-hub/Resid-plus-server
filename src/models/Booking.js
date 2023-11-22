@@ -17,7 +17,7 @@ const bookingSchema = new mongoose.Schema({
     hours: { type: Number, default: 0 }
   },
   totalAmount: { type: Number, default: 1, required: false },
-  hostAmount: { type: Number, default: 1, required: false },
+  residenceCharge: { type: Number, default: 1, required: false },
   serviceCharge: { type: Number, default: 1, required: false },
   discount: { type: Number, default: 0, required: false },
   checkInTime: { type: Date, required: true },

@@ -218,6 +218,11 @@ const allResidence = async (req, res) => {
     }
     else if (checkUser.role === 'host') {
       const requestType = req.query.requestType || 'all'
+      const activeStatus = req.query.activeStatus || 'active'
+      if (activeStatus === 'inactive') {
+        filter.$and = filter.$and || [];
+        filter.$and.push({ status: activeStatus });
+      }
       if (requestType === 'all') {
         residences = await Residence.find({ hostId: checkUser._id, isDeleted: false, ...filter })
           .limit(limit)
@@ -454,7 +459,6 @@ const updateResidence = async (req, res) => {
 
     const existingResidence = await Residence.findById(id);
     if (checkHost.role === 'host' && checkHost._id.toString() === existingResidence.hostId.toString()) {
-      const updateType = req.query.updateType || 'general'
       const updatedResidence = {
         residenceName: !residenceName ? existingResidence.residenceName : residenceName,
         capacity: !capacity ? existingResidence.capacity : capacity,
@@ -501,9 +505,6 @@ const updateResidence = async (req, res) => {
           console.log(files)
         });
         updatedResidence.photo = files;
-      }
-      if (updateType === 'admin-suggessions') {
-        updatedResidence.reUpload = true;
       }
       const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
 
@@ -636,6 +637,127 @@ const updateResidence = async (req, res) => {
   }
 }
 
+const blockedResidenceUpdate = async (req, res) => {
+  console.log(req.body)
+  try {
+    const checkHost = await User.findById(req.body.userId);
+    //extracting the residence id from param that is going to be edited
+    const id = req.params.id
+    const {
+      residenceName,
+      capacity,
+      beds,
+      baths,
+      address,
+      city,
+      municipality,
+      quirtier,
+      aboutResidence,
+      hourlyAmount,
+      dailyAmount,
+      amenities,
+      ownerName,
+      aboutOwner,
+      status,
+      category
+    } = req.body;
+
+    if (!checkHost || checkHost.status !== 'accepted') {
+      if (req.files.length > 0) {
+        unlinkImages(req.files.map(file => file.path))
+      }
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
+    };
+    if (category) {
+      const existingCategory = await Category.findById(category);
+      if (!existingCategory) {
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Category not found') }));
+      }
+    }
+
+    const existingResidence = await Residence.findById(id);
+    if (checkHost.role === 'host' && checkHost._id.toString() === existingResidence.hostId.toString()) {
+      const updatedResidence = {
+        residenceName: !residenceName ? existingResidence.residenceName : residenceName,
+        capacity: !capacity ? existingResidence.capacity : capacity,
+        beds: !beds ? existingResidence.beds : beds,
+        baths: !baths ? existingResidence.baths : baths,
+        address: !address ? existingResidence.address : address,
+        city: !city ? existingResidence.city : city,
+        municipality: !municipality ? existingResidence.municipality : municipality,
+        quirtier: !quirtier ? existingResidence.quirtier : quirtier,
+        aboutResidence: !aboutResidence ? existingResidence.aboutResidence : aboutResidence,
+        hourlyAmount: !hourlyAmount ? existingResidence.hourlyAmount : hourlyAmount,
+        dailyAmount: !dailyAmount ? existingResidence.dailyAmount : dailyAmount,
+        amenities: !amenities ? existingResidence.amenities : amenities,
+        ownerName: !ownerName ? existingResidence.ownerName : ownerName,
+        aboutOwner: !aboutOwner ? existingResidence.aboutOwner : aboutOwner,
+        category: !category ? existingResidence.category : category,
+        hostId: req.body.userId,
+        reUpload: true
+      };
+      if (status) {
+        if (status !== 'active' || status !== 'inactive') {
+          return res.status(403).json(response({ status: 'Error', statusCode: '403', message: req.t('Invalid status') }));
+        }
+        else {
+          updatedResidence.status = status;
+        }
+      }
+      if (req.files.length > 0) {
+        const images = await Residence.find({ _id: id })
+          .select('photo')
+          .exec();
+        const paths = images.map(image =>
+          image.photo.map(photoObject => photoObject.path)
+        ).flat();
+        unlinkImages(paths)
+        console.log(paths);
+
+        const files = [];
+        req.files.forEach((file) => {
+          const publicFileUrl = `${req.protocol}://${req.get('host')}/uploads/residences/${file.filename}`;
+          files.push({
+            publicFileUrl,
+            path: file.path
+          });
+          console.log(files)
+        });
+        updatedResidence.photo = files;
+      }
+      const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
+
+
+      const message = checkHost.fullName + ' has updated ' + existingResidence.residenceName + ' . Your feedBack was: ' + existingResidence.feedBack
+
+      const newNotification = {
+        message: message,
+        image: checkHost.image,
+        linkId: existingResidence._id,
+        type: 'residence',
+        role: 'host'
+      }
+      await addNotification(newNotification)
+      const notification = await getAllNotification('super-admin', 10, 1)
+      io.emit('super-admin-notification', notification);
+
+      const commonNotif = await getAllNotification('admin', 10, 1)
+      io.emit('admin-notification', commonNotif);
+
+      return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: req.t('Residence edited successfully.'), data: updatedData }));
+    }
+  }
+  catch (error) {
+    logger.error(error, req.originalUrl)
+    console.error(error);
+    //deleting the images if something went wrong
+    if (req.files) {
+      unlinkImages(req.files.map(file => file.path))
+    }
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
+  }
+}
+
 //residences details
 const residenceDetails = async (req, res) => {
   try {
@@ -733,4 +855,4 @@ const residenceDashboard = async (req, res) => {
   }
 }
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials };
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials, blockedResidenceUpdate };
