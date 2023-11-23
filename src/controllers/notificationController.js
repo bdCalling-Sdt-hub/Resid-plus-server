@@ -28,8 +28,10 @@ async function addManyNotifications(data) {
     const userHostNotifications = insertedNotifications.filter(notification =>
       notification.role === 'user' || notification.role === 'host'
     );
-
-    return userHostNotifications;
+    
+    const firstObject = userHostNotifications[0]; // Accessing the first object
+    
+    return firstObject;
   }
   catch (error) {
     logger.error(error, 'from: add-multiple-notification')

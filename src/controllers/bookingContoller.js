@@ -160,7 +160,7 @@ const addBooking = async (req, res) => {
       serviceCharge,
     } = req.body;
 
-    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays === null || totalHours === null || totalAmount === null || !residenceId || residenceCharge===null || serviceCharge===null) {
+    if (!numberOfGuests || !guestTypes || !checkInTime || !checkOutTime || totalDays === null || totalHours === null || totalAmount === null || !residenceId || residenceCharge === null || serviceCharge === null) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -173,7 +173,7 @@ const addBooking = async (req, res) => {
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
     const today = new Date()
-    
+
     if (checkInTime < today) {
       return res.status(404).json(
         response({
@@ -298,9 +298,10 @@ const addBooking = async (req, res) => {
         role: 'host'
       }
       const notification = await addNotification(newNotification)
-      io.to('room' + booking.hostId).emit('host-notification', notification);
+      const roomId = booking.hostId._id.toString()
+      console.log('room --->', roomId)
+      io.to('room' + roomId).emit('host-notification', notification);
 
-      console.log('add booking successfull --------->', booking)
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: req.t('Booking added successfully.'), data: booking }));
     }
     else {
@@ -469,8 +470,8 @@ const allBooking = async (req, res) => {
   }
 };
 
-const cancelBooking = async (req, res) => {
-  try{
+const cancelBookingByUser = async (req, res) => {
+  try {
     const checkUser = await User.findById(req.body.userId);
     const id = req.params.id
     const { status } = req.body;
@@ -486,20 +487,237 @@ const cancelBooking = async (req, res) => {
     if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
+
+    if (checkUser.role !== 'user') {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to cancel booking') }));
+    }
     const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId')
     if (!bookingDetails || bookingDetails.isDeleted) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: req.t('Booking not found') }));
     }
-    if (checkUser.role === 'host') {
-    }
 
+    if (status === "cancelled") {
+
+      if ((bookingDetails.status === 'pending') || (bookingDetails.status === 'reserved') && (bookingDetails.paymentTypes === 'unknown')) {
+        bookingDetails.status = status
+        bookingDetails.save()
+        const hostMessage = bookingDetails.userId.fullName + ' cancelled booking request for ' + bookingDetails.residenceId.residenceName
+        const newNotification = {
+          message: hostMessage,
+          receiverId: bookingDetails.hostId._id,
+          image: bookingDetails.userId.image,
+          linkId: bookingDetails._id,
+          type: 'booking',
+          role: 'host'
+        }
+        const hostNotification = await addNotification(newNotification)
+        const roomId = bookingDetails.hostId._id.toString()
+        console.log('room --->', roomId)
+        io.to('room' + roomId).emit('host-notification', hostNotification);
+        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking cancelled successfully.'), data: bookingDetails }));
+      }
+      else if(bookingDetails.status === 'reserved' && bookingDetails.paymentTypes !== 'unknown'){
+        const userPayment = await Payment.findOne({ bookingId: bookingDetails._id, userId: checkUser._id }).sort({ createdAt: -1 });
+        if (!userPayment || userPayment.paymentTypes === 'pending') {
+          return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'payment', message: req.t('Payment has not done yet') }));
+        }
+        else {
+          const residence_details = await Residence.findById(bookingDetails.residenceId._id)
+          const paymentTime = new Date(userPayment.createdAt);
+          const currentTime = new Date();
+
+          // Calculate the total duration in milliseconds between paymentTime and currentTime
+          const totalDurationInMillis = currentTime.getTime() - paymentTime.getTime();
+
+          // Calculate the duration representing 40% of the total duration
+          const fortyPercentInMillis = totalDurationInMillis * 0.4;
+
+          // Calculate the time that is 40% of the duration from paymentTime
+          const fortyPercentTime = new Date(paymentTime.getTime() + fortyPercentInMillis);
+          const stayMoreThanTwoDays = bookingDetails.totalTime.days > 2
+
+          if (fortyPercentTime < currentTime) {
+            var income = await Income.findOne({ hostId: checkUser._id })
+            if (!income) {
+              income = new Income({
+                hostId: checkUser._id,
+              })
+            }
+            const amount = Math.ceil(bookingDetails.totalAmount * 0.98)
+            income.pendingAmount += amount
+            income.totalIncome += amount
+            await income.save()
+
+            bookingDetails.status = status
+            bookingDetails.save()
+            residence_details.status = 'active'
+            await residence_details.save()
+            return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('You have been refunded excluding refund charge. Please check your wallet'), data: bookingDetails }));
+          }
+          else if (stayMoreThanTwoDays && fortyPercentTime > currentTime) {
+            var income = await Income.findOne({ hostId: checkUser._id })
+            if (!income) {
+              income = new Income({
+                hostId: checkUser._id,
+              })
+            }
+            const amount = Math.ceil(bookingDetails.totalAmount * 0.48)
+            income.pendingAmount += amount
+            income.totalIncome += amount
+            await income.save()
+
+            const hostIncome = await Income.findOne({ hostId: bookingDetails.hostId._id })
+            if (!hostIncome) {
+              hostIncome = new Income({
+                hostId: bookingDetails.hostId._id,
+              })
+            }
+            const hostAmount = Math.ceil(bookingDetails.totalAmount * 0.30)
+            hostIncome.pendingAmount += hostAmount
+            hostIncome.totalIncome += hostAmount
+            await hostIncome.save()
+
+            const hostMessage = bookingDetails.userId.fullName + ' cancelled booking request for ' + bookingDetails.residenceId.residenceName + ' and you have been refunded ' + hostAmount + '. Please check your wallet'
+            const newNotification = {
+              message: hostMessage,
+              receiverId: bookingDetails.hostId._id,
+              image: bookingDetails.userId.image,
+              linkId: bookingDetails._id,
+              type: 'booking',
+              role: 'host'
+            }
+            const hostNotification = await addNotification(newNotification)
+            const roomId = bookingDetails.hostId._id.toString()
+            console.log('room --->', roomId)
+            io.to('room' + roomId).emit('host-notification', hostNotification);
+
+            adminMessage = bookingDetails.userId.fullName + ' cancelled booking request for ' + bookingDetails.residenceId.residenceName + ' and you have been refunded ' + bookingDetails.totalAmount * 0.20
+            const superAdminNotif = {
+              message: adminMessage,
+              receiverId: bookingDetails.hostId._id,
+              image: bookingDetails.userId.image,
+              linkId: bookingDetails._id,
+              type: 'booking',
+              role: 'super-admin'
+            }
+            const superAdminNotification = await addNotification(superAdminNotif)
+            io.emit('super-admin-notification', superAdminNotification);
+
+            bookingDetails.status = status
+            bookingDetails.save()
+
+            residence_details.status = 'active'
+            await residence_details.save()
+
+            return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('You have been refunded excluding refund charge. Please check your wallet'), data: bookingDetails }));
+          }
+          else {
+            var income = await Income.findOne({ hostId: bookingDetails.hostId._id })
+            if (!income) {
+              income = new Income({
+                hostId: bookingDetails.hostId._id,
+              })
+            }
+            const amount = bookingDetails.residenceCharge
+            income.pendingAmount += amount
+            income.totalIncome += amount
+            await income.save()
+
+            const hostMessage = bookingDetails.userId.fullName + ' cancelled booking request for ' + bookingDetails.residenceId.residenceName + ' and you have been refunded ' + amount + '. Please check your wallet'
+            const newNotification = {
+              message: hostMessage,
+              receiverId: bookingDetails.hostId._id,
+              image: bookingDetails.userId.image,
+              linkId: bookingDetails._id,
+              type: 'booking',
+              role: 'host'
+            }
+            const hostNotification = await addNotification(newNotification)
+            const roomId = bookingDetails.hostId._id.toString()
+            io.to('room' + roomId).emit('host-notification', hostNotification);
+
+            bookingDetails.status = status
+            bookingDetails.save()
+
+            residence_details.status = 'active'
+            await residence_details.save()
+
+            return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking request cancelled but as the time frame specified by the refund policy has expired, so no refund can be processed at this time'), data: bookingDetails }));
+          }
+        }
+      }
+      else{
+        return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: req.t('You can not cancel booking') }));
+      }
+    }
+    else {
+      return res.status(400).json(response({ status: 'Error', type: "booking",statusCode: '400', message: req.t("Booking status not appropiate") }));
+    }
   }
-  catch(error){
+  catch (error) {
     logger.error(error, req.originalUrl)
     console.log(error)
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
   }
 }
+
+const refundPolicy = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId');
+
+    if((!bookingDetails || bookingDetails.isDeleted) && bookingDetails.paymentTypes !== 'unknown'){
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: req.t('Refund details not available') }));
+    }
+    const userPayment = await Payment.findOne({ bookingId: bookingDetails._id, userId: req.body.userId }).sort({ createdAt: -1 });
+
+    if (!userPayment || userPayment.paymentTypes === 'pending') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'payment', message: req.t('Payment has not been completed yet') }));
+    }
+
+    const currentTime = new Date();
+
+    const paymentTime = new Date(userPayment.createdAt);
+
+    // Calculate the total duration in milliseconds between paymentTime and currentTime
+    const totalDurationInMillis = currentTime.getTime() - paymentTime.getTime();
+
+    // Calculate the duration representing 40% of the total duration
+    const fortyPercentInMillis = totalDurationInMillis * 0.4;
+
+    // Calculate the time that is 40% of the duration from paymentTime
+    const fortyPercentTime = new Date(paymentTime.getTime() + fortyPercentInMillis);
+
+    const stayMoreThanTwoDays = bookingDetails.totalTime.days > 2;
+
+    var message = `You are eligible for a refund until ${fortyPercentTime.toISOString()} (40% of time elapsed since payment).`
+
+    var minimumRefund = `You can get ${stayMoreThanTwoDays ? '50%' : '0%'} refund by cancelling before check-in time.`
+
+    return res.status(200).json(
+      response({
+        status: 'OK',
+        statusCode: '200',
+        type: 'booking',
+        message: req.t('Refund policy retrieved successfully'),
+        data: {
+          message,
+          minimumRefund
+        },
+      })
+    );
+  } catch (error) {
+    logger.error(error, req.originalUrl)
+    console.log(error);
+    return res.status(500).json(
+      response({
+        status: 'Error',
+        statusCode: '500',
+        message: req.t('Error getting refund policy'),
+      })
+    );
+  }
+};
 
 //update bookings
 const updateBooking = async (req, res) => {
@@ -538,10 +756,10 @@ const updateBooking = async (req, res) => {
 
           const currentTime = new Date()
           const checkInTime = new Date(bookingDetails.checkInTime)
-          const remainingHours =  calculateTotalHoursBetween(currentTime, checkInTime)
+          const remainingHours = calculateTotalHoursBetween(currentTime, checkInTime)
           const remainingNinetyPercent = remainingHours * 0.1
           const remainingTimeToPay = remainingHours * 60 * 60 * 40 // hours to mili-second and then taking 40% of it --> 60*40/100 = 24
-          
+
           bookingDetails.status = status
           bookingDetails.save()
 
@@ -563,16 +781,18 @@ const updateBooking = async (req, res) => {
             type: 'booking'
           }]
 
-          const userNotification =await addManyNotifications(newNotification)
+          const userNotification = await addManyNotifications(newNotification)
           const adminNotification = await getAllNotification('super-admin', 10, 1)
           io.emit('super-admin-notification', adminNotification);
-          io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+          const roomId = bookingDetails.userId._id.toString()
+          console.log('room --->', roomId)
+          io.to('room' + roomId).emit('user-notification', userNotification);
 
           setTimeout(async () => {
             const bookingDetails = await Booking.findById(id).populate('residenceId');
             if (bookingDetails.paymentTypes === 'unknown') {
               const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for ' + bookingDetails.residenceId.residenceName + ', and you need to pay within ' + remainingNinetyPercent + ' hours'
-              
+
               const newNotification = {
                 message: userMessage,
                 receiverId: bookingDetails.userId._id,
@@ -581,11 +801,12 @@ const updateBooking = async (req, res) => {
                 role: 'user',
                 type: 'booking'
               }
-              const userNotification =await addNotification(newNotification)
-              io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+              const userNotification = await addNotification(newNotification)
+              const roomId = bookingDetails.userId._id.toString()
+              io.to('room' + roomId).emit('user-notification', userNotification);
             }
           }, remainingTimeToPay * 0.8);
-        
+
           // Set up setTimeout for 100% of the remaining time to pay
           setTimeout(async () => {
             const bookingDetails = await Booking.findById(id).populate('residenceId userId');
@@ -595,7 +816,7 @@ const updateBooking = async (req, res) => {
               const userMessage = 'You booking request for ' + bookingDetails.residenceId.residenceName + ' automatically cancelled due to not payment with-in time'
 
               const hostMessage = bookingDetails.residenceId.residenceName + ' booking request automatically cancelled due to not payment with-in time'
-              
+
               const newNotification = {
                 message: userMessage,
                 receiverId: bookingDetails.userId._id,
@@ -604,8 +825,9 @@ const updateBooking = async (req, res) => {
                 role: 'user',
                 type: 'booking'
               }
-              const userNotification =await addNotification(newNotification)
-              io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+              const userNotification = await addNotification(newNotification)
+              const roomId = bookingDetails.userId._id.toString()
+              io.to('room' + roomId).emit('user-notification', userNotification);
 
               const hostNotif = {
                 message: hostMessage,
@@ -615,8 +837,9 @@ const updateBooking = async (req, res) => {
                 role: 'host',
                 type: 'booking'
               }
-              const hostNotification =await addNotification(hostNotif)
-              io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
+              const hostNotification = await addNotification(hostNotif)
+              const hostRoomId = bookingDetails.hostId._id.toString()
+              io.to('room' + hostRoomId).emit('host-notification', hostNotification);
             }
           }, remainingTimeToPay);
 
@@ -645,13 +868,14 @@ const updateBooking = async (req, res) => {
             role: 'user',
             type: 'booking'
           }
-          const userNotification =await addNotification(newNotification)
-          io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+          const userNotification = await addNotification(newNotification)
+          const roomId = bookingDetails.userId._id.toString()
+          io.to('room' + roomId).emit('user-notification', userNotification);
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
-        if(bookingDetails.status === 'reserved'){
-          if(bookingDetails.paymentTypes === 'unknown'){
+        if (bookingDetails.status === 'reserved') {
+          if (bookingDetails.paymentTypes === 'unknown') {
             bookingDetails.status = status
             bookingDetails.save()
             const userMessage = bookingDetails.hostId.fullName + ' cancelled your booking request for ' + bookingDetails.residenceId.residenceName
@@ -665,12 +889,13 @@ const updateBooking = async (req, res) => {
               type: 'booking'
             }
             reside
-            const userNotification =await addNotification(newNotification)
-            io.to('room' + bookingDetails.userId._id).emit('user-notification', userNotification);
+            const userNotification = await addNotification(newNotification)
+            const roomId = bookingDetails.userId._id.toString()
+            io.to('room' + roomId).emit('user-notification', userNotification);
 
             return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
           }
-          else{
+          else {
             return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: req.t('You can not cancel reservation when user already paid') }));
           }
         }
@@ -703,8 +928,8 @@ const updateBooking = async (req, res) => {
             type: 'booking'
           }
           const hostNotification = await addNotification(newNotification)
-          console.log(hostNotification)
-          io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
+          const roomId = bookingDetails.hostId._id.toString()
+          io.to('room' + roomId).emit('host-notification', hostNotification);
 
           // const accessToken = process.env.ORANGE_ACCESS_KEY
           // const senderNumber = process.env.ORANGE_SENDER_NUMBER
@@ -722,8 +947,8 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
           bookingDetails.status = status
           bookingDetails.save()
-          var hostIncome = await Income.findOne({hostId: bookingDetails.hostId._id})
-          if(!hostIncome){
+          var hostIncome = await Income.findOne({ hostId: bookingDetails.hostId._id })
+          if (!hostIncome) {
             hostIncome = new Income({
               hostId: bookingDetails.hostId._id,
               totalIncome: bookingDetails.residenceCharge,
@@ -747,12 +972,26 @@ const updateBooking = async (req, res) => {
             role: 'host'
           }
           const hostNotification = await addNotification(newNotification)
-          io.to('room' + bookingDetails.hostId._id).emit('host-notification', hostNotification);
+          const roomId = bookingDetails.hostId._id.toString()
+          io.to('room' + roomId).emit('host-notification', hostNotification);
+
+          var hostIncome = await Income.findOne({ hostId: paymentDetails.hostId });
+          if(!hostIncome){
+            hostIncome = new Income({
+              hostId: paymentDetails.hostId,
+            })
+          }
+          hostIncome.pendingAmount = hostIncome.pendingAmount + paymentDetails.paymentData.amount;
+          hostIncome.totalAmount = hostIncome.totalAmount + paymentDetails.paymentData.amount;
+          await hostIncome.save();
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
           return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: req.t('Your booking-request update credentials not match') }));
         }
+      }
+      else {
+        return res.status(401).json(response({ status: 'Error', statusCode: '401', type: "booking-request", message: req.t('Your booking-request update credentials not match') }));
       }
     }
     else {
@@ -762,9 +1001,7 @@ const updateBooking = async (req, res) => {
   catch (error) {
     logger.error(error, req.originalUrl)
     console.error(error);
-    //deleting the images if something went wrong
-
-    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error added booking') }));
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Error in editing booking') }));
   }
 };
 
@@ -1001,4 +1238,4 @@ const deleteHistory = async (req, res) => {
   }
 }
 
-module.exports = { addBooking, allBooking, updateBooking, bookingDetails, bookingDashboardCount, bookingDashboardRatio, deleteBooking, calculateTimeAndPrice, deleteHistory };
+module.exports = { addBooking, allBooking, updateBooking, bookingDetails, bookingDashboardCount, bookingDashboardRatio, deleteBooking, calculateTimeAndPrice, deleteHistory, cancelBookingByUser, refundPolicy };

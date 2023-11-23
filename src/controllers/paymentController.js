@@ -134,11 +134,13 @@ const payInAmount = async (req, res) => {
     var payload;
     var payInURL;
     if (paymentTypes === 'test' && process.env.NODE_ENV === 'development') {
-      const { phoneNumber, email, password, token } = req.body
-      if (!phoneNumber || !email || !password || !token) {
-        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required test details not found' }));
-      }
-      paydunyaResponse.data.success = true
+      paymentDetails.status = 'success'
+      paymentDetails.paymentMethod = paymentTypes
+      await paymentDetails.save()
+      const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
+      bookingDetails.paymentTypes = paymentDetails.paymentTypes
+      await bookingDetails.save()
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paymentDetails }));
     }
     else if (paymentTypes === 'card') {
       const { cardNumber, cardCvv, cardExpiredDateYear, cardExpiredDateMonth, token, email, fullName } = req.body
@@ -236,6 +238,7 @@ const payInAmount = async (req, res) => {
       const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
+
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
     }
     else {

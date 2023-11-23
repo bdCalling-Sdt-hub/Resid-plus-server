@@ -480,14 +480,14 @@ const updateResidence = async (req, res) => {
         hostId: req.body.userId,
       };
       if (status) {
-        if (status !== 'active' || status !== 'inactive') {
+        if (status !== 'active' && status !== 'inactive') {
           return res.status(403).json(response({ status: 'Error', statusCode: '403', message: req.t('Invalid status') }));
         }
         else {
           updatedResidence.status = status;
         }
       }
-      if (req.files.length > 0) {
+      if (req?.files?.length > 0) {
         const images = await Residence.find({ _id: id })
           .select('photo')
           .exec();
@@ -495,7 +495,6 @@ const updateResidence = async (req, res) => {
           image.photo.map(photoObject => photoObject.path)
         ).flat();
         unlinkImages(paths)
-        console.log(paths);
 
         const files = [];
         req.files.forEach((file) => {
@@ -504,29 +503,11 @@ const updateResidence = async (req, res) => {
             publicFileUrl,
             path: file.path
           });
-          console.log(files)
         });
         updatedResidence.photo = files;
       }
       const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
 
-      if (updateType === 'admin-suggessions') {
-        const message = checkHost.fullName + ' has updated ' + existingResidence.residenceName + ' . Your feedBack was: ' + existingResidence.feedBack
-
-        const newNotification = {
-          message: message,
-          image: checkHost.image,
-          linkId: existingResidence._id,
-          type: 'residence',
-          role: 'host'
-        }
-        await addNotification(newNotification)
-        const notification = await getAllNotification('super-admin', 10, 1)
-        io.emit('super-admin-notification', notification);
-
-        const commonNotif = await getAllNotification('admin', 10, 1)
-        io.emit('super-admin-notification', commonNotif);
-      }
       return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'residence', message: req.t('Residence edited successfully.'), data: updatedData }));
     }
     else if (checkHost.role === 'admin' || checkHost.role === 'super-admin') {
@@ -552,7 +533,8 @@ const updateResidence = async (req, res) => {
             role: 'host'
           }
           const notification = await addNotification(newNotification)
-          io.to('room' + existingResidence.hostId).emit('host-notification', notification);
+          const roomId = existingResidence.hostId.toString();
+          io.to('room' + roomId).emit('host-notification', notification);
 
         }
         else {
@@ -586,7 +568,8 @@ const updateResidence = async (req, res) => {
               role: 'host'
             }
             const notification = await addNotification(newNotification)
-            io.to('roon' + existingResidence.hostId).emit('host-notification', notification);
+            const roomId = existingResidence.hostId.toString();
+            io.to('roon' + roomId).emit('host-notification', notification);
           }
           else {
             return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence rejection requirements not fulfilled' }));
@@ -607,8 +590,8 @@ const updateResidence = async (req, res) => {
               role: 'host'
             }
             const notification = await addNotification(newNotification)
-            io.to('roon' + existingResidence.hostId).emit('host-notification', notification);
-
+            const roomId = existingResidence.hostId.toString();
+            io.to('roon' + roomId).emit('host-notification', notification);
           }
           else {
             return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence deletion requirements not fulfilled' }));
