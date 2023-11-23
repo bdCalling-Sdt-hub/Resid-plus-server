@@ -122,14 +122,14 @@ const payInAmount = async (req, res) => {
     const paymentTypes = req.query.paymentTypes
     const {paymentId} = req.body
     if (!paymentId ) {
-      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Payment id not found' }));
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment id not found') }));
     }
     const paymentDetails = await Payment.findById(paymentId).populate('bookingId residenceId userId');
     if(!paymentDetails){
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment not found' }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Payment not found') }));
     }
     if(paymentDetails.status === 'success'){
-      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Payment is already done' }));
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment is already done') }));
     }
     var payload;
     var payInURL;
@@ -145,7 +145,7 @@ const payInAmount = async (req, res) => {
     else if (paymentTypes === 'card') {
       const { cardNumber, cardCvv, cardExpiredDateYear, cardExpiredDateMonth, token, email, fullName } = req.body
       if (!cardNumber || !cardCvv || !cardExpiredDateYear || !cardExpiredDateMonth || !token || !email || !fullName) {
-        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Card details not found' }));
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Card details not found') }));
       }
       payload = {
         "full_name": fullName,
@@ -161,7 +161,7 @@ const payInAmount = async (req, res) => {
     else if (paymentTypes === 'orange-money-ci') {
       const { fullName, email, phoneNumber, otp, token } = req.body
       if (!fullName || !email || !phoneNumber || !otp || !token) {
-        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Orange Money details not found' }));
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Orange Money details not found') }));
       }
       payload = {
         "orange_money_ci_customer_fullname": fullName,
@@ -175,7 +175,7 @@ const payInAmount = async (req, res) => {
     else if (paymentTypes === 'mtn-ci') {
       const { fullName, email, phoneNumber, provider, token } = req.body
       if (!fullName || !email || !phoneNumber || !provider || !token) {
-        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required MTN details not found' }));
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required MTN details not found') }));
       }
       payload = {
         "mtn_ci_customer_fullname": fullName,
@@ -189,7 +189,7 @@ const payInAmount = async (req, res) => {
     else if (paymentTypes === 'moov-ci') {
       const { fullName, email, phoneNumber, token } = req.body
       if (!fullName || !email || !phoneNumber || !token) {
-        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Moov details not found' }));
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Moov details not found') }));
       }
       payload = {
         "moov_ci_customer_fullname": fullName,
@@ -202,7 +202,7 @@ const payInAmount = async (req, res) => {
     else if (paymentTypes === 'wave-ci') {
       const { fullName, email, phoneNumber, token } = req.body
       if (!fullName || !email || !phoneNumber || !token) {
-        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Wave details not found' }));
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Wave details not found') }));
       }
       payload = {
         "wave_ci_fullName": fullName,
@@ -215,7 +215,7 @@ const payInAmount = async (req, res) => {
     else if (paymentTypes === 'paydunya') {
       const { fullName, email, phoneNumber, password, token } = req.body
       if (!fullName || !email || !phoneNumber || !password || !token) {
-        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required Paydunya details not found' }));
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Paydunya details not found') }));
       }
       payload = {
         "customer_name": fullName,
@@ -227,7 +227,7 @@ const payInAmount = async (req, res) => {
       payInURL = 'https://app.paydunya.com/api/v1/softpay/paydunya'
     }
     else {
-      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Payment type not found' }));
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment type not found') }));
     }
     console.log("payload---------->", payload, payInURL)
     const paydunyaResponse = await axios.post(payInURL, payload);
@@ -275,7 +275,7 @@ const createDisburseToken = async (data) => {
   } catch (error) {
     logger.error(error, 'Disburse token creation error')
     console.error(error);
-    return error.message;
+    return res.status;
   }
 }
 

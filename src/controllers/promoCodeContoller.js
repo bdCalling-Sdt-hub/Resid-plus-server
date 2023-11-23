@@ -24,7 +24,7 @@ const allPromoCodes = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '401',
-          message: req.t('You are not authorised to get amenities'),
+          message: req.t('You are not authorised to get all promo-codes'),
         })
       );
     }
