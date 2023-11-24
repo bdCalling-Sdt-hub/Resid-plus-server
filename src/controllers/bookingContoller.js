@@ -938,8 +938,15 @@ const updateBooking = async (req, res) => {
       }
       if (status === 'check-in') {
         if (bookingDetails.paymentTypes !== 'unknown' && bookingDetails.status === 'reserved') {
-          if (bookingDashboardCount) {
-
+          const today = new Date()
+          const checkInTime = new Date(bookingDetails.checkInTime)
+          if (process.env.NODE_ENV === 'production' && today < checkInTime) {
+            return res.status(409).json(response({
+              status: 'Error',
+              statusCode: '409',
+              type: 'booking',
+              message: `You can't check-in until ${checkInTime}.`,
+            }));
           }
           bookingDetails.status = status
           bookingDetails.save()
@@ -967,7 +974,7 @@ const updateBooking = async (req, res) => {
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
-          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: "booking-request", message: req.t('Your booking-request update credentials not match') }));
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: "booking-request", message: req.t('You must pay atleast 50% to check-in') }));
         }
       }
       else if (status === "check-out") {
@@ -1014,7 +1021,7 @@ const updateBooking = async (req, res) => {
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
-          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: req.t('Your booking-request update credentials not match') }));
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: 'booking', message: req.t('Your need to clear full payment and must be checked-in') }));
         }
       }
       else {

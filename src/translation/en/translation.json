@@ -236,5 +236,12 @@
   "User not authorised to get all search credentials": "User not authorised to get all search credentials",
   "Search credentials retrieved successfully": "Search credentials retrieved successfully",
   "You are not authorised to delete this residence": "You are not authorised to delete this residence",
-  "Cannot delete residence with future booking requests accepted.": "Cannot delete residence with future booking requests accepted."
+  "Cannot delete residence with future booking requests accepted.": "Cannot delete residence with future booking requests accepted.",
+  "You must pay atleast 50% to check-in": "You must pay atleast 50% to check-in",
+  "Your need to clear full payment and must be checked-in": "Your need to clear full payment and must be checked-in",
+  "User looking to update, not found": "User looking to update, not found",
+  "User status updated successfully": "User status updated successfully",
+  "User update credentials not fulfilled": "User update credentials not fulfilled",
+  "Update users status failed due to having reserved residence": "Update users status failed due to having reserved residence",
+  "Status is required": "Status is required"
 }

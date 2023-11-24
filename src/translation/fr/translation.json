@@ -230,11 +230,18 @@
   "You are not authorised to get amenities": "Vous n'êtes pas autorisé à obtenir les aménités",
   "PromoCodes retrieved successfully": "Codes promotionnels récupérés avec succès",
   "Expiry date should be a valid future date": "La date d'expiration doit être une date future valide",
-  "You are not authorised to get all promo-codes" : "Vous n'êtes pas autorisé à obtenir tous les codes promotionnels",
+  "You are not authorised to get all promo-codes": "Vous n'êtes pas autorisé à obtenir tous les codes promotionnels",
   "Residence already exists": "La résidence existe déjà",
   "You are Not authorize to delete residence": "Vous n'êtes pas autorisé à supprimer la résidence",
   "User not authorised to get all search credentials": "Utilisateur non autorisé à obtenir toutes les informations de recherche",
   "Search credentials retrieved successfully": "Informations de recherche récupérées avec succès",
   "You are not authorised to delete this residence": "Vous n'êtes pas autorisé à supprimer cette résidence",
-  "Cannot delete residence with future booking requests accepted.": "Impossible de supprimer la résidence avec des demandes de réservation futures acceptées."
+  "Cannot delete residence with future booking requests accepted.": "Impossible de supprimer la résidence avec des demandes de réservation futures acceptées.",
+  "You must pay atleast 50% to check-in": "Vous devez payer au moins 50% pour vous enregistrer",
+  "Your need to clear full payment and must be checked-in": "Vous devez effectuer le paiement intégral et vous devez vous enregistrer",
+  "User looking to update, not found": "Utilisateur souhaitant mettre à jour, introuvable",
+  "User status updated successfully": "Statut de l'utilisateur mis à jour avec succès",
+  "User update credentials not fulfilled": "Informations de mise à jour de l'utilisateur non remplies",
+  "Update users status failed due to having reserved residence": "La mise à jour du statut des utilisateurs a échoué en raison de la résidence réservée",
+  "Status is required": "Le statut est requis"
 }

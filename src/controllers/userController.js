@@ -717,13 +717,13 @@ const changePassword = async (req, res) => {
 
 const updateUserStatus = async (req, res) => {
   try {
-    const checkUser = await User.findOne({ _id: req.body.userId });
+    const checkUser = await User.findById(req.body.userId);
     if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User not found'),
         })
       );
     }
@@ -734,7 +734,7 @@ const updateUserStatus = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '404',
-          message: 'User not found',
+          message: req.t('User looking to update, not found'),
         })
       );
     }
@@ -745,7 +745,7 @@ const updateUserStatus = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '400',
-          message: 'Status is required',
+          message: req.t('Status is required'),
         })
       );
     }
@@ -760,7 +760,7 @@ const updateUserStatus = async (req, res) => {
               status: 'OK',
               statusCode: '200',
               type: 'user',
-              message: 'User status updated successfully',
+              message: req.t('User status updated successfully'),
               data: {
                 user: existingUser
               },
@@ -772,7 +772,7 @@ const updateUserStatus = async (req, res) => {
             response({
               status: 'Error',
               statusCode: '400',
-              message: 'User update credentials not fulfilled',
+              message: req.t('User update credentials not fulfilled'),
             })
           );
         }
@@ -784,7 +784,7 @@ const updateUserStatus = async (req, res) => {
             response({
               status: 'Error',
               statusCode: '400',
-              message: 'Update users status failed due to having reserved residence',
+              message: req.t('Update users status failed due to having reserved residence'),
             })
           );
         }
@@ -799,7 +799,7 @@ const updateUserStatus = async (req, res) => {
               response({
                 status: 'Error',
                 statusCode: '400',
-                message: 'User update credentials not fulfilled',
+                message: req.t('User update credentials not fulfilled'),
               })
             );
           }
@@ -815,7 +815,7 @@ const updateUserStatus = async (req, res) => {
               response({
                 status: 'Error',
                 statusCode: '400',
-                message: 'User update credentials not fulfilled',
+                message: req.t('User update credentials not fulfilled'),
               })
             );
           }
@@ -831,7 +831,7 @@ const updateUserStatus = async (req, res) => {
               response({
                 status: 'Error',
                 statusCode: '400',
-                message: 'User update credentials not fulfilled',
+                message: req.t('User update credentials not fulfilled'),
               })
             );
           }
@@ -841,23 +841,24 @@ const updateUserStatus = async (req, res) => {
             response({
               status: 'Error',
               statusCode: '400',
-              message: 'Request type not defined properly',
+              message: req.t('Request type not defined properly'),
             })
           );
         }
       }
+      //const allUser = await User.find({ status: sta })
       return res.status(200).json(
         response({
           status: 'OK',
           statusCode: '200',
           type: 'user',
-          message: 'User status updated successfully',
+          message: req.t('User status updated successfully'),
           data: existingUser
         })
       );
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'user', message: 'You are not authorised to get all user details', data: null }));
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'user', message: req.t('You are not authorised to get all user details'), data: null }));
     }
   }
   catch (error) {
@@ -866,7 +867,7 @@ const updateUserStatus = async (req, res) => {
       response({
         status: 'Error',
         statusCode: '500',
-        message: 'Error getting users',
+        message: req.t('Error getting users'),
       })
     );
   }

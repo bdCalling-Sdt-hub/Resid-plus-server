@@ -273,7 +273,7 @@ const payInAmount = async (req, res) => {
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
     }
     else {
-      console.log("paydunyaResponse---------->", paydunyaResponse.data, paydunyaResponse.data.response_code)
+      console.log("paydunyaResponse---------->", paydunyaResponse.data)
       if(!paydunyaResponse.data.success){
         paymentDetails.status = 'failed'
         await paymentDetails.save()
