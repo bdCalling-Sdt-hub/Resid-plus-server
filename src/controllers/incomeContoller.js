@@ -17,7 +17,7 @@ const allIncomes = async (req, res) => {
       );
     }
 
-    const income = await Income.find({ hostId: req.body.userId });
+    const income = await Income.findOne({ hostId: req.body.userId });
     if (!income) {
       return res.status(404).json(
         response({

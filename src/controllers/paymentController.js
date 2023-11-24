@@ -140,6 +140,22 @@ const payInAmount = async (req, res) => {
       const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
+
+      const hostMessage = paymentDetails.userId.fullName + ' has paid ' + paymentDetails.paymentData.amount +' for ' + paymentDetails.residenceId.residenceName + ' for Booking ID: ' + paymentDetails.bookingId.bookingId + ', after check-out it will transfer to your account.'
+
+      const newNotification = {
+        message: hostMessage,
+        receiverId: paymentDetails.userId._id,
+        image: paymentDetails.userId.image,
+        linkId: paymentDetails.bookingId._id,
+        role: 'host',
+        type: 'booking'
+      }
+
+      const notification = await addNotification(newNotification)
+      const roomId = paymentDetails.hostId._id.toString()
+      io.to('room'+roomId).emit('host-notification', notification);
+        
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paymentDetails }));
     }
     else if (paymentTypes === 'card') {
@@ -238,6 +254,21 @@ const payInAmount = async (req, res) => {
       const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
+
+      const hostMessage = paymentDetails.userId.fullName + ' has paid ' + paymentDetails.paymentData.amount +' for ' + paymentDetails.residenceId.residenceName + ' for Booking ID: ' + paymentDetails.bookingId.bookingId + ', after check-out it will transfer to your account.'
+
+      const newNotification = {
+        message: hostMessage,
+        receiverId: paymentDetails.userId._id,
+        image: paymentDetails.userId.image,
+        linkId: paymentDetails.bookingId._id,
+        role: 'host',
+        type: 'booking'
+      }
+
+      const notification = await addNotification(newNotification)
+      const roomId = paymentDetails.hostId._id.toString()
+      io.to('room'+roomId).emit('host-notification', notification);
 
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
     }
@@ -345,7 +376,7 @@ const allPayment = async (req, res) => {
     const requestType = !req.query.requestType ? 'total' : req.query.requestType;
     var data
     if (requestType === 'total') {
-      const allPayments = await Payment.find({ hostId: req.body.userId });
+      const allPayments = await Payment.find({ hostId: req.body.userId, status:"success" });
       const total = allPayments.reduce((total, payment) => total + payment.paymentData.amount, 0);
       data = total
       console.log("totalIncome---------->", total, allPayments, req.body.userId)
@@ -354,7 +385,7 @@ const allPayment = async (req, res) => {
       const dayTime = 24 * 60 * 60 * 1000;
       const dayEndDate = new Date();
       const dayStartDate = new Date(dayEndDate - dayTime);
-      const allPayments = await Payment.find({ createdAt: { $gte: dayStartDate, $lt: dayEndDate }, hostId: req.body.userId }).populate('bookingId residenceId');
+      const allPayments = await Payment.find({ createdAt: { $gte: dayStartDate, $lt: dayEndDate }, hostId: req.body.userId, status:"success" }).populate('bookingId residenceId');
       const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
       data = { allPayments, total }
     }
@@ -362,7 +393,7 @@ const allPayment = async (req, res) => {
       const weeklyTime = 7 * 24 * 60 * 60 * 1000
       weeklyStartDate = new Date(new Date().getTime() - weeklyTime);
       weeklyEndDate = new Date();
-      const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate }, hostId: req.body.userId }).populate('bookingId residenceId');
+      const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate }, hostId: req.body.userId, status:"success" }).populate('bookingId residenceId');
       const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
       data = { allPayments, total }
 
@@ -391,7 +422,7 @@ const allPayment = async (req, res) => {
       const monthEndDate = new Date();
       const monthStartDate = new Date(monthEndDate - monthTime);
 
-      const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate }, hostId: req.body.userId });
+      const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate }, hostId: req.body.userId, status:"success" });
 
       const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',

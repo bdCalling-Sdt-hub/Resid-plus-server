@@ -258,6 +258,7 @@ const allResidence = async (req, res) => {
         .limit(limit)
         .skip((page - 1) * limit)
         .select('photo residenceName acceptanceStatus')
+        .sort({ createdAt: -1 })
       count = await Residence.countDocuments({ ...filter });
       const accepted = await Residence.countDocuments({ acceptanceStatus: 'accepted' });
       const pending = await Residence.countDocuments({ acceptanceStatus: 'pending' });

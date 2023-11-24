@@ -1,4 +1,5 @@
 const response = require("../helpers/response");
+require('dotenv').config()
 const Booking = require("../models/Booking");
 const Residence = require("../models/Residence");
 const Payment = require("../models/Payment");
@@ -516,8 +517,8 @@ const cancelBookingByUser = async (req, res) => {
         io.to('room' + roomId).emit('host-notification', hostNotification);
         return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking cancelled successfully.'), data: bookingDetails }));
       }
-      else if(bookingDetails.status === 'reserved' && bookingDetails.paymentTypes !== 'unknown'){
-        const userPayment = await Payment.findOne({ bookingId: bookingDetails._id, userId: checkUser._id }).sort({ createdAt: -1 });
+      else if (bookingDetails.status === 'reserved' && bookingDetails.paymentTypes !== 'unknown') {
+        const userPayment = await Payment.findOne({ bookingId: bookingDetails._id, userId: checkUser._id, status: "success" }).sort({ createdAt: -1 });
         if (!userPayment || userPayment.paymentTypes === 'pending') {
           return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'payment', message: req.t('Payment has not done yet') }));
         }
@@ -646,12 +647,12 @@ const cancelBookingByUser = async (req, res) => {
           }
         }
       }
-      else{
+      else {
         return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: req.t('You can not cancel booking') }));
       }
     }
     else {
-      return res.status(400).json(response({ status: 'Error', type: "booking",statusCode: '400', message: req.t("Booking status not appropiate") }));
+      return res.status(400).json(response({ status: 'Error', type: "booking", statusCode: '400', message: req.t("Booking status not appropiate") }));
     }
   }
   catch (error) {
@@ -666,10 +667,10 @@ const refundPolicy = async (req, res) => {
     const id = req.params.id;
     const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId');
 
-    if((!bookingDetails || bookingDetails.isDeleted) && bookingDetails.paymentTypes !== 'unknown'){
+    if ((!bookingDetails || bookingDetails.isDeleted) && bookingDetails.paymentTypes !== 'unknown') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: req.t('Refund details not available') }));
     }
-    const userPayment = await Payment.findOne({ bookingId: bookingDetails._id, userId: req.body.userId }).sort({ createdAt: -1 });
+    const userPayment = await Payment.findOne({ bookingId: bookingDetails._id, userId: req.body.userId, status: "success" }).sort({ createdAt: -1 });
 
     if (!userPayment || userPayment.paymentTypes === 'pending') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'payment', message: req.t('Payment has not been completed yet') }));
@@ -749,6 +750,28 @@ const updateBooking = async (req, res) => {
       }
       if (status === 'reserved') {
         if (bookingDetails.status === 'pending') {
+          const existingBookings = await Booking.findOne({
+            residenceId: bookingDetails.residenceId._id,
+            status: 'reserved',
+            $or: [
+              {
+                $and: [
+                  { checkInTime: { $lte: bookingDetails.checkInTime } },
+                  { checkOutTime: { $gte: bookingDetails.checkInTime } },
+                ]
+              },
+              {
+                $and: [
+                  { checkInTime: { $lte: bookingDetails.checkOutTime } },
+                  { checkOutTime: { $gte: bookingDetails.checkOutTime } },
+                ]
+              }
+            ]
+          });
+
+          if (existingBookings) {
+            return res.status(409).json(response({ status: 'Error', statusCode: '409', message: req.t('Residence is already booked for the requested time.') }));
+          }
           const updated_residence = {
             status
           }
@@ -757,6 +780,8 @@ const updateBooking = async (req, res) => {
           const currentTime = new Date()
           const checkInTime = new Date(bookingDetails.checkInTime)
           const remainingHours = calculateTotalHoursBetween(currentTime, checkInTime)
+          const exactHours = Math.floor(remainingHours);
+          const exactMinutes = Math.round((remainingHours - hours) * 60);
           const remainingNinetyPercent = remainingHours * 0.1
           const remainingTimeToPay = remainingHours * 60 * 60 * 40 // hours to mili-second and then taking 40% of it --> 60*40/100 = 24
 
@@ -764,7 +789,7 @@ const updateBooking = async (req, res) => {
           bookingDetails.save()
 
           const adminMessage = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
-          const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for ' + bookingDetails.residenceId.residenceName + ', and you need to pay within ' + remainingHours + ' hours'
+          const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for ' + bookingDetails.residenceId.residenceName + ', and you need to pay within ' + exactHours + ' hours and '+ exactMinutes + ' minutes'
 
           const newNotification = [{
             message: adminMessage,
@@ -888,7 +913,6 @@ const updateBooking = async (req, res) => {
               role: 'user',
               type: 'booking'
             }
-            reside
             const userNotification = await addNotification(newNotification)
             const roomId = bookingDetails.userId._id.toString()
             io.to('room' + roomId).emit('user-notification', userNotification);
@@ -914,6 +938,9 @@ const updateBooking = async (req, res) => {
       }
       if (status === 'check-in') {
         if (bookingDetails.paymentTypes !== 'unknown' && bookingDetails.status === 'reserved') {
+          if (bookingDashboardCount) {
+
+          }
           bookingDetails.status = status
           bookingDetails.save()
 
@@ -976,7 +1003,7 @@ const updateBooking = async (req, res) => {
           io.to('room' + roomId).emit('host-notification', hostNotification);
 
           var hostIncome = await Income.findOne({ hostId: paymentDetails.hostId });
-          if(!hostIncome){
+          if (!hostIncome) {
             hostIncome = new Income({
               hostId: paymentDetails.hostId,
             })

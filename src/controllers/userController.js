@@ -162,6 +162,9 @@ const signIn = async (req, res) => {
   try {
     //Get email password from req.body
     const { email, password } = req.body;
+    if(!email || !password){
+      return res.status(400).json(response({ statusCode: 200, message: req.t('Email and password are required'), status: "OK" }));
+    }
     console.log(email);
 
     // Find the user by email
