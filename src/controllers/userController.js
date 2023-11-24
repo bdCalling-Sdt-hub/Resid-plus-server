@@ -98,6 +98,9 @@ const createUser = async (req, res) => {
     return res.status(401).json(response({ statusCode: 200, message: req.t('You are not authorized to create user'), status: "OK" }));
   }
   const { fullName, email, phoneNumber, address, dateOfBirth } = req.body;
+  if(!fullName || !email || !phoneNumber || !address || !dateOfBirth){
+    return res.status(400).json(response({ statusCode: 200, message: req.t('All fields are required'), status: "OK" }));
+  }
   const existingUser = await User.findOne({ email });
   if(existingUser){
     return res.status(409).json(response({ statusCode: 200, message: req.t('User already exists'), status: "OK" }));
