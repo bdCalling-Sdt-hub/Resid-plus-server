@@ -185,3 +185,5 @@
 2023-11-24T11:23:27.858Z [ERROR] TokenExpiredError: jwt expired (Error Path: /api/bookings/dashboard/ratio)
 2023-11-24T11:23:27.870Z [ERROR] Error: Requested content not found for path: /uploads/users/img_5851-(1)-1697868862797.JPG (Error Path: /uploads/users/img_5851-(1)-1697868862797.JPG)
 2023-11-24T11:45:25.419Z [ERROR] AxiosError: Request failed with status code 500 (Error Path: /api/payments/make-payment?paymentTypes=wave-ci)
+2023-11-24T12:43:51.959Z [ERROR] AxiosError: Request failed with status code 500 (Error Path: /api/payments/make-payment?paymentTypes=wave-ci)
+2023-11-24T12:43:59.993Z [ERROR] AxiosError: Request failed with status code 500 (Error Path: /api/payments/make-payment?paymentTypes=wave-ci)

@@ -97,7 +97,7 @@ const createUser = async (req, res) => {
   if (checkUser.role !== 'super-admin') {
     return res.status(401).json(response({ statusCode: 200, message: req.t('You are not authorized to create user'), status: "OK" }));
   }
-  const { fullName, email, phoneNumber, address, dateOfBirth, role } = req.body;
+  const { fullName, email, phoneNumber, address, dateOfBirth } = req.body;
   const existingUser = await User.findOne({ email });
   if(existingUser){
     return res.status(409).json(response({ statusCode: 200, message: req.t('User already exists'), status: "OK" }));
@@ -114,7 +114,7 @@ const createUser = async (req, res) => {
     emailVerified: true,
     dateOfBirth,
     password,
-    role
+    role : 'admin'
   });
 
   const url = process.env.ALLOWED_CLIENT_URL_DASHBOARD
@@ -586,7 +586,7 @@ const allUser = async (req, res) => {
         { phoneNumber: { $regex: searchRegExp } },
       ],
     };
-    if (userType) {
+    if (userType!=='all') {
       filter.$and = filter.$and || [];
       filter.$and.push({ role: userType })
     }
