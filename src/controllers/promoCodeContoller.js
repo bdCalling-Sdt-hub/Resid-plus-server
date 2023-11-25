@@ -31,7 +31,7 @@ const allPromoCodes = async (req, res) => {
 
     const promoCodes = await PromoCode.find();
 
-    console.log("promoCodes------------->", promoCodes)
+    //console.log("promoCodes------------->", promoCodes)
     return res.status(200).json(
       response({
         status: 'OK',
@@ -101,7 +101,7 @@ const addPromoCode = async (req, res) => {
 
     // Check if an promoCode entry already exists
     let promoCode = await PromoCode.findOne({ couponCode: couponCode });
-    console.log("existing data------------>", promoCode)
+    //console.log("existing data------------>", promoCode)
 
     if (!promoCode) {
       // If no entry exists, create a new one

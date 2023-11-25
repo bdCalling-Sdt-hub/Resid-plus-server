@@ -30,8 +30,6 @@ const addResidence = async (req, res) => {
       category
     } = req.body;
 
-    console.log('resid add req ------>',req.body)
-
     const checkHost = await User.findById(req.body.userId);
 
     if (!checkHost || checkHost.status !== 'accepted') {
@@ -553,7 +551,7 @@ const updateResidence = async (req, res) => {
             if (!feedBack) {
               return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Feedback must be given' }));
             }
-            const message = 'Admin has blocked ' + existingResidence.residenceName+', Feedback: ' + feedBack
+            const message = 'Admin has blocked ' + existingResidence.residenceName + ', Feedback: ' + feedBack
 
             existingResidence.feedBack = feedBack;
             existingResidence.reUpload = false;
@@ -570,8 +568,7 @@ const updateResidence = async (req, res) => {
             }
             const notification = await addNotification(newNotification)
             const roomId = existingResidence.hostId.toString();
-            console.log('room id', roomId)
-            io.to('roon' + roomId).emit('host-notification', notification);
+            io.to('room' + roomId).emit('host-notification', notification);
           }
           else {
             return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence rejection requirements not fulfilled' }));
@@ -593,7 +590,7 @@ const updateResidence = async (req, res) => {
             }
             const notification = await addNotification(newNotification)
             const roomId = existingResidence.hostId.toString();
-            io.to('roon' + roomId).emit('host-notification', notification);
+            io.to('room' + roomId).emit('host-notification', notification);
           }
           else {
             return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Residence deletion requirements not fulfilled' }));
@@ -797,15 +794,15 @@ const residenceDashboard = async (req, res) => {
       const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
-      const residences = await Residence.find({acceptanceStatus: acceptanceStatus, isDeleted: false})
+      const residences = await Residence.find({ acceptanceStatus: acceptanceStatus, isDeleted: false })
         .limit(limit)
         .skip((page - 1) * limit)
         .populate('amenities', 'translation')
         .populate('category', 'translation');
-      count = await Residence.countDocuments({acceptanceStatus: acceptanceStatus, isDeleted: false});
+      count = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false });
 
-      const active = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false,status: 'active' });
-      const reserved = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false,status: 'reserved' });
+      const active = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false, status: 'active' });
+      const reserved = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false, status: 'reserved' });
       console.log(active, reserved)
       const count_data = {
         active,
