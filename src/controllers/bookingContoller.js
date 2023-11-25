@@ -781,7 +781,7 @@ const updateBooking = async (req, res) => {
           const checkInTime = new Date(bookingDetails.checkInTime)
           const remainingHours = calculateTotalHoursBetween(currentTime, checkInTime)
           const exactHours = Math.floor(remainingHours);
-          const exactMinutes = Math.round((remainingHours - hours) * 60);
+          const exactMinutes = Math.round((remainingHours - exactHours) * 60);
           const remainingNinetyPercent = remainingHours * 0.1
           const remainingTimeToPay = remainingHours * 60 * 60 * 40 // hours to mili-second and then taking 40% of it --> 60*40/100 = 24
 
