@@ -794,17 +794,18 @@ const residenceDashboard = async (req, res) => {
     };
 
     if (checkUser.role === 'super-admin' || checkUser.role === 'admin') {
+      const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
-      const residences = await Residence.find()
+      const residences = await Residence.find({acceptanceStatus: acceptanceStatus, isDeleted: false})
         .limit(limit)
         .skip((page - 1) * limit)
         .populate('amenities', 'translation')
         .populate('category', 'translation');
-      count = await Residence.countDocuments();
+      count = await Residence.countDocuments({acceptanceStatus: acceptanceStatus, isDeleted: false});
 
-      const active = await Residence.countDocuments({ status: 'active' });
-      const reserved = await Residence.countDocuments({ status: 'reserved' });
+      const active = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false,status: 'active' });
+      const reserved = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false,status: 'reserved' });
       console.log(active, reserved)
       const count_data = {
         active,
