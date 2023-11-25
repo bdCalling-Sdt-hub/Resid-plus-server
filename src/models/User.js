@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
   },
   phoneNumber: { type: String, required: false, trim: true },
   address: { type: String, required: false, trim: true },
-  dateOfBirth: { type: String, required: false },
+  dateOfBirth: { type: Date, required: false },
   password: { type: String, required: [true, 'Password must be given'], set: (v) => bcrypt.hashSync(v, bcrypt.genSaltSync(10)) },
   image: {
     type: Object, required: false, default: {

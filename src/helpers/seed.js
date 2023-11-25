@@ -15,6 +15,16 @@ const usersData = [
     "password": "helloadmin",
     "role": "super-admin",
     "emailVerified": true
+  },
+  {
+    "fullName": "Franck Brou",
+    "email": "sub.residplus@gmail.com",
+    "phoneNumber": "+2250757063629",
+    "address": "Canada",
+    "dateOfBirth": new Date("2000-01-01"),
+    "password": "hellosubadmin",
+    "role": "admin",
+    "emailVerified": true
   }
 ];
 
@@ -146,7 +156,7 @@ const categoriesData = [
 // Function to seed users
 const seedUsers = async () => {
   try {
-    //await User.deleteMany();
+    await User.deleteMany();
     await User.insertMany(usersData);
     console.log('Users seeded successfully!');
   } catch (err) {
@@ -157,7 +167,7 @@ const seedUsers = async () => {
 // Function to seed amenities
 const seedAmenities = async () => {
   try {
-    //await Amenity.deleteMany();
+    await Amenity.deleteMany();
     await Amenity.insertMany(amenitiesData);
     console.log('Amenities seeded successfully!');
   } catch (err) {
@@ -168,9 +178,9 @@ const seedAmenities = async () => {
 // Function to seed categories
 const seedCategories = async () => {
   try {
-    //await Category.deleteMany();
-    await Category.insertMany(categoriesData);
-    console.log('Categories seeded successfully!');
+    await Category.deleteMany();
+    const data = await Category.insertMany(categoriesData);
+    console.log({message: 'Categories seeded successfully!', data: data});
   } catch (err) {
     console.error('Error seeding categories:', err);
   }
