@@ -243,5 +243,6 @@
   "User status updated successfully": "Statut de l'utilisateur mis à jour avec succès",
   "User update credentials not fulfilled": "Informations de mise à jour de l'utilisateur non remplies",
   "Update users status failed due to having reserved residence": "La mise à jour du statut des utilisateurs a échoué en raison de la résidence réservée",
-  "Status is required": "Le statut est requis"
+  "Status is required": "Le statut est requis",
+  "Must provide appropiate data": "Doit fournir des données appropriées"
 }
