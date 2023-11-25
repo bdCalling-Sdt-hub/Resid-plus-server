@@ -27,12 +27,13 @@ function validatePassword(password) {
 const signUp = async (req, res) => {
   console.log(req.body)
   try {
-    const { fullName, email, phoneNumber, address, dateOfBirth, password, role } = req.body;
+    var { fullName, email, phoneNumber, address, dateOfBirth, password, role } = req.body;
 
     //role as admin is not allowed to be signed-up
     // if(role==='super-admin'){
     //   return res.status(409).json(response({ statusCode: 200, message:req.t('You are not authorized to sign-up'), status: "OK" }));
     // }
+    var dateOfBirth = new Date(dateOfBirth);
     const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
     // Create the user in the database
@@ -100,6 +101,9 @@ const createUser = async (req, res) => {
   const { fullName, email, phoneNumber, address, dateOfBirth } = req.body;
   if(!fullName || !email || !phoneNumber || !address || !dateOfBirth){
     return res.status(400).json(response({ statusCode: 200, message: req.t('All fields are required'), status: "OK" }));
+  }
+  if(!/^[a-zA-ZÀ-ÖØ-öø-ÿ0-9._%+-]+@[a-zA-ZÀ-ÖØ-öø-ÿ0-9.-]+\.[a-zA-ZÀ-ÖØ-öø-ÿ]{2,}$/.test(email)){
+    return res.status(400).json(response({ statusCode: 200, message: req.t('Invalid email format'), status: "OK" }));
   }
   const existingUser = await User.findOne({ email });
   if(existingUser){

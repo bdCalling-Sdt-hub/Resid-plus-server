@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const promoCodeSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  couponCode: { type: String, required: true, unique: true },
-  discountPercentage: { type: Number, required: true },
-  expiryDate: { type: Date, required: true },
-  isActive: { type: Boolean, required: true },
+  title: { type: String, required: false },
+  couponCode: { type: String, required: false },
+  discountPercentage: { type: Number, required: false },
+  expiryDate: { type: Date, required: false },
+  isActive: { type: Boolean, required: false },
 },
   { timestamps: true },
 );

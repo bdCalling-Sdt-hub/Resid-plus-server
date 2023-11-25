@@ -1,3 +1,0 @@
-2023-11-25T04:42:31.578Z [ERROR] TokenExpiredError: jwt expired (Error Path: /api/incomes)
-2023-11-25T04:50:19.986Z [ERROR] JsonWebTokenError: jwt malformed (Error Path: /api/notifications)
-2023-11-25T04:50:20.002Z [ERROR] JsonWebTokenError: jwt malformed (Error Path: /api/notifications)

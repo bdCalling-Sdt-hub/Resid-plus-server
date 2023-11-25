@@ -32,12 +32,14 @@ const validationMiddleware = async (req, res, next) => {
     }
 
     if (!validateEmail(email)) {
+      console.log("email--------->",email)
       errors.push({ field: 'email', error: req.t('Invalid email format') });
     }
     if (!address) {
       errors.push({ field: 'address', error: req.t('Address must be given') });
     }
     if (!validateDate(dateOfBirth)) {
+      console.log("date of birth--------->",dateOfBirth)
       errors.push({ field: 'dateOfBirth', error: req.t('Date of birth must be given') });
     }
     if (!validatePassword(password)) {

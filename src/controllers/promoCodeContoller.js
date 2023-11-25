@@ -68,8 +68,8 @@ const addPromoCode = async (req, res) => {
       );
     }
 
-    const { title, discountPercentage, expiryDate, isActive, couponCode } = req.body;
-    if (!title || discountPercentage===null || !expiryDate || !isActive || !couponCode) {
+    var { title, discountPercentage, expiryDate, isActive, couponCode } = req.body;
+    if (!title || discountPercentage===null || !expiryDate || isActive===null || !couponCode) {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -101,18 +101,21 @@ const addPromoCode = async (req, res) => {
 
     // Check if an promoCode entry already exists
     let promoCode = await PromoCode.findOne({ couponCode: couponCode });
+    console.log("existing data------------>", promoCode)
 
     if (!promoCode) {
       // If no entry exists, create a new one
-      promoCode = new PromoCode({
-        title,
-        discountPercentage,
-        expiryDate,
-        isActive,
-        couponCode
-      });
-      await promoCode.save();
-      return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'promoCode', message: req.t('PromoCode added successfully.'), data: promoCode }));
+      //console.log("couponCode------------->", couponCode)
+      const newPomoCode = {
+        title: title,
+        discountPercentage: discountPercentage,
+        expiryDate: expiryDate,
+        isActive: isActive,
+        couponCode: couponCode
+      };
+      //console.log("promoCode------------->", newPomoCode)
+      const data = await PromoCode.create(newPomoCode);
+      return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'promoCode', message: req.t('PromoCode added successfully.'), data: data }));
     }
 
     // If an entry exists, update its content
@@ -121,7 +124,7 @@ const addPromoCode = async (req, res) => {
     }
   } catch (error) {
     logger.error(error, req.originalUrl)
-    console.error(error.message);
+    console.error(error);
     return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'promoCode', message: error.message }));
   }
 };
