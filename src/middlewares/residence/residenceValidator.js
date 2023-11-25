@@ -9,73 +9,49 @@ const validateResidenceMiddleware = (req, res, next) => {
 
   let errors = {};
 
-  if (!residenceName) {
-    errors.residenceName = req.t('Residence Name must be given');
+  if (!residenceName || (isNaN(capacity) || capacity <= 0) || (isNaN(beds) || beds <= 0) || (isNaN(baths || baths <= 0)) || !address || !city || !municipality || !quirtier || (isNaN(hourlyAmount) || hourlyAmount <= 0)) {
+    return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'residence', message: "Must provide appropiate data" }));
   }
-  else{
-    errors.residenceName = {}
-  }
+  // if (!residenceName) {
+  //   errors.push(req.t('Residence Name must be given'));
+  // }
 
-  if (isNaN(capacity) || capacity <= 0) {
-    errors.capacity = req.t('Capacity must be a positive number');
-  }
-  else{
-    errors.capacity = {}
-  }
+  // if (isNaN(capacity) || capacity <= 0) {
+  //   errors.push(req.t('Capacity must be a positive number'));
+  // }
 
-  if (isNaN(beds) || beds <= 0) {
-    errors.beds = req.t('Number of beds must be a positive number');
-  }
-  else{
-    errors.beds = {}
-  }
+  // if (isNaN(beds) || beds <= 0) {
+  //   errors.push(req.t('Number of beds must be a positive number'));
+  // }
 
-  if (isNaN(baths) || baths <= 0) {
-    errors.baths = req.t('Number of baths must be a positive number');
-  }
-  else{
-    errors.baths = {}
-  }
+  // if (isNaN(baths) || baths <= 0) {
+  //   errors.push(req.t('Number of baths must be a positive number'));
+  // }
 
-  if (!address) {
-    errors.address = req.t('Address must be provided');
-  }
-  else{
-    errors.address = {}
-  }
+  // if (!address) {
+  //   errors.push(req.t('Address must be provided'));
+  // }
 
-  if (!city) {
-    errors.city = req.t('City must be provided');
-  }
-  else{
-    errors.city = {}
-  }
+  // if (!city) {
+  //   errors.push(req.t('City must be provided'));
+  // }
 
-  if (!municipality) {
-    errors.municipality = req.t('Municipality must be provided');
-  }
-  else{
-    errors.municipality = {}
-  }
+  // if (!municipality) {
+  //   errors.push(req.t('Municipality must be provided'));
+  // }
 
-  if (!quirtier) {
-    errors.quirtier = req.t('Quirtier must be provided');
-  }
-  else{
-    errors.quirtier = {}
-  }
+  // if (!quirtier) {
+  //   errors.push(req.t('Quirtier must be provided'));
+  // }
 
-  if (isNaN(hourlyAmount) || hourlyAmount <= 0) {
-    errors.hourlyAmount = req.t('Hourly amount must be a positive number');
-  }
-  else{
-    errors.hourlyAmount = {}
-  }
+  // if (isNaN(hourlyAmount) || hourlyAmount <= 0) {
+  //   errors.push(req.t('Hourly amount must be a positive number'));
+  // }
 
-  if (Object.keys(errors).length > 0) {
-    unlinkImages(req.files.map(file => file.path))
-    return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'residence', message: errors }));
-  }
+  // if (Object.keys(errors).length > 0) {
+  //   unlinkImages(req.files.map(file => file.path))
+  //   return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'residence', message: errors }));
+  // }
 
   next();
 };
