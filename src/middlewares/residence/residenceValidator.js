@@ -1,69 +1,78 @@
 const response = require('../../helpers/response');
 const unlinkImages = require('../../common/image/unlinkImage');
+
 const validateResidenceMiddleware = (req, res, next) => {
   const {
     residenceName, capacity, beds, baths, address, city,
     municipality, quirtier, hourlyAmount
   } = req.body;
 
-  let errors = [];
+  let errors = {};
 
   if (!residenceName) {
-    errors.push({ field: 'residenceName', error: req.t('Residence Name must be given') });
+    errors.residenceName = req.t('Residence Name must be given');
+  }
+  else{
+    errors.residenceName = {}
   }
 
   if (isNaN(capacity) || capacity <= 0) {
-    errors.push({ field: 'capacity', error: req.t('Capacity must be a positive number') });
+    errors.capacity = req.t('Capacity must be a positive number');
+  }
+  else{
+    errors.capacity = {}
   }
 
   if (isNaN(beds) || beds <= 0) {
-    errors.push({ field: 'beds', error: req.t('Number of beds must be a positive number') });
+    errors.beds = req.t('Number of beds must be a positive number');
+  }
+  else{
+    errors.beds = {}
   }
 
   if (isNaN(baths) || baths <= 0) {
-    errors.push({ field: 'baths', error: req.t('Number of baths must be a positive number') });
+    errors.baths = req.t('Number of baths must be a positive number');
+  }
+  else{
+    errors.baths = {}
   }
 
   if (!address) {
-    errors.push({ field: 'address', error: req.t('Address must be provided') });
+    errors.address = req.t('Address must be provided');
+  }
+  else{
+    errors.address = {}
   }
 
   if (!city) {
-    errors.push({ field: 'city', error: req.t('City must be provided') });
+    errors.city = req.t('City must be provided');
+  }
+  else{
+    errors.city = {}
   }
 
   if (!municipality) {
-    errors.push({ field: 'municipality', error: req.t('Municipality must be provided') });
+    errors.municipality = req.t('Municipality must be provided');
+  }
+  else{
+    errors.municipality = {}
   }
 
   if (!quirtier) {
-    errors.push({ field: 'quirtier', error: req.t('Quirtier must be provided') });
+    errors.quirtier = req.t('Quirtier must be provided');
+  }
+  else{
+    errors.quirtier = {}
   }
 
   if (isNaN(hourlyAmount) || hourlyAmount <= 0) {
-    errors.push({ field: 'hourlyAmount', error: req.t('Hourly amount must be a positive number') });
+    errors.hourlyAmount = req.t('Hourly amount must be a positive number');
+  }
+  else{
+    errors.hourlyAmount = {}
   }
 
-  // Check if amenities is defined and is an array
-  // if (!Array.isArray(amenities)) {
-  //   console.log(amenities);
-  //   errors.push({ field: 'amenities', error: req.t('Amenities must be an array') });
-  // } else {
-  //   const validAmenities = [
-  //     "wifi", "air-conditioner", "heating", "parking", "pets",
-  //     "kitchen", "tv", "internet", "washing-machine", "dryer", "refrigerator",
-  //     "air-conditioner", "heating", "parking"
-  //   ];
-  //   console.log(amenities);
-  //   for (var amenity of amenities) {
-  //     if (!validAmenities.includes(amenity)) {
-  //       errors.push({ field: 'amenities', error: req.t('Invalid amenities') });
-  //       break;
-  //     }
-  //   }
-  // }
-
-  if (errors.length > 0) {
+  if (Object.keys(errors).length > 0) {
     unlinkImages(req.files.map(file => file.path))
     return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'residence', message: errors }));
   }
