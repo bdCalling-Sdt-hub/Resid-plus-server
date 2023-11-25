@@ -174,7 +174,7 @@ const allResidence = async (req, res) => {
       filter.$and.push({ beds: numberOfBeds });
     }
 
-    if (acceptanceStatus && acceptanceStatus !== 'all') {
+    if (acceptanceStatus !== 'all') {
       console.log('Acceptance Status------>', acceptanceStatus)
       filter.$and = filter.$and || [];
       filter.$and.push({ acceptanceStatus: acceptanceStatus });
@@ -553,7 +553,7 @@ const updateResidence = async (req, res) => {
             if (!feedBack) {
               return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Feedback must be given' }));
             }
-            const message = 'Admin has blocked ' + existingResidence.residenceName + ' from being ' + existingResidence.acceptanceStatus + ' . Reason: ' + feedBack
+            const message = 'Admin has blocked ' + existingResidence.residenceName+', Feedback: ' + feedBack
 
             existingResidence.feedBack = feedBack;
             existingResidence.reUpload = false;
@@ -570,6 +570,7 @@ const updateResidence = async (req, res) => {
             }
             const notification = await addNotification(newNotification)
             const roomId = existingResidence.hostId.toString();
+            console.log('room id', roomId)
             io.to('roon' + roomId).emit('host-notification', notification);
           }
           else {

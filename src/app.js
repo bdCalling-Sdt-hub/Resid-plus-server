@@ -46,8 +46,8 @@ app.use(cors(
   {
     origin: [
       process.env.ALLOWED_CLIENT_URL_DASHBOARD,
-      process.env.ALLOWED_CLIENT_URL_SUB_DASHBOARD,
-      process.env.ALLOWED_CLIENT_URL_WEB
+      process.env.ALLOWED_CLIENT_URL_WEB,
+      process.env.ALLOWED_CLIENT_URL_SUB_DASHBOARD
     ],
     optionsSuccessStatus: 200
   }
@@ -59,19 +59,19 @@ const i18nextMiddleware = require('i18next-http-middleware');
 const Backend = require('i18next-node-fs-backend');
 
 i18next
-.use(Backend)
-.use(i18nextMiddleware.LanguageDetector)
-.init({
-  backend: {
-    loadPath: __dirname + '/translation/{{lng}}/translation.json',
-  },
-  detection: {
-    order: ['header'],
-    caches: ['cookie']
-  },
-  preload: ['en', 'fr'],
-  fallbackLng: process.env.API_RESPONCE_LANGUAGE,
-});
+  .use(Backend)
+  .use(i18nextMiddleware.LanguageDetector)
+  .init({
+    backend: {
+      loadPath: __dirname + '/translation/{{lng}}/translation.json',
+    },
+    detection: {
+      order: ['header'],
+      caches: ['cookie']
+    },
+    preload: ['en', 'fr'],
+    fallbackLng: process.env.API_RESPONCE_LANGUAGE,
+  });
 app.use(i18nextMiddleware.handle(i18next));
 
 //initilizing logger
