@@ -838,6 +838,12 @@ const updateBooking = async (req, res) => {
             if (bookingDetails.paymentTypes === 'unknown') {
               bookingDetails.status = 'cancelled'
               await bookingDetails.save()
+
+              //updating residence status to active
+              const residenceInfo = await Residence.findById(bookingDetails.residenceId._id)
+              residenceInfo.status = 'active'
+              await residenceInfo.save()
+
               const userMessage = 'Votre demande de réservation pour ' + bookingDetails.residenceId.residenceName + ' automatiquement annulé pour non-paiement dans les délais'
 
               const hostMessage = bookingDetails.residenceId.residenceName + ' demande de réservation automatiquement annulée pour non-paiement dans les délais'
