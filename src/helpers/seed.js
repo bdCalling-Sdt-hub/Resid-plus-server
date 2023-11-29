@@ -163,7 +163,7 @@ const categoriesData = [
     "key": "hotel",
     "translation": {
       "en": "Hotel",
-      "fr": "Chambre"
+      "fr": "Hôtel"
     }
   },
   {
