@@ -1,5 +1,5 @@
 const express = require('express');
-const { allCountry, deleteCountry, updateCountry, addCountry, addManyCountry } = require('../controllers/countryContoller');
+const { allCountry, deleteCountry, updateCountry, addCountry, addManyCountry } = require('../controllers/countryController');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 

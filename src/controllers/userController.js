@@ -1,5 +1,4 @@
 const User = require("../models/User");
-const UnverifiedUser = require("../models/UnverifiedUser");
 require('dotenv').config();
 const crypto = require('crypto');
 const Booking = require("../models/Booking")
