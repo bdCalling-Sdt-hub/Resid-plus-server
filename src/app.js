@@ -17,6 +17,7 @@ const amenitiesRouter = require('./routes/amenitiesRouter')
 const categoryRouter = require('./routes/categoryRouter')
 const promoCodeRouter = require('./routes/promoCodeRouter')
 const incomeRouter = require('./routes/incomeRouter');
+const countryRouter = require('./routes/countryRouter');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -99,6 +100,7 @@ app.use('/api/amenities', amenitiesRouter)
 app.use('/api/categories', categoryRouter)
 app.use('/api/promo-codes', promoCodeRouter)
 app.use('/api/incomes', incomeRouter);
+app.use('/api/countries', countryRouter);
 
 //testing API is alive
 app.get('/test', (req, res) => {

@@ -4,12 +4,12 @@ const unlinkImages = require('../../common/image/unlinkImage');
 const validateResidenceMiddleware = (req, res, next) => {
   const {
     residenceName, capacity, beds, baths, address, city,
-    municipality, quirtier, hourlyAmount
+    municipality, quirtier, hourlyAmount, country
   } = req.body;
 
-  let errors = {};
+  //let errors = {};
 
-  if (!residenceName || (isNaN(capacity) || capacity <= 0) || (isNaN(beds) || beds <= 0) || (isNaN(baths || baths <= 0)) || !address || !city || !municipality || !quirtier || (isNaN(hourlyAmount) || hourlyAmount <= 0)) {
+  if (!residenceName || (isNaN(capacity) || capacity <= 0) || (isNaN(beds) || beds <= 0) || (isNaN(baths || baths <= 0)) || !address || !city || !municipality || !quirtier || (isNaN(hourlyAmount) || hourlyAmount <= 0 || !country)) {
     return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'residence', message: "Must provide appropiate data" }));
   }
   // if (!residenceName) {

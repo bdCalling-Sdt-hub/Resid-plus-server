@@ -3,6 +3,7 @@ require('dotenv').config();
 const User = require('../models/User');
 const Category = require('../models/Category');
 const Amenity = require('../models/Amenity');
+const Country = require('../models/Country');
 
 // Sample data
 const usersData = [
@@ -27,6 +28,33 @@ const usersData = [
     "emailVerified": true
   }
 ];
+
+const countriesData = [
+  {
+    "countryName": "SENEGAL",
+    "countryCode":"+221"
+  },
+  {
+    "countryName": "COTE D’IVOIRE",
+    "countryCode":"+225"
+  },
+  {
+    "countryName": "BURKINA FASO",
+    "countryCode":"+226"
+  },
+  {
+    "countryName": "BENIN",
+    "countryCode":"+229"
+  },
+  {
+    "countryName": "TOGO",
+    "countryCode":"+228"
+  },
+  {
+    "countryName": "MALI",
+    "countryCode":"+223"
+  }
+]
 
 const amenitiesData = [
   {
@@ -131,6 +159,7 @@ const amenitiesData = [
 
 const categoriesData = [
   {
+    "_id": "656184a880b6b1c2ef30998a",
     "key": "hotel",
     "translation": {
       "en": "Hotel",
@@ -138,6 +167,7 @@ const categoriesData = [
     }
   },
   {
+    "_id": "656184a880b6b1c2ef30998b",
     "key": "residence",
     "translation": {
       "en": "Residence",
@@ -145,13 +175,14 @@ const categoriesData = [
     }
   },
   {
+    "_id": "656184a880b6b1c2ef30998c",
     "key": "personal-house",
     "translation": {
       "en": "Personal-House",
       "fr": "Maison-personnelle"
     }
   }
-]
+];
 
 // Function to seed users
 const seedUsers = async () => {
@@ -186,6 +217,17 @@ const seedCategories = async () => {
   }
 };
 
+// Function to seed countries
+const seedCountries = async () => {
+  try {
+    await Country.deleteMany();
+    await Country.insertMany(countriesData);
+    console.log('Countries seeded successfully!');
+  } catch (err) {
+    console.error('Error seeding countries:', err);
+  }
+};
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_CONNECTION, {
   useNewUrlParser: true,
@@ -198,6 +240,7 @@ const seedDatabase = async () => {
     await seedUsers();
     await seedAmenities();
     await seedCategories();
+    await seedCountries();
     console.log('------------> Database seeding completed! <------------');
   } catch (err) {
     console.error('Error seeding database:', err);

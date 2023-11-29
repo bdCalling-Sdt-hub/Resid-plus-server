@@ -27,6 +27,11 @@ const userSchema = new mongoose.Schema({
       path: 'public\\uploads\\users\\user-1695552693976.jpg'
     }
   },
+  country: {
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Country',
+    required: false
+  },
   role: { type: String, enum: ['user', 'super-admin', 'admin', 'unknown', 'host'], default: 'unknown' },
   emailVerified: { type: Boolean, default: false },
   //emailVerificationAttemps: { type: Number, default: 0 },

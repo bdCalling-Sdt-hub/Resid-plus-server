@@ -20,16 +20,16 @@ function validateDate(dateString) {
 
 const validationMiddleware = async (req, res, next) => {
   try {
-    const { fullName, email, phoneNumber, address, dateOfBirth, password, role } = req.body;
+    const { fullName, email, phoneNumber, address, dateOfBirth, password, role, country } = req.body;
 
-    let errors = [];
+    //let errors = [];
 
     const userExist = await User.findOne({ email });
     if (userExist) {
       return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "User already exists" }));
     }
 
-    if (!fullName || !/^\+225\d{6,10}$/.test(phoneNumber) || !validateEmail(email) || !address || !validateDate(dateOfBirth) || !validatePassword(password) || !role) {
+    if (!fullName || !/^\+22[156983]\d{6,10}$/.test(phoneNumber) || !validateEmail(email) || !address || !validateDate(dateOfBirth) || !validatePassword(password) || !role || !country) {
       return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must provide appropiate data" }));
     }
     // if (!/^\+225\d{6,10}$/.test(phoneNumber)) {

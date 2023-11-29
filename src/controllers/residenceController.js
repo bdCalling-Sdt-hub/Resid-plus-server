@@ -8,6 +8,7 @@ const unlinkImages = require('../common/image/unlinkImage');
 const { addNotification, getAllNotification } = require("./notificationController");
 const logger = require("../helpers/logger");
 const Category = require("../models/Category");
+const Country = require("../models/Country");
 
 //Add residence
 const addResidence = async (req, res) => {
@@ -141,6 +142,7 @@ const allResidence = async (req, res) => {
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
     const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
     const reUploaded = req.query.reUpload || 'no'
+    const country = req.query.country || ''
 
     //minPrice must be greater or equal 1
     const minPrice = Number(req.query.minPrice) || '';
@@ -183,6 +185,11 @@ const allResidence = async (req, res) => {
       filter.$and.push({ reUpload: true });
     }
 
+    if (country) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ country: country });
+    }
+
     let residences = [];
     let count = 0;
 
@@ -193,7 +200,8 @@ const allResidence = async (req, res) => {
           .limit(limit)
           .skip((page - 1) * limit)
           .populate('amenities', 'translation')
-          .populate('category', 'translation');
+          .populate('category', 'translation')
+          .populate('country', 'countryName');
 
         count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
       }
@@ -203,7 +211,8 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit)
           .sort({ createdAt: -1 })
           .populate('amenities', 'translation')
-          .populate('category', 'translation');
+          .populate('category', 'translation')
+          .populate('country', 'countryName');
         count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
@@ -212,7 +221,8 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit)
           .sort({ popularity: -1 })
           .populate('amenities', 'translation')
-          .populate('category', 'translation');;
+          .populate('category', 'translation')
+          .populate('country', 'countryName');
         count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
       }
     }
@@ -228,7 +238,8 @@ const allResidence = async (req, res) => {
           .limit(limit)
           .skip((page - 1) * limit)
           .populate('amenities', 'translation')
-          .populate('category', 'translation');
+          .populate('category', 'translation')
+          .populate('country', 'countryName');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
@@ -237,7 +248,8 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit)
           .sort({ createdAt: -1 })
           .populate('amenities', 'translation')
-          .populate('category', 'translation');
+          .populate('category', 'translation')
+          .populate('country', 'countryName');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'popular') {
@@ -246,7 +258,8 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit)
           .sort({ popularity: -1 })
           .populate('amenities', 'translation')
-          .populate('category', 'translation');
+          .populate('category', 'translation')
+          .populate('country', 'countryName');
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
     }
@@ -257,6 +270,7 @@ const allResidence = async (req, res) => {
         .skip((page - 1) * limit)
         .select('photo residenceName acceptanceStatus')
         .sort({ createdAt: -1 })
+        .populate('country', 'countryName')
       count = await Residence.countDocuments({ ...filter });
       const accepted = await Residence.countDocuments({ acceptanceStatus: 'accepted' });
       const pending = await Residence.countDocuments({ acceptanceStatus: 'pending' });
@@ -326,18 +340,20 @@ const searchCredentials = async (req, res) => {
 
       if (priceRange === 0) {
         priceArray = [{ min: minPrice, max: maxPrice }];
-      } else {
+      } 
+      else {
         for (let i = 0; i < 5; i++) {
           const minRange = minPrice + priceRange * i;
           const maxRange = minRange + priceRange;
           priceArray.push({ min: minRange, max: maxRange });
         }
       }
+      const countries = await Country.find().select('countryName');
 
-      console.log('all data --------->', noOfUniqueBeds, minPrice, maxPrice, priceRange, range)
       const data = {
         noOfUniqueBeds,
         priceArray,
+        countries
       }
       return res.status(200).json(
         response({

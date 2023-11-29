@@ -1,11 +1,11 @@
 const User = require("../models/User");
+const UnverifiedUser = require("../models/UnverifiedUser");
 require('dotenv').config();
 const crypto = require('crypto');
 const Booking = require("../models/Booking")
 const bcrypt = require('bcryptjs');
 const response = require("../helpers/response");
 const jwt = require('jsonwebtoken');
-const fs = require("fs");
 const emailWithNodemailer = require("../helpers/email");
 require('dotenv').config();
 //defining unlinking image function 
@@ -27,7 +27,7 @@ function validatePassword(password) {
 const signUp = async (req, res) => {
   console.log(req.body)
   try {
-    var { fullName, email, phoneNumber, address, dateOfBirth, password, role } = req.body;
+    var { fullName, email, phoneNumber, address, dateOfBirth, password, role, country } = req.body;
 
     //role as admin is not allowed to be signed-up
     // if(role==='super-admin'){
@@ -45,7 +45,8 @@ const signUp = async (req, res) => {
       dateOfBirth,
       oneTimeCode,
       password,
-      role
+      role,
+      country
     });
 
     if (user && (user.role === 'user' || user.role === 'host')) {
@@ -98,8 +99,8 @@ const createUser = async (req, res) => {
   if (checkUser.role !== 'super-admin') {
     return res.status(401).json(response({ statusCode: 200, message: req.t('You are not authorized to create user'), status: "OK" }));
   }
-  const { fullName, email, phoneNumber, address, dateOfBirth } = req.body;
-  if(!fullName || !email || !phoneNumber || !address || !dateOfBirth){
+  const { fullName, email, phoneNumber, address, dateOfBirth, country } = req.body;
+  if(!fullName || !email || !phoneNumber || !address || !dateOfBirth || !country){
     return res.status(400).json(response({ statusCode: 200, message: req.t('All fields are required'), status: "OK" }));
   }
   if(!/^[a-zA-ZÀ-ÖØ-öø-ÿ0-9._%+-]+@[a-zA-ZÀ-ÖØ-öø-ÿ0-9.-]+\.[a-zA-ZÀ-ÖØ-öø-ÿ]{2,}$/.test(email)){
@@ -121,7 +122,8 @@ const createUser = async (req, res) => {
     emailVerified: true,
     dateOfBirth,
     password,
-    role : 'admin'
+    role : 'admin',
+    country
   });
 
   const url = process.env.ALLOWED_CLIENT_URL_DASHBOARD
@@ -175,7 +177,7 @@ const signIn = async (req, res) => {
     console.log(email);
 
     // Find the user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate('country', 'countryName');
 
     if (!user) {
       return res.status(404).json(response({ statusCode: 200, message: req.t('User does not exists'), status: "OK" }));
@@ -485,7 +487,6 @@ const updateProfile = async (req, res) => {
       }
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     };
-    console.log('all value-------->', req.body)
     const user = {
       fullName: !fullName ? checkUser.fullName : fullName,
       phoneNumber: !phoneNumber ? checkUser.phoneNumber : phoneNumber,
@@ -506,6 +507,8 @@ const updateProfile = async (req, res) => {
         publicFileUrl,
         path: req.file.path
       };
+
+      console.log('fileInfo---------------->', req.file)
 
       user.image = fileInfo
     }
@@ -542,7 +545,8 @@ const userDetails = async (req, res) => {
     }
 
     const user = await User.findById(id)
-      .select('fullName email phoneNumber address image dateOfBirth');
+      .select('fullName email phoneNumber address image dateOfBirth country')
+      .populate('country', 'countryName');
 
     return res.status(200).json(
       response({
@@ -583,6 +587,7 @@ const allUser = async (req, res) => {
     const search = req.query.search || '';
     const userType = req.query.userType || 'user'
     const userAccountStatus = !req.query.userAccountStatus ? 'accepted' : req.query.userAccountStatus;
+    const country = req.query.country || '';
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const searchRegExp = new RegExp('.*' + search + '.*', 'i');
@@ -601,6 +606,10 @@ const allUser = async (req, res) => {
       filter.$and = filter.$and || [];
       filter.$and.push({ status: userAccountStatus })
     }
+    if (country) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ country: country })
+    }
 
     let users = [];
     let completed = {}
@@ -610,7 +619,8 @@ const allUser = async (req, res) => {
       users = await User.find(filter)
         .limit(limit)
         .skip((page - 1) * limit)
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .populate('country', 'countryName');
 
       //console.log(users)
       for (const user of users) {

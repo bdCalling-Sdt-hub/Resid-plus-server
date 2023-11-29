@@ -29,6 +29,11 @@ const residenceSchema = new mongoose.Schema({
     ref: 'Category',
     required: true
   },
+  country: {
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Country',
+    required: false
+  },
   isDeleted: { type: Boolean, default: false },
   acceptanceStatus: { type: String, enum: ['accepted', 'pending', 'deleted', 'blocked'], default: 'pending' },
   feedBack:{
