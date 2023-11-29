@@ -96,6 +96,7 @@ const createPayInToken = async (req, res) => {
           paymentData: {
             token: paydunyaResponse.data.token,
             amount: paymentAmount,
+            residenceCharge: bookingDetails.residenceCharge
           }
         });
         await newPayment.save();
@@ -118,6 +119,7 @@ const createPayInToken = async (req, res) => {
 }
 
 const payInAmount = async (req, res) => {
+  console.log("payInAmount---------->", req.body, req.query.paymentTypes)
   try {
     const paymentTypes = req.query.paymentTypes
     const {paymentId} = req.body
@@ -141,7 +143,7 @@ const payInAmount = async (req, res) => {
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
 
-      const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.amount +" pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
+      const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.residenceCharge +" pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
 
       const newNotification = {
         message: hostMessage,
@@ -160,7 +162,36 @@ const payInAmount = async (req, res) => {
     }
     else if (paymentTypes === 'card') {
       const { cardNumber, cardCvv, cardExpiredDateYear, cardExpiredDateMonth, token, email, fullName } = req.body
+      console.log(req.body)
       if (!cardNumber || !cardCvv || !cardExpiredDateYear || !cardExpiredDateMonth || !token || !email || !fullName) {
+        if (!cardNumber) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Card number is required' }));
+        }
+        
+        if (!cardCvv) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'CVV is required' }));
+        }
+        
+        if (!cardExpiredDateYear) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Card expiration year is required' }));
+        }
+        
+        if (!cardExpiredDateMonth) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Card expiration month is required' }));
+        }
+        
+        if (!token) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Token is required' }));
+        }
+        
+        if (!email) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Email is required' }));
+        }
+        
+        if (!fullName) {
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Full name is required' }));
+        }
+        
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Card details not found') }));
       }
       payload = {
@@ -255,7 +286,7 @@ const payInAmount = async (req, res) => {
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
 
-      const hostMessage = paymentDetails.userId.fullName + ' a payé ' + paymentDetails.paymentData.amount +' pour ' + paymentDetails.residenceId.residenceName + " pour l'ID de réservation: " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
+      const hostMessage = paymentDetails.userId.fullName + ' a payé ' + paymentDetails.paymentData.residenceCharge +' pour ' + paymentDetails.residenceId.residenceName + " pour l'ID de réservation: " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
 
       const newNotification = {
         message: hostMessage,
@@ -377,7 +408,7 @@ const allPayment = async (req, res) => {
     var data
     if (requestType === 'total') {
       const allPayments = await Payment.find({ hostId: req.body.userId, status:"success" });
-      const total = allPayments.reduce((total, payment) => total + payment.paymentData.amount, 0);
+      const total = allPayments.reduce((total, payment) => total + payment.paymentData.residenceCharge, 0);
       data = total
       console.log("totalIncome---------->", total, allPayments, req.body.userId)
     }
@@ -386,7 +417,7 @@ const allPayment = async (req, res) => {
       const dayEndDate = new Date();
       const dayStartDate = new Date(dayEndDate - dayTime);
       const allPayments = await Payment.find({ createdAt: { $gte: dayStartDate, $lt: dayEndDate }, hostId: req.body.userId, status:"success" }).populate('bookingId residenceId');
-      const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
+      const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.residenceCharge, 0);
       data = { allPayments, total }
     }
     else if (requestType === 'weekly') {
@@ -394,7 +425,7 @@ const allPayment = async (req, res) => {
       weeklyStartDate = new Date(new Date().getTime() - weeklyTime);
       weeklyEndDate = new Date();
       const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate }, hostId: req.body.userId, status:"success" }).populate('bookingId residenceId');
-      const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.amount, 0);
+      const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.residenceCharge, 0);
       data = { allPayments, total }
 
       function getWeekNumber(date) {
@@ -440,7 +471,7 @@ const allPayment = async (req, res) => {
           totalPaymentsByMonth[key] = 0;
         }
 
-        totalPaymentsByMonth[key] += payment?.paymentData?.amount;
+        totalPaymentsByMonth[key] += payment?.paymentData?.residenceCharge;
       });
 
       data = totalPaymentsByMonth;

@@ -985,12 +985,9 @@ const updateBooking = async (req, res) => {
           if (!hostIncome) {
             hostIncome = new Income({
               hostId: bookingDetails.hostId._id,
-              totalIncome: bookingDetails.residenceCharge,
             })
           }
           const incomeAmount = bookingDetails.residenceCharge
-          hostIncome.pendingAmount += incomeAmount
-          await hostIncome.save()
 
           const residence = await Residence.findById(bookingDetails.residenceId)
           residence.status = 'active'
@@ -1009,15 +1006,16 @@ const updateBooking = async (req, res) => {
           const roomId = bookingDetails.hostId._id.toString()
           io.to('room' + roomId).emit('host-notification', hostNotification);
 
-          var hostIncome = await Income.findOne({ hostId: paymentDetails.hostId });
-          if (!hostIncome) {
-            hostIncome = new Income({
-              hostId: paymentDetails.hostId,
-            })
-          }
-          hostIncome.pendingAmount = hostIncome.pendingAmount + paymentDetails.paymentData.amount;
-          hostIncome.totalAmount = hostIncome.totalAmount + paymentDetails.paymentData.amount;
+          const totalIncome = hostIncome.totalIncome + incomeAmount
+          const pendingIncome = hostIncome.pendingAmount + incomeAmount
+          
+          hostIncome.totalIncome = totalIncome;
+          hostIncome.pendingAmount = pendingIncome;
+
+          console.log('hostIncome------>', incomeAmount, totalIncome, pendingIncome, hostIncome.pendingAmount, hostIncome.totalAmount)
+
           await hostIncome.save();
+          console.log('hostIncome------>', hostIncome)
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {

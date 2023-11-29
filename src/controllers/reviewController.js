@@ -41,16 +41,16 @@ const giveReview = async (req, res) => {
       );
     }
 
-    const existingReview = await Review.findOne({userId: checkUser._id,  residenceId: bookingDetails.residenceId})
-    if(existingReview){
-      return res.status(201).json(
-        response({
-          status: 'Error',
-          statusCode: '201',
-          message: req.t('Review already exists'),
-        })
-      );
-    }
+    // const existingReview = await Review.findOne({userId: checkUser._id,  residenceId: bookingDetails.residenceId})
+    // if(existingReview){
+    //   return res.status(201).json(
+    //     response({
+    //       status: 'Error',
+    //       statusCode: '201',
+    //       message: req.t('Review already exists'),
+    //     })
+    //   );
+    // }
 
     if (checkUser.role !== 'user') {
       return res.status(401).json(
@@ -73,7 +73,7 @@ const giveReview = async (req, res) => {
         const allratings = await Review.find({ residenceId: residenceId });
         if (allratings.length > 0) {
           const totalRatings = allratings.reduce((sum, review) => sum + review.rating, 0);
-          const averageRating = totalRatings / allratings.length;
+          const averageRating = Math.floor(totalRatings / allratings.length);
 
           console.log(`The average rating is: ${averageRating}`);
           const residence = {
