@@ -28,25 +28,42 @@ const signUp = async (req, res) => {
   try {
     var { fullName, email, phoneNumber, address, dateOfBirth, password, role, country } = req.body;
 
+    const userExist = await User.findOne({ email });
+    var user
+    var oneTimeCode
+    if (userExist) {
+      if (!userExist.emailVerified) {
+        oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+        // Store the OTC and its expiration time in the database
+        userExist.oneTimeCode = oneTimeCode;
+        user = await userExist.save();
+      }
+      else{
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "User already exists" }));
+      }
+    }
+
     //role as admin is not allowed to be signed-up
     // if(role==='super-admin'){
     //   return res.status(409).json(response({ statusCode: 200, message:req.t('You are not authorized to sign-up'), status: "OK" }));
     // }
-    var dateOfBirth = new Date(dateOfBirth);
-    const oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+    else {
+      var dateOfBirth = new Date(dateOfBirth);
+      oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
-    // Create the user in the database
-    const user = await User.create({
-      fullName,
-      email,
-      phoneNumber,
-      address,
-      dateOfBirth,
-      oneTimeCode,
-      password,
-      role,
-      country
-    });
+      // Create the user in the database
+      user = await User.create({
+        fullName,
+        email,
+        phoneNumber,
+        address,
+        dateOfBirth,
+        oneTimeCode,
+        password,
+        role,
+        country
+      });
+    }
 
     if (user && (user.role === 'user' || user.role === 'host')) {
       const emailData = {
@@ -99,20 +116,20 @@ const createUser = async (req, res) => {
     return res.status(401).json(response({ statusCode: 200, message: req.t('You are not authorized to create user'), status: "OK" }));
   }
   const { fullName, email, phoneNumber, address, dateOfBirth, country } = req.body;
-  if(!fullName || !email || !phoneNumber || !address || !dateOfBirth || !country){
+  if (!fullName || !email || !phoneNumber || !address || !dateOfBirth || !country) {
     return res.status(400).json(response({ statusCode: 200, message: req.t('All fields are required'), status: "OK" }));
   }
-  if(!/^[a-zA-ZÀ-ÖØ-öø-ÿ0-9._%+-]+@[a-zA-ZÀ-ÖØ-öø-ÿ0-9.-]+\.[a-zA-ZÀ-ÖØ-öø-ÿ]{2,}$/.test(email)){
+  if (!/^[a-zA-ZÀ-ÖØ-öø-ÿ0-9._%+-]+@[a-zA-ZÀ-ÖØ-öø-ÿ0-9.-]+\.[a-zA-ZÀ-ÖØ-öø-ÿ]{2,}$/.test(email)) {
     return res.status(400).json(response({ statusCode: 200, message: req.t('Invalid email format'), status: "OK" }));
   }
   const existingUser = await User.findOne({ email });
-  if(existingUser){
+  if (existingUser) {
     return res.status(409).json(response({ statusCode: 200, message: req.t('User already exists'), status: "OK" }));
   }
   const length = 8;
   // Generate a random password
   const password = crypto.randomBytes(length).toString('hex').slice(0, length);
-  console.log('password------>',password)
+  console.log('password------>', password)
   const user = await User.create({
     fullName,
     email,
@@ -121,7 +138,7 @@ const createUser = async (req, res) => {
     emailVerified: true,
     dateOfBirth,
     password,
-    role : 'admin',
+    role: 'admin',
     country
   });
 
@@ -170,7 +187,7 @@ const signIn = async (req, res) => {
   try {
     //Get email password from req.body
     const { email, password } = req.body;
-    if(!email || !password){
+    if (!email || !password) {
       return res.status(400).json(response({ statusCode: 200, message: req.t('Email and password are required'), status: "OK" }));
     }
     console.log(email);
@@ -178,7 +195,7 @@ const signIn = async (req, res) => {
     // Find the user by email
     const user = await User.findOne({ email }).populate('country', 'countryName');
 
-    if (!user) {
+    if (!user || !user.emailVerified) {
       return res.status(404).json(response({ statusCode: 200, message: req.t('User does not exists'), status: "OK" }));
     }
     if (user.status !== 'accepted') {
@@ -597,7 +614,7 @@ const allUser = async (req, res) => {
         { phoneNumber: { $regex: searchRegExp } },
       ],
     };
-    if (userType!=='all') {
+    if (userType !== 'all') {
       filter.$and = filter.$and || [];
       filter.$and.push({ role: userType })
     }
