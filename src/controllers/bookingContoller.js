@@ -289,7 +289,7 @@ const addBooking = async (req, res) => {
       console.log(popularity, residence)
       await Residence.findByIdAndUpdate(residence_details._id, residence, options)
 
-      const message = checkUser.fullName + ' wants to book ' + residence_details.residenceName + ' from ' + booking.checkInTime + ' to ' + booking.checkOutTime
+      const message = checkUser.fullName + ' veut réserver ' + residence_details.residenceName + ' depuis ' + booking.checkInTime + ' à ' + booking.checkOutTime
       const newNotification = {
         message: message,
         receiverId: booking.hostId,
@@ -502,7 +502,7 @@ const cancelBookingByUser = async (req, res) => {
       if ((bookingDetails.status === 'pending') || (bookingDetails.status === 'reserved') && (bookingDetails.paymentTypes === 'unknown')) {
         bookingDetails.status = status
         bookingDetails.save()
-        const hostMessage = bookingDetails.userId.fullName + ' cancelled booking request for ' + bookingDetails.residenceId.residenceName
+        const hostMessage = bookingDetails.userId.fullName + ' demande de réservation annulée pour ' + bookingDetails.residenceId.residenceName
         const newNotification = {
           message: hostMessage,
           receiverId: bookingDetails.hostId._id,
@@ -578,7 +578,7 @@ const cancelBookingByUser = async (req, res) => {
             hostIncome.totalIncome += hostAmount
             await hostIncome.save()
 
-            const hostMessage = bookingDetails.userId.fullName + ' cancelled booking request for ' + bookingDetails.residenceId.residenceName + ' and you have been refunded ' + hostAmount + '. Please check your wallet'
+            const hostMessage = bookingDetails.userId.fullName + ' demande de réservation annulée pour ' + bookingDetails.residenceId.residenceName + ' et vous avez été remboursé ' + hostAmount + ' FCFA. Veuillez vérifier votre portefeuille.'
             const newNotification = {
               message: hostMessage,
               receiverId: bookingDetails.hostId._id,
@@ -592,7 +592,7 @@ const cancelBookingByUser = async (req, res) => {
             console.log('room --->', roomId)
             io.to('room' + roomId).emit('host-notification', hostNotification);
 
-            adminMessage = bookingDetails.userId.fullName + ' cancelled booking request for ' + bookingDetails.residenceId.residenceName + ' and you have been refunded ' + bookingDetails.totalAmount * 0.20
+            adminMessage = bookingDetails.userId.fullName + ' demande de réservation annulée pour ' + bookingDetails.residenceId.residenceName + ' et tu as été remboursé ' + bookingDetails.totalAmount * 0.20 + ' FCFA'
             const superAdminNotif = {
               message: adminMessage,
               receiverId: bookingDetails.hostId._id,
@@ -624,7 +624,7 @@ const cancelBookingByUser = async (req, res) => {
             income.totalIncome += amount
             await income.save()
 
-            const hostMessage = bookingDetails.userId.fullName + ' cancelled booking request for ' + bookingDetails.residenceId.residenceName + ' and you have been refunded ' + amount + '. Please check your wallet'
+            const hostMessage = bookingDetails.userId.fullName + ' demande de réservation annulée pour ' + bookingDetails.residenceId.residenceName + ' et tu as été remboursé ' + amount + ' FCFA. Veuillez vérifier votre portefeuille'
             const newNotification = {
               message: hostMessage,
               receiverId: bookingDetails.hostId._id,
@@ -788,8 +788,8 @@ const updateBooking = async (req, res) => {
           bookingDetails.status = status
           bookingDetails.save()
 
-          const adminMessage = bookingDetails.userId.fullName + ' booked ' + bookingDetails.residenceId.residenceName
-          const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for ' + bookingDetails.residenceId.residenceName + ', and you need to pay within ' + exactHours + ' hours and '+ exactMinutes + ' minutes'
+          const adminMessage = bookingDetails.userId.fullName + ' réservée ' + bookingDetails.residenceId.residenceName
+          const userMessage = bookingDetails.hostId.fullName + ' accepté votre demande de réservation pour ' + bookingDetails.residenceId.residenceName + ', et vous devez payer dans les délais ' + exactHours + ' heures et '+ exactMinutes + ' minutes'
 
           const newNotification = [{
             message: adminMessage,
@@ -816,7 +816,7 @@ const updateBooking = async (req, res) => {
           setTimeout(async () => {
             const bookingDetails = await Booking.findById(id).populate('residenceId');
             if (bookingDetails.paymentTypes === 'unknown') {
-              const userMessage = bookingDetails.hostId.fullName + ' accepted your booking request for ' + bookingDetails.residenceId.residenceName + ', and you need to pay within ' + remainingNinetyPercent + ' hours'
+              const userMessage = bookingDetails.hostId.fullName + ' accepté votre demande de réservation pour ' + bookingDetails.residenceId.residenceName + ', et vous devez payer dans les délais ' + remainingNinetyPercent + ' hours'
 
               const newNotification = {
                 message: userMessage,
@@ -838,9 +838,9 @@ const updateBooking = async (req, res) => {
             if (bookingDetails.paymentTypes === 'unknown') {
               bookingDetails.status = 'cancelled'
               await bookingDetails.save()
-              const userMessage = 'You booking request for ' + bookingDetails.residenceId.residenceName + ' automatically cancelled due to not payment with-in time'
+              const userMessage = 'Votre demande de réservation pour ' + bookingDetails.residenceId.residenceName + ' automatiquement annulé pour non-paiement dans les délais'
 
-              const hostMessage = bookingDetails.residenceId.residenceName + ' booking request automatically cancelled due to not payment with-in time'
+              const hostMessage = bookingDetails.residenceId.residenceName + ' demande de réservation automatiquement annulée pour non-paiement dans les délais'
 
               const newNotification = {
                 message: userMessage,
@@ -883,7 +883,7 @@ const updateBooking = async (req, res) => {
 
           bookingDetails.status = status
           bookingDetails.save()
-          const userMessage = bookingDetails.hostId.fullName + ' cancelled your booking request for ' + bookingDetails.residenceId.residenceName
+          const userMessage = bookingDetails.hostId.fullName + ' annulé votre demande de réservation pour ' + bookingDetails.residenceId.residenceName
 
           const newNotification = {
             message: userMessage,
@@ -903,7 +903,7 @@ const updateBooking = async (req, res) => {
           if (bookingDetails.paymentTypes === 'unknown') {
             bookingDetails.status = status
             bookingDetails.save()
-            const userMessage = bookingDetails.hostId.fullName + ' cancelled your booking request for ' + bookingDetails.residenceId.residenceName
+            const userMessage = bookingDetails.hostId.fullName + ' annulé votre demande de réservation pour ' + bookingDetails.residenceId.residenceName
 
             const newNotification = {
               message: userMessage,
@@ -951,7 +951,7 @@ const updateBooking = async (req, res) => {
           bookingDetails.status = status
           bookingDetails.save()
 
-          const hostMessage = bookingDetails.userId.fullName + ' checked-in and waiting for the key for ' + bookingDetails.residenceId.residenceName + ', please provide him the key'
+          const hostMessage = bookingDetails.userId.fullName + ' enregistré et en attente de la clé pour ' + bookingDetails.residenceId.residenceName + ', merci de lui fournir la clé'
 
           const newNotification = {
             message: hostMessage,
@@ -996,7 +996,7 @@ const updateBooking = async (req, res) => {
           residence.status = 'active'
           await residence.save()
 
-          const hostMessage = bookingDetails.userId.fullName + ' checked-out from ' + bookingDetails.residenceId.residenceName + ', and payment is transferred to your wallet'
+          const hostMessage = bookingDetails.userId.fullName + ' extrait de ' + bookingDetails.residenceId.residenceName + ', et le paiement est transféré sur votre portefeuille'
           const newNotification = {
             message: hostMessage,
             receiverId: bookingDetails.hostId._id,

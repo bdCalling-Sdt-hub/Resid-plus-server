@@ -141,7 +141,7 @@ const payInAmount = async (req, res) => {
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
 
-      const hostMessage = paymentDetails.userId.fullName + ' has paid ' + paymentDetails.paymentData.amount +' for ' + paymentDetails.residenceId.residenceName + ' for Booking ID: ' + paymentDetails.bookingId.bookingId + ', after check-out it will transfer to your account.'
+      const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.amount +" pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
 
       const newNotification = {
         message: hostMessage,
@@ -255,7 +255,7 @@ const payInAmount = async (req, res) => {
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
 
-      const hostMessage = paymentDetails.userId.fullName + ' has paid ' + paymentDetails.paymentData.amount +' for ' + paymentDetails.residenceId.residenceName + ' for Booking ID: ' + paymentDetails.bookingId.bookingId + ', after check-out it will transfer to your account.'
+      const hostMessage = paymentDetails.userId.fullName + ' a payé ' + paymentDetails.paymentData.amount +' pour ' + paymentDetails.residenceId.residenceName + " pour l'ID de réservation: " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
 
       const newNotification = {
         message: hostMessage,

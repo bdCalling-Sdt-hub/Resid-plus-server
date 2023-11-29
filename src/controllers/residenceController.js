@@ -90,7 +90,7 @@ const addResidence = async (req, res) => {
       }
 
       await residence.save();
-      const message = checkHost.fullName + ' has added ' + residence.residenceName + ', please check and give your feedback'
+      const message = checkHost.fullName + ' a ajouté ' + residence.residenceName + ', veuillez vérifier et donner votre avis'
       const newNotification = {
         message: message,
         image: checkHost.image,
@@ -532,7 +532,7 @@ const updateResidence = async (req, res) => {
       }
       if (acceptanceStatus === 'accepted') {
         if (existingResidence.acceptanceStatus !== 'deleted') {
-          const message = checkHost.fullName + ' has accepted ' + existingResidence.residenceName + ' from being ' + existingResidence.acceptanceStatus
+          const message = checkHost.fullName + " a accepté " + existingResidence.residenceName + " d'être " + existingResidence.acceptanceStatus
 
           existingResidence.acceptanceStatus = acceptanceStatus;
           existingResidence.reUpload = false;
@@ -567,7 +567,7 @@ const updateResidence = async (req, res) => {
             if (!feedBack) {
               return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Feedback must be given' }));
             }
-            const message = 'Admin has blocked ' + existingResidence.residenceName + ', Feedback: ' + feedBack
+            const message = "L'administrateur a bloqué " + existingResidence.residenceName + '. Retour: ' + feedBack
 
             existingResidence.feedBack = feedBack;
             existingResidence.reUpload = false;
@@ -592,7 +592,7 @@ const updateResidence = async (req, res) => {
         }
         else if (acceptanceStatus === 'deleted') {
           if (existingResidence.acceptanceStatus !== 'deleted') {
-            const message = checkHost.fullName + ' has deleted ' + existingResidence.residenceName + ' from being ' + existingResidence.acceptanceStatus
+            const message = checkHost.fullName + " a supprimé " + existingResidence.residenceName + " d'être " + existingResidence.acceptanceStatus
 
             existingResidence.acceptanceStatus = acceptanceStatus;
             existingResidence.save();
@@ -728,7 +728,7 @@ const blockedResidenceUpdate = async (req, res) => {
       const updatedData = await Residence.findByIdAndUpdate(id, updatedResidence, { new: true });
 
 
-      const message = checkHost.fullName + ' has updated ' + existingResidence.residenceName + ' . Your feedBack was: ' + existingResidence.feedBack
+      const message = checkHost.fullName + ' a mis à jour ' + existingResidence.residenceName + ' . Votre retour était: ' + existingResidence.feedBack
 
       const newNotification = {
         message: message,

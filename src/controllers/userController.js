@@ -405,7 +405,7 @@ const verifyOneTimeCode = async (req, res) => {
         user.emailVerified = true;
         user.oneTimeCode = null;
         await user.save();
-        const adminMessage = user.fullName + ' has registered to be a ' + user.role + ' in your system'
+        const adminMessage = user.fullName + " s'est inscrit comme " + user.role + " dans votre système"
         const newNotification = {
           message: adminMessage,
           image: user.image,
