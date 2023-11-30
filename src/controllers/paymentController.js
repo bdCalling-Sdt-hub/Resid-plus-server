@@ -251,6 +251,7 @@ const payInAmount = async (req, res) => {
       if (!fullName || !email || !phoneNumber || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Wave details not found') }));
       }
+      console.log("wave-ci---------->", req.body)
       payload = {
         "wave_ci_fullName": fullName,
         "wave_ci_email": email,

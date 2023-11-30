@@ -6,6 +6,7 @@ const User = require("../models/User");
 //All incomes
 const allIncomes = async (req, res) => {
   try {
+    var data;
     const checkUser = await User.findById(req.body.userId);
     if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(
@@ -17,15 +18,13 @@ const allIncomes = async (req, res) => {
       );
     }
 
-    const income = await Income.findOne({ hostId: req.body.userId });
-    if (!income) {
-      return res.status(404).json(
-        response({
-          status: 'Error',
-          statusCode: '404',
-          message: req.t('Income not found'),
-        })
-      );
+    data = await Income.findOne({ hostId: req.body.userId });
+
+    if (!data) {
+      data = {
+        "totalIncome": 0,
+        "pendingAmount": 0,
+      }
     }
     return res.status(200).json(
       response({
@@ -33,10 +32,10 @@ const allIncomes = async (req, res) => {
         statusCode: '200',
         type: 'income',
         message: req.t('Income retrieved successfully'),
-        data: income,
+        data: data,
       })
     );
-  } 
+  }
   catch (error) {
     logger.error(error, req.originalUrl);
     console.log(error);
