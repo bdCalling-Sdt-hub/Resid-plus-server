@@ -970,10 +970,10 @@ const updateBooking = async (req, res) => {
           const roomId = bookingDetails.hostId._id.toString()
           io.to('room' + roomId).emit('host-notification', hostNotification);
 
-          const accessToken = process.env.ORANGE_ACCESS_KEY
-          const senderNumber = process.env.ORANGE_SENDER_NUMBER
-          const receiverNumber = bookingDetails.hostId.phoneNumber
-          const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
+          // const accessToken = process.env.ORANGE_ACCESS_KEY
+          // const senderNumber = process.env.ORANGE_SENDER_NUMBER
+          // const receiverNumber = bookingDetails.hostId.phoneNumber
+          // const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
 
           //await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
@@ -992,7 +992,8 @@ const updateBooking = async (req, res) => {
               hostId: bookingDetails.hostId._id,
             })
           }
-          const incomeAmount = bookingDetails.residenceCharge
+          //charge 1% of total amount
+          const incomeAmount = Math.floor(bookingDetails.residenceCharge*0.99)
 
           const residence = await Residence.findById(bookingDetails.residenceId)
           residence.status = 'active'

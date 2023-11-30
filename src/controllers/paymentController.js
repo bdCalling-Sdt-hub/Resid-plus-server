@@ -162,7 +162,7 @@ const payInAmount = async (req, res) => {
     }
     else if (paymentTypes === 'card') {
       const { cardNumber, cardCvv, cardExpiredDateYear, cardExpiredDateMonth, token, email, fullName } = req.body
-      console.log(req.body)
+      
       if (!cardNumber || !cardCvv || !cardExpiredDateYear || !cardExpiredDateMonth || !token || !email || !fullName) {
         if (!cardNumber) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Card number is required' }));
@@ -194,6 +194,7 @@ const payInAmount = async (req, res) => {
         
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Card details not found') }));
       }
+      console.log('card info------>',req.body)
       payload = {
         "full_name": fullName,
         "email": email,
@@ -238,6 +239,7 @@ const payInAmount = async (req, res) => {
       if (!fullName || !email || !phoneNumber || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Moov details not found') }));
       }
+      console.log("moov-ci---------->", req.body)
       payload = {
         "moov_ci_customer_fullname": fullName,
         "moov_ci_email": email,
@@ -279,6 +281,7 @@ const payInAmount = async (req, res) => {
     }
     console.log("payload---------->", payload, payInURL)
     const paydunyaResponse = await axios.post(payInURL, payload);
+    console.log("paydunyaResponse---------->", paydunyaResponse.data)
     if (paydunyaResponse.data.success) {
       paymentDetails.status = 'success'
       paymentDetails.paymentMethod = paymentTypes
@@ -385,13 +388,15 @@ const takePayment = async (req, res) => {
     return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Amount should be greater than 200 and less than you pending amount') }));
   }
   const disburse_token = await createDisburseToken({ account_alias, amount, withdraw_mode });
+  console.log("disburse_token---------->", disburse_token)
   if (!disburse_token) {
     return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse token not created') }));
   }
   const userId = req.body.userId;
   const payout = await payoutDisburseAmount({disburse_token, userId});
+  console.log("payout---------->", payout)
   if(!payout){
-    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse amount not completed') }));
+    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse process failed') }));
   }
   hostIncome.pendingAmount = hostIncome.pendingAmount - amount;
   await hostIncome.save();

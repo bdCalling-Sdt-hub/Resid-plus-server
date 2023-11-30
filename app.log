@@ -57,3 +57,7 @@
 2023-11-30T05:00:15.214Z [ERROR] TokenExpiredError: jwt expired (Error Path: /api/residences?category=656184a880b6b1c2ef30998b&requestType=all)
 2023-11-30T05:00:15.226Z [ERROR] TokenExpiredError: jwt expired (Error Path: /api/residences?category=656184a880b6b1c2ef30998c&requestType=all)
 2023-11-30T05:00:17.089Z [ERROR] TokenExpiredError: jwt expired (Error Path: /api/users/6561bc616b28ebee7677cb64)
+2023-11-30T10:47:40.272Z [ERROR] TokenExpiredError: jwt expired (Error Path: /api/payments?requestType=weekly)
+2023-11-30T11:52:50.728Z [ERROR] CastError: Cast to ObjectId failed for value "hotel" (type string) at path "category" for model "Residence" (Error Path: /api/residences?category=hotel&numberOfBeds=1&maxPrice=0&minPrice=0)
+2023-11-30T11:53:11.510Z [ERROR] CastError: Cast to ObjectId failed for value "hotel" (type string) at path "category" for model "Residence" (Error Path: /api/residences?category=hotel&numberOfBeds=&maxPrice=0&minPrice=0)
+2023-11-30T11:55:40.485Z [ERROR] CastError: Cast to ObjectId failed for value "hotel" (type string) at path "category" for model "Residence" (Error Path: /api/residences?category=hotel&numberOfBeds=&maxPrice=0&minPrice=0)
