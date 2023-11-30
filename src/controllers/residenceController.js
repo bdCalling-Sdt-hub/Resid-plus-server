@@ -349,11 +349,13 @@ const searchCredentials = async (req, res) => {
         }
       }
       const countries = await Country.find().select('countryName');
+      const categories = await Category.find().select('translation');
 
       const data = {
         noOfUniqueBeds,
         priceArray,
-        countries
+        countries,
+        categories
       }
       return res.status(200).json(
         response({

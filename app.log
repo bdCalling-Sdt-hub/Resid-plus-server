@@ -61,3 +61,4 @@
 2023-11-30T11:52:50.728Z [ERROR] CastError: Cast to ObjectId failed for value "hotel" (type string) at path "category" for model "Residence" (Error Path: /api/residences?category=hotel&numberOfBeds=1&maxPrice=0&minPrice=0)
 2023-11-30T11:53:11.510Z [ERROR] CastError: Cast to ObjectId failed for value "hotel" (type string) at path "category" for model "Residence" (Error Path: /api/residences?category=hotel&numberOfBeds=&maxPrice=0&minPrice=0)
 2023-11-30T11:55:40.485Z [ERROR] CastError: Cast to ObjectId failed for value "hotel" (type string) at path "category" for model "Residence" (Error Path: /api/residences?category=hotel&numberOfBeds=&maxPrice=0&minPrice=0)
+2023-11-30T11:57:59.741Z [ERROR] CastError: Cast to ObjectId failed for value "residence" (type string) at path "category" for model "Residence" (Error Path: /api/residences?category=residence&acceptanceStatus=accepted)
