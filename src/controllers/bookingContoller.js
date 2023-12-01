@@ -77,36 +77,25 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
-    var baseAmount;
-    if (residence_details.category.name === 'hotel') {
-      baseAmount = residence_details.hourlyAmount / 12 // as hourly amount is given for 12 hours or half day
-    }
-    else {
-      baseAmount = residence_details.dailyAmount
-    }
+    const dailyAmount = residence_details.dailyAmount
+    const hourlyAmount = residence_details.hourlyAmount/12
     const calculatedHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
-    var calculatedTime;
-    if (residence_details.category.name === 'hotel') {
-      calculatedTime = calculatedHours
-    }
-    else {
-      calculatedTime = Math.ceil(calculatedHours / 24)
-    }
-    if (calculatedTime < 1 && residence_details.category.name === 'hotel') {
+    
+    if (calculatedHours < 1 && residence_details.category.name === 'hotel') {
       return res.status(404).json(
         response({
           status: 'Error',
           statusCode: '404',
-          message: req.t('Total stay must be greater than 1 hours for hotel'),
+          message: req.t('Total stay must be at least one hours for hotel'),
         })
       );
     }
-    if (calculatedTime < 1 && residence_details.category.name !== 'hostel') {
+    if (calculatedHours < 12 && residence_details.category.name !== 'hostel') {
       return res.status(404).json(
         response({
           status: 'Error',
           statusCode: '404',
-          message: req.t('Total stay must be greater than 1 day for personal House or residence'),
+          message: req.t('Total stay must be at least half-day for residences and personal-houses'),
         })
       );
     }
@@ -115,7 +104,7 @@ const calculateTimeAndPrice = async (req, res) => {
     const totalHours = parseFloat(hoursCalculated.toFixed(2));
 
     // Calculate total amount for days and remaining hours
-    const residenceCharge = baseAmount * calculatedTime;
+    const residenceCharge = totalDays * dailyAmount + totalHours * hourlyAmount;
     const serviceCharge = Math.ceil(0.06 * residenceCharge);
 
     // Calculate total amount
@@ -145,6 +134,7 @@ const calculateTimeAndPrice = async (req, res) => {
   }
 }
 //Add booking
+
 const addBooking = async (req, res) => {
   try {
     let {
@@ -168,6 +158,10 @@ const addBooking = async (req, res) => {
           message: req.t(`Please fill all the fields`),
         })
       );
+    }
+    if(!residenceCharge || !serviceCharge){
+      residenceCharge = totalAmount * 0.94
+      serviceCharge = totalAmount * 0.06
     }
 
     checkInTime = new Date(checkInTime)

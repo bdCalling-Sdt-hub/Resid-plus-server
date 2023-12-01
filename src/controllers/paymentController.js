@@ -34,7 +34,7 @@ const createPayInToken = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
 
-    if (!checkUser || checkUser.status!=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'User not found' }));
     };
 
@@ -122,15 +122,15 @@ const payInAmount = async (req, res) => {
   console.log("payInAmount---------->", req.body, req.query.paymentTypes)
   try {
     const paymentTypes = req.query.paymentTypes
-    const {paymentId} = req.body
-    if (!paymentId ) {
+    const { paymentId } = req.body
+    if (!paymentId) {
       return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment id not found') }));
     }
     const paymentDetails = await Payment.findById(paymentId).populate('bookingId residenceId userId');
-    if(!paymentDetails){
+    if (!paymentDetails) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Payment not found') }));
     }
-    if(paymentDetails.status === 'success'){
+    if (paymentDetails.status === 'success') {
       return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment is already done') }));
     }
     var payload;
@@ -143,7 +143,7 @@ const payInAmount = async (req, res) => {
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
 
-      const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.residenceCharge +" pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
+      const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.residenceCharge + " pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
 
       const newNotification = {
         message: hostMessage,
@@ -156,45 +156,45 @@ const payInAmount = async (req, res) => {
 
       const notification = await addNotification(newNotification)
       const roomId = paymentDetails.hostId._id.toString()
-      io.to('room'+roomId).emit('host-notification', notification);
-        
+      io.to('room' + roomId).emit('host-notification', notification);
+
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paymentDetails }));
     }
     else if (paymentTypes === 'card') {
       const { cardNumber, cardCvv, cardExpiredDateYear, cardExpiredDateMonth, token, email, fullName } = req.body
-      
+
       if (!cardNumber || !cardCvv || !cardExpiredDateYear || !cardExpiredDateMonth || !token || !email || !fullName) {
         if (!cardNumber) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Card number is required' }));
         }
-        
+
         if (!cardCvv) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'CVV is required' }));
         }
-        
+
         if (!cardExpiredDateYear) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Card expiration year is required' }));
         }
-        
+
         if (!cardExpiredDateMonth) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Card expiration month is required' }));
         }
-        
+
         if (!token) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Token is required' }));
         }
-        
+
         if (!email) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Email is required' }));
         }
-        
+
         if (!fullName) {
           return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Full name is required' }));
         }
-        
+
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Card details not found') }));
       }
-      console.log('card info------>',req.body)
+      console.log('card info------>', req.body)
       payload = {
         "full_name": fullName,
         "email": email,
@@ -290,7 +290,7 @@ const payInAmount = async (req, res) => {
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
 
-      const hostMessage = paymentDetails.userId.fullName + ' a payé ' + paymentDetails.paymentData.residenceCharge +' pour ' + paymentDetails.residenceId.residenceName + " pour l'ID de réservation: " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
+      const hostMessage = paymentDetails.userId.fullName + ' a payé ' + paymentDetails.paymentData.residenceCharge + ' pour ' + paymentDetails.residenceId.residenceName + " pour l'ID de réservation: " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
 
       const newNotification = {
         message: hostMessage,
@@ -303,13 +303,13 @@ const payInAmount = async (req, res) => {
 
       const notification = await addNotification(newNotification)
       const roomId = paymentDetails.hostId._id.toString()
-      io.to('room'+roomId).emit('host-notification', notification);
+      io.to('room' + roomId).emit('host-notification', notification);
 
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
     }
     else {
       console.log("paydunyaResponse---------->", paydunyaResponse.data)
-      if(!paydunyaResponse.data.success){
+      if (!paydunyaResponse.data.success) {
         paymentDetails.status = 'failed'
         await paymentDetails.save()
       }
@@ -366,54 +366,64 @@ const payoutDisburseAmount = async (data) => {
 }
 
 const takePayment = async (req, res) => {
-  const checkUser = await User.findById(req.body.userId);
-  if(!checkUser || checkUser.status!=='accepted'){
-    return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
-  }
-  const {
-    account_alias,
-    amount,
-    withdraw_mode,
-  } = req.body;
+  try {
+    const checkUser = await User.findById(req.body.userId);
+    console.log("Body---------->", req.body)
+    if (!checkUser || checkUser.status !== 'accepted') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
+    }
+    const {
+      account_alias,
+      amount,
+      withdraw_mode,
+    } = req.body;
 
-  if (!account_alias || !amount || !withdraw_mode) {
-    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required fields not found') }));
-  }
+    if (!account_alias || !amount || !withdraw_mode) {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required fields not found') }));
+    }
 
-  const hostIncome = await Income.findOne({ hostId: req.body.userId });
-  if(!hostIncome){
-    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Income not found') }));
+    const hostIncome = await Income.findOne({ hostId: req.body.userId });
+    if (!hostIncome) {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Income not found') }));
+    }
+    if (amount < 200 && hostIncome.pendingAmount < amount) {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Amount should be greater than 200 and less than you pending amount') }));
+    }
+    const disburse_token = await createDisburseToken({ account_alias, amount, withdraw_mode });
+    console.log("disburse_token---------->", disburse_token)
+    if (!disburse_token) {
+      console.log("Error disburse token not created---------->")
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse token not created') }));
+    }
+    // const userId = req.body.userId;
+    // const payout = await payoutDisburseAmount({ disburse_token, userId });
+    // console.log("payout---------->", payout)
+    // if (!payout) {
+    //   console.log("Error payout token not created---------->")
+    //   return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse process failed') }));
+    // }
+    // hostIncome.pendingAmount = hostIncome.pendingAmount - amount;
+    // await hostIncome.save();
+    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: req.t('Payment is successfully withdwwn from wallet'), data: disburse_token }));
   }
-  if(amount<200 && hostIncome.pendingAmount<amount){
-    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Amount should be greater than 200 and less than you pending amount') }));
+  catch (error) {
+    logger.error(error, req.originalUrl)
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
   }
-  const disburse_token = await createDisburseToken({ account_alias, amount, withdraw_mode });
-  console.log("disburse_token---------->", disburse_token)
-  if (!disburse_token) {
-    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse token not created') }));
-  }
-  const userId = req.body.userId;
-  const payout = await payoutDisburseAmount({disburse_token, userId});
-  console.log("payout---------->", payout)
-  if(!payout){
-    return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse process failed') }));
-  }
-  hostIncome.pendingAmount = hostIncome.pendingAmount - amount;
-  await hostIncome.save();
-  return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: req.t('Payment token created successfully.') }));
 }
 //All payments
 const allPayment = async (req, res) => {
   try {
     const checkUser = await User.findById(req.body.userId);
-    if (!checkUser || checkUser.status!=='accepted') {
+    if (!checkUser || checkUser.status !== 'accepted') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
     }
 
     const requestType = !req.query.requestType ? 'total' : req.query.requestType;
     var data
     if (requestType === 'total') {
-      const allPayments = await Payment.find({ hostId: req.body.userId, status:"success" });
+      const allPayments = await Payment.find({ hostId: req.body.userId, status: "success" });
       const total = allPayments.reduce((total, payment) => total + payment.paymentData.residenceCharge, 0);
       data = total
       console.log("totalIncome---------->", total, allPayments, req.body.userId)
@@ -422,7 +432,7 @@ const allPayment = async (req, res) => {
       const dayTime = 24 * 60 * 60 * 1000;
       const dayEndDate = new Date();
       const dayStartDate = new Date(dayEndDate - dayTime);
-      const allPayments = await Payment.find({ createdAt: { $gte: dayStartDate, $lt: dayEndDate }, hostId: req.body.userId, status:"success" }).populate('bookingId residenceId');
+      const allPayments = await Payment.find({ createdAt: { $gte: dayStartDate, $lt: dayEndDate }, hostId: req.body.userId, status: "success" }).populate('bookingId residenceId');
       const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.residenceCharge, 0);
       data = { allPayments, total }
     }
@@ -430,7 +440,7 @@ const allPayment = async (req, res) => {
       const weeklyTime = 7 * 24 * 60 * 60 * 1000
       weeklyStartDate = new Date(new Date().getTime() - weeklyTime);
       weeklyEndDate = new Date();
-      const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate }, hostId: req.body.userId, status:"success" }).populate('bookingId residenceId');
+      const allPayments = await Payment.find({ createdAt: { $gte: weeklyStartDate, $lt: weeklyEndDate }, hostId: req.body.userId, status: "success" }).populate('bookingId residenceId');
       const total = allPayments.reduce((total, payment) => total + payment?.paymentData?.residenceCharge, 0);
       data = { allPayments, total }
 
@@ -459,7 +469,7 @@ const allPayment = async (req, res) => {
       const monthEndDate = new Date();
       const monthStartDate = new Date(monthEndDate - monthTime);
 
-      const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate }, hostId: req.body.userId, status:"success" });
+      const allPayments = await Payment.find({ createdAt: { $gte: monthStartDate, $lt: monthEndDate }, hostId: req.body.userId, status: "success" });
 
       const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',
