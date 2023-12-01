@@ -160,8 +160,8 @@ const addBooking = async (req, res) => {
       );
     }
     if(!residenceCharge || !serviceCharge){
-      residenceCharge = totalAmount * 0.94
-      serviceCharge = totalAmount * 0.06
+      residenceCharge = Math.ceil(totalAmount * 0.94)
+      serviceCharge = Math.ceil(totalAmount * 0.06)
     }
 
     checkInTime = new Date(checkInTime)
