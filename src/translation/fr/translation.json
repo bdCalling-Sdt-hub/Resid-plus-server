@@ -245,5 +245,7 @@
   "Update users status failed due to having reserved residence": "La mise à jour du statut des utilisateurs a échoué en raison de la résidence réservée",
   "Status is required": "Le statut est requis",
   "Must provide appropiate data": "Doit fournir des données appropriées",
-  "Disburse process failed" : "Le processus de décaissement a échoué"
+  "Disburse process failed" : "Le processus de décaissement a échoué",
+  "Your property is currently booked, so you can not deactivate yourself now" : "Votre propriété est actuellement réservée, vous ne pouvez donc pas vous désactiver maintenant",
+  "User deleted successfully": "Utilisateur supprimé avec succès"
 }

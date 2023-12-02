@@ -38,7 +38,7 @@ const signUp = async (req, res) => {
         userExist.oneTimeCode = oneTimeCode;
         user = await userExist.save();
       }
-      else{
+      else {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "User already exists" }));
       }
     }
@@ -906,5 +906,33 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const checkUser = await User.findById(req.body.userId);
+    if (!checkUser || checkUser.status !== 'accepted') {
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('User not found') }));
+    };
+    const passwordMatch = await bcrypt.compare(password, checkUser.password);
+    if (!passwordMatch) {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('Unauthorised') }));
+    }
+    const existingBooking = await Booking.findOne({ userId: req.body.userId, status: {$nin:['pending', 'cancelled', ]} })
+    if (existingBooking) {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Your property is currently booked, so you can not deactivate yourself now') }));
+    }
+    await Residence.deleteMany({ hostId: req.body.userId })
+    await Booking.deleteMany({ hostId: req.body.userId })
+    await User.findByIdAndDelete(req.body.userId)
+    return res.status(200).json(response({ status: 'OK', statusCode: '200', message: req.t('User deleted successfully') }));
+  }
+  catch (error) {
+    logger.error(error, req.originalUrl);
+    console.log(error)
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', type: 'user', message: error.message }));
+  }
+}
 
-module.exports = { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser, resendOneTimeCode, updateUserStatus, createUser }
+
+
+module.exports = { signUp, signIn, processForgetPassword, changePassword, verifyOneTimeCode, updatePassword, updateProfile, userDetails, allUser, resendOneTimeCode, updateUserStatus, createUser, deleteAccount }

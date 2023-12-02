@@ -340,7 +340,7 @@ const searchCredentials = async (req, res) => {
 
       if (priceRange === 0) {
         priceArray = [{ min: minPrice, max: maxPrice }];
-      } 
+      }
       else {
         for (let i = 0; i < 5; i++) {
           const minRange = minPrice + priceRange * i;

@@ -20,14 +20,14 @@ function validateDate(dateString) {
 
 const validationMiddleware = async (req, res, next) => {
   try {
-    const { fullName, email, phoneNumber, address, dateOfBirth, password, role, country } = req.body;
+    const { fullName, email, dateOfBirth, password, role, country } = req.body;
 
     //let errors = [];
     console.log(req.body);
-    if (!fullName || !/^\+22[156983]\d{6,10}$/.test(phoneNumber) || !validateEmail(email) || !address || !validateDate(dateOfBirth) || !validatePassword(password) || !role || !country) {
+    if (!fullName || !validateEmail(email) || !validateDate(dateOfBirth) || !validatePassword(password) || !role || !country) {
       return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must provide appropiate data" }));
     }
-    // if (!/^\+225\d{6,10}$/.test(phoneNumber)) {
+    // if (!/^\+22[156983]\d{6,10}$/.test(phoneNumber)) {
     //   errors.push(req.t('Invalid phone number format'));
     // }
     // if (!validateEmail(email)) {

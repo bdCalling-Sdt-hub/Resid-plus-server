@@ -245,5 +245,7 @@
   "Update users status failed due to having reserved residence": "Update users status failed due to having reserved residence",
   "Status is required": "Status is required",
   "Must provide appropiate data": "Must provide appropiate data",
-  "Disburse process failed": "Disburse process failed"
+  "Disburse process failed": "Disburse process failed",
+  "Your property is currently booked, so you can not deactivate yourself now" : "Your property is currently booked, so you can not deactivate yourself now",
+  "User deleted successfully": "User deleted successfully"
 }
