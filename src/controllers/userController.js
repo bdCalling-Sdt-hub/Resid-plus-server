@@ -488,7 +488,7 @@ const updateProfile = async (req, res) => {
     }
 
     if (phoneNumber) {
-      if (!/^\+225\d{6,10}$/.test(phoneNumber)) {
+      if (!/^\+22[156983]\d{6,10}$/.test(phoneNumber)) {
         if (req.file) {
           unlinkImages(req.file.path)
         }
