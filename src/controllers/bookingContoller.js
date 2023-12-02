@@ -159,10 +159,10 @@ const addBooking = async (req, res) => {
         })
       );
     }
-    if(!residenceCharge || !serviceCharge){
-      residenceCharge = Math.ceil(totalAmount * 0.94)
-      serviceCharge = Math.ceil(totalAmount * 0.06)
-    }
+    // if(!residenceCharge || !serviceCharge){
+    //   residenceCharge = Math.ceil(totalAmount * 0.94)
+    //   serviceCharge = Math.ceil(totalAmount * 0.06)
+    // }
 
     checkInTime = new Date(checkInTime)
     checkOutTime = new Date(checkOutTime)
