@@ -6,7 +6,7 @@ const User = require("../models/User");
 //All countrys
 const allCountry = async (req, res) => {
   try {
-    const countrys = await Country.find().select('countryName countryCode');
+    const countrys = await Country.find().select('countryName countryCode countryFlag');
     return res.status(200).json(
       response({
         status: 'OK',
@@ -43,7 +43,7 @@ const addCountry = async (req, res) => {
       );
     }
 
-    const { countryName, countryCode } = req.body;
+    const { countryName, countryCode, countryFlag } = req.body;
 
     if (user.role === 'user') {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'country', message: req.t('You are not Authorized') }));
@@ -57,6 +57,7 @@ const addCountry = async (req, res) => {
       country = new Country({
         countryName: countryName,
         countryCode: countryCode,
+        countryFlag: countryFlag
       });
       await country.save();
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'country', message: req.t('Country added successfully.'), data: country }));
@@ -156,22 +157,20 @@ const updateCountry = async (req, res) => {
       );
     }
     const id = req.params.id;
-    const { en, fr } = req.body;
+    const { countryName, countryCode, countryFlag } = req.body;
     const checkCountry = await Country.findById(id);
     if (!checkCountry) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: req.t('Country not found') }));
     }
     else {
       key = en.toLowerCase()
-      const aminity = {
-        key: !en ? checkCountry.key : key,
-        translation: {
-          en: !en ? checkCountry.translation.en : en,
-          fr: !fr ? checkCountry.translation.fr : fr
-        }
+      const country = {
+        countryName: countryName,
+        countryCode: countryCode,
+        countryFlag: countryFlag
       }
-      await Country.findByIdAndUpdate(id, aminity, { new: true });
-      return res.status(201).json(response({ status: 'Updated', statusCode: '201', type: 'country', message: req.t('Country updated successfully.'), data: aminity }));
+      await Country.findByIdAndUpdate(id, country, { new: true });
+      return res.status(201).json(response({ status: 'Updated', statusCode: '201', type: 'country', message: req.t('Country updated successfully.'), data: country }));
     }
   }
   catch (error) {

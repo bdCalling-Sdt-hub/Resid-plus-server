@@ -26,33 +26,85 @@ const usersData = [
     "password": "hellosubadmin",
     "role": "admin",
     "emailVerified": true
+  },
+  {
+    "fullName": "Testing Host",
+    "email": "host@gmail.com",
+    "phoneNumber": "+2250757063629",
+    "address": "Canada",
+    "dateOfBirth": new Date("2000-01-01"),
+    "password": "hellohost",
+    "role": "host",
+    "emailVerified": true,
+    "country": "6569d157077a08fb0acc03c0"
+  },
+  {
+    "fullName": "Testing User",
+    "email": "user@gmail.com",
+    "phoneNumber": "+2250757063629",
+    "address": "Canada",
+    "dateOfBirth": new Date("2000-01-01"),
+    "password": "hellouser",
+    "role": "user",
+    "emailVerified": true,
+    "country": "6569d157077a08fb0acc03c0"
   }
 ];
 
 const countriesData = [
   {
+    "_id": "6569d157077a08fb0acc03bf",
     "countryName": "SENEGAL",
-    "countryCode":"+221"
+    "countryCode": "+221",
+    "countryFlag": {
+      publicFileUrl: `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/flags/senegal.png`,
+      path: 'public\\uploads\\flags\\senegal.png'
+    }
   },
   {
-    "countryName": "COTE D’IVOIRE",
-    "countryCode":"+225"
+    "_id": "6569d157077a08fb0acc03c0",
+    "countryName": "COTE D'IVOIRE",
+    "countryCode": "+225",
+    "countryFlag": {
+      publicFileUrl: `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/flags/ivory-coast.png`,
+      path: 'public\\uploads\\flags\\ivory-coast.png'
+    }
   },
   {
+    "_id": "6569d157077a08fb0acc03c1",
     "countryName": "BURKINA FASO",
-    "countryCode":"+226"
+    "countryCode": "+226",
+    "countryFlag": {
+      publicFileUrl: `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/flags/burkina-faso.png`,
+      path: 'public\\uploads\\flags\\burkina-faso.png'
+    }
   },
   {
+    "_id": "6569d157077a08fb0acc03c2",
     "countryName": "BENIN",
-    "countryCode":"+229"
+    "countryCode": "+229",
+    "countryFlag": {
+      publicFileUrl: `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/flags/benin.png`,
+      path: 'public\\uploads\\flags\\benin.png'
+    }
   },
   {
+    "_id": "6569d157077a08fb0acc03c3",
     "countryName": "TOGO",
-    "countryCode":"+228"
+    "countryCode": "+228",
+    "countryFlag": {
+      publicFileUrl: `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/flags/togo.png`,
+      path: 'public\\uploads\\flags\\togo.png'
+    }
   },
   {
+    "_id": "6569d157077a08fb0acc03c4",
     "countryName": "MALI",
-    "countryCode":"+223"
+    "countryCode": "+223",
+    "countryFlag": {
+      publicFileUrl: `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/flags/mali.png`,
+      path: 'public\\uploads\\flags\\mali.png'
+    }
   }
 ]
 
@@ -211,7 +263,7 @@ const seedCategories = async () => {
   try {
     await Category.deleteMany();
     const data = await Category.insertMany(categoriesData);
-    console.log({message: 'Categories seeded successfully!', data: data});
+    console.log({ message: 'Categories seeded successfully!', data: data });
   } catch (err) {
     console.error('Error seeding categories:', err);
   }
@@ -237,10 +289,10 @@ mongoose.connect(process.env.MONGODB_CONNECTION, {
 // Call seeding functions
 const seedDatabase = async () => {
   try {
-    await seedUsers();
     await seedAmenities();
     await seedCategories();
     await seedCountries();
+    await seedUsers();
     console.log('------------> Database seeding completed! <------------');
   } catch (err) {
     console.error('Error seeding database:', err);
