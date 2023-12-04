@@ -24,7 +24,7 @@ const createSupport = async (req, res) => {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'support', message: req.t('You are not Authorized') }));
     }
 
-    // Check if an About us entry already exists
+    // Check if an Support entry already exists
     let support = await Support.findOne();
 
     if (!support) {
@@ -37,7 +37,7 @@ const createSupport = async (req, res) => {
     // If an entry exists, update its content
     support.content = content;
     await support.save();
-    return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'support', message: req.t('About us content updated successfully'), data: support }));
+    return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'support', message: req.t('Support content updated successfully'), data: support }));
   } catch (error) {
     logger.error(error, req.originalUrl)
     console.error(error.message);
@@ -62,11 +62,11 @@ const getAll = async (req, res) => {
     const support = await Support.findOne();
 
     if (!support) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'support', message: req.t('About us content not found') }));
+      return res.status(200).json(response({ status: 'Error', statusCode: '200', type: 'support', message: req.t('Support content not found') }));
     }
 
     //const supportContentWithoutTags = support.content.replace(/<\/?[^>]+(>|$)/g, "");
-    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'support', message: req.t('About us content retrieved successfully'), data: support }));
+    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'support', message: req.t('Support content retrieved successfully'), data: support }));
   } catch (error) {
     logger.error(error, req.originalUrl)
     console.error(error.message);

@@ -110,6 +110,8 @@ const calculateTimeAndPrice = async (req, res) => {
     // Calculate total amount
     const totalAmount = Math.ceil(residenceCharge + serviceCharge);
 
+    console.log('-------->', totalDays, totalHours, residenceCharge, serviceCharge, totalAmount)
+
     return res.status(200).json(
       response({
         status: 'OK',
@@ -133,8 +135,8 @@ const calculateTimeAndPrice = async (req, res) => {
     console.log(error)
   }
 }
-//Add booking
 
+//Add booking
 const addBooking = async (req, res) => {
   try {
     let {
