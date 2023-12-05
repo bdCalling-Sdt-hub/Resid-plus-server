@@ -57,11 +57,7 @@ const getAll = async (req, res) => {
     }
 
     const aboutUs = await AboutUs.findOne();
-
-    if (!aboutUs) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'about-us', message: req.t('About us content not found') }));
-    }
-
+    
     //const aboutUsContentWithoutTags = aboutUs.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'about-us', message: req.t('About us content retrieved successfully'), data: aboutUs }));
   } catch (error) {

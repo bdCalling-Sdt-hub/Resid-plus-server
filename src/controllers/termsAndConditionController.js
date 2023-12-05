@@ -58,11 +58,7 @@ const getAll = async (req, res) => {
     }
 
     const termsAndCondition = await TermsAndCondition.findOne();
-
-    if (!termsAndCondition) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'terms-and-conditions', message: req.t('Terms and conditions content not found') }));
-    }
-
+    
     //const termsAndConditionContentWithoutTags = termsAndCondition.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'terms-and-conditions', message: req.t('Terms and conditions content retrieved successfully'), data: termsAndCondition }));
   } catch (error) {

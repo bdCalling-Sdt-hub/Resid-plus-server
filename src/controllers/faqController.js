@@ -171,10 +171,6 @@ const getAll = async (req, res) => {
 
     const faq = await Faq.find();
 
-    if (faq.length === 0) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'faq', message: req.t('faq content not found') }));
-    }
-
     //const faqContentWithoutTags = faq.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'faq', message: req.t('faq content retrieved successfully'), data: faq }));
   } catch (error) {

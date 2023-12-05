@@ -61,10 +61,6 @@ const getAll = async (req, res) => {
 
     const support = await Support.findOne();
 
-    if (!support) {
-      return res.status(200).json(response({ status: 'Error', statusCode: '200', type: 'support', message: req.t('Support content not found') }));
-    }
-
     //const supportContentWithoutTags = support.content.replace(/<\/?[^>]+(>|$)/g, "");
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'support', message: req.t('Support content retrieved successfully'), data: support }));
   } catch (error) {

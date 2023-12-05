@@ -938,7 +938,7 @@ const updateBooking = async (req, res) => {
         return res.status(401).json(response({ status: 'Error', statusCode: '401', type: 'booking', message: req.t('You are not authorised to access this booking request') }));
       }
       if (status === 'check-in') {
-        if (bookingDetails.paymentTypes !== 'unknown' && bookingDetails.status === 'reserved') {
+        if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'reserved') {
           const today = new Date()
           const checkInTime = new Date(bookingDetails.checkInTime)
           if (process.env.NODE_ENV === 'production' && today < checkInTime) {
@@ -952,36 +952,6 @@ const updateBooking = async (req, res) => {
           bookingDetails.status = status
           bookingDetails.save()
 
-          const hostMessage = bookingDetails.userId.fullName + ' enregistré et en attente de la clé pour ' + bookingDetails.residenceId.residenceName + ', merci de lui fournir la clé'
-
-          const newNotification = {
-            message: hostMessage,
-            receiverId: bookingDetails.hostId._id,
-            image: bookingDetails.userId.image,
-            linkId: bookingDetails._id,
-            role: 'host',
-            type: 'booking'
-          }
-          const hostNotification = await addNotification(newNotification)
-          const roomId = bookingDetails.hostId._id.toString()
-          io.to('room' + roomId).emit('host-notification', hostNotification);
-
-          // const accessToken = process.env.ORANGE_ACCESS_KEY
-          // const senderNumber = process.env.ORANGE_SENDER_NUMBER
-          // const receiverNumber = bookingDetails.hostId.phoneNumber
-          // const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
-
-          //await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
-          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
-        }
-        else {
-          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: "booking-request", message: req.t('You must pay atleast 50% to check-in') }));
-        }
-      }
-      else if (status === "check-out") {
-        if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
-          bookingDetails.status = status
-          bookingDetails.save()
           var hostIncome = await Income.findOne({ hostId: bookingDetails.hostId._id })
           if (!hostIncome) {
             hostIncome = new Income({
@@ -995,29 +965,46 @@ const updateBooking = async (req, res) => {
           residence.status = 'active'
           await residence.save()
 
-          const hostMessage = bookingDetails.userId.fullName + ' extrait de ' + bookingDetails.residenceId.residenceName + ', et le paiement est transféré sur votre portefeuille'
-          const newNotification = {
-            message: hostMessage,
-            receiverId: bookingDetails.hostId._id,
-            image: bookingDetails.userId.image,
-            linkId: bookingDetails._id,
-            type: 'booking',
-            role: 'host'
-          }
-          const hostNotification = await addNotification(newNotification)
-          const roomId = bookingDetails.hostId._id.toString()
-          io.to('room' + roomId).emit('host-notification', hostNotification);
-
           const totalIncome = hostIncome.totalIncome + incomeAmount
           const pendingIncome = hostIncome.pendingAmount + incomeAmount
           
           hostIncome.totalIncome = totalIncome;
           hostIncome.pendingAmount = pendingIncome;
 
-          console.log('hostIncome------>', incomeAmount, totalIncome, pendingIncome, hostIncome.pendingAmount, hostIncome.totalAmount)
-
           await hostIncome.save();
-          console.log('hostIncome------>', hostIncome)
+
+          const hostMessage = bookingDetails.userId.fullName + ' enregistré et en attente de la clé pour ' + bookingDetails.residenceId.residenceName + '. Les frais de séjour ont également été transférés sur votre portefeuille.'
+
+          const newNotification = {
+            message: hostMessage,
+            receiverId: bookingDetails.hostId._id,
+            image: bookingDetails.userId.image,
+            linkId: bookingDetails._id,
+            role: 'host',
+            type: 'booking'
+          }
+          const hostNotification = await addNotification(newNotification)
+          const roomId = bookingDetails.hostId._id.toString()
+          io.to('room' + roomId).emit('host-notification', hostNotification);
+
+          const accessToken = process.env.ORANGE_ACCESS_KEY
+          const senderNumber = process.env.ORANGE_SENDER_NUMBER
+          const receiverNumber = bookingDetails.hostId.phoneNumber
+          const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
+
+          //await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
+        }
+        else {
+          return res.status(409).json(response({ status: 'Error', statusCode: '409', type: "booking-request", message: req.t('You must pay atleast 50% to check-in') }));
+        }
+      }
+      else if (status === "check-out") {
+        if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
+          bookingDetails.status = status
+          bookingDetails.save()
+          
+
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
