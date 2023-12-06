@@ -45,7 +45,17 @@ const calculateTimeAndPrice = async (req, res) => {
       );
     }
 
-    if(checkInTime){
+    const requestData = {
+      "Half-Day": "half-day",
+      "Full-Day": "full-day",
+      "Hours": "hours",
+      "Demi-journée": "half-day",
+      "Journée-complète": "full-day",
+      "Heures": "hours"
+    }
+    requestBy = requestData[requestBy]
+
+    if (checkInTime) {
       checkInTime = new Date(checkInTime)
     }
 
