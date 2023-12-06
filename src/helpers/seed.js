@@ -236,6 +236,16 @@ const categoriesData = [
   }
 ];
 
+// Function to drop the entire database
+const dropDatabase = async () => {
+  try {
+    await mongoose.connection.dropDatabase();
+    console.log('------------> Database dropped successfully! <------------');
+  } catch (err) {
+    console.error('Error dropping database:', err);
+  }
+};
+
 // Function to seed users
 const seedUsers = async () => {
   try {
@@ -289,6 +299,7 @@ mongoose.connect(process.env.MONGODB_CONNECTION, {
 // Call seeding functions
 const seedDatabase = async () => {
   try {
+    await dropDatabase(); 
     await seedAmenities();
     await seedCategories();
     await seedCountries();

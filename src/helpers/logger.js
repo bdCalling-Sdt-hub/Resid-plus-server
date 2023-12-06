@@ -4,22 +4,19 @@ const path = require('path');
 const logFilePath = path.join(__dirname, '../../app.log');
 
 function logMessage(level, message, errorPath) {
-  let logEntry = `${new Date().toISOString()} [${level}] ${message}`;
+  const logEntry = `${new Date().toISOString()} [${level}] ${
+    typeof message === 'object' ? JSON.stringify(message) : message
+  }${errorPath ? ` (Error Path: ${typeof errorPath === 'object' ? JSON.stringify(errorPath) : errorPath})` : ''}\n`;
 
-  if (errorPath) {
-    logEntry += ` (Error Path: ${errorPath})`;
+  try {
+    const existingLogs = fs.readFileSync(logFilePath, 'utf8');
+    fs.writeFileSync(logFilePath, logEntry + existingLogs);
+  } catch (err) {
+    console.error('Error writing to log file:', err);
   }
-
-  logEntry += '\n';
-
-  fs.appendFile(logFilePath, logEntry, (err) => {
-    if (err) {
-      console.error('Error writing to log file:', err);
-    }
-  });
 }
 
 module.exports = {
-  info: (message) => logMessage('INFO', message),
+  info: (message, errorPath) => logMessage('INFO', message, errorPath), // Include errorPath here
   error: (message, errorPath) => logMessage('ERROR', message, errorPath),
 };

@@ -43,7 +43,7 @@ const createPayInToken = async (req, res) => {
       paymentTypes
     } = req.body;
 
-    if (paymentTypes !== 'half-payment' && paymentTypes !== 'full-payment') {
+    if (paymentTypes !== 'full-payment') {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment status not not appropiate' }));
     }
     const bookingDetails = await Booking.findById(bookingId).populate('residenceId userId');
@@ -62,10 +62,7 @@ const createPayInToken = async (req, res) => {
 
     if (checkUser.role === 'user' && bookingDetails.userId._id.toString() === req.body.userId) {
       let paymentAmount = bookingDetails.totalAmount
-      if ((bookingDetails.paymentTypes === 'unknown' && paymentTypes === 'half-payment' || bookingDetails.paymentTypes === 'half-payment' && paymentTypes === 'full-payment')) {
-        paymentAmount = Math.ceil(paymentAmount / 2)
-      }
-      const description = bookingDetails.userId.fullName + ' wants to ' + paymentTypes + ' for ' + bookingDetails.residenceId.residenceName + ' for ' + bookingDetails.totalTime.days + ' days and ' + bookingDetails.totalTime.hours + ' hours'
+      const description = bookingDetails.userId.fullName + ' vouloir ' + paymentTypes + ' pour ' + bookingDetails.residenceId.residenceName + ' pour ' + bookingDetails.totalTime.days + ' jours et ' + bookingDetails.totalTime.hours + ' heures'
 
       const payload =
       {
@@ -82,6 +79,9 @@ const createPayInToken = async (req, res) => {
           "residence_name": bookingDetails.residenceId.residenceName,
           "booking_id": bookingDetails.bookingId,
           "total_time": bookingDetails.totalTime
+        },
+        "actions": {
+          "callback_url": `http://www.${process.env.API_SERVER_IP}:3000/api/payments/payment-status`
         }
       }
       const paydunyaResponse = await axios.post(payInTokenUrl, payload, { headers });
@@ -282,29 +282,7 @@ const payInAmount = async (req, res) => {
     console.log("payload---------->", payload, payInURL)
     const paydunyaResponse = await axios.post(payInURL, payload);
     console.log("paydunyaResponse---------->", paydunyaResponse.data)
-    if (paydunyaResponse.data.success) {
-      paymentDetails.status = 'success'
-      paymentDetails.paymentMethod = paymentTypes
-      await paymentDetails.save()
-      const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
-      bookingDetails.paymentTypes = paymentDetails.paymentTypes
-      await bookingDetails.save()
-
-      const hostMessage = paymentDetails.userId.fullName + ' a payé ' + paymentDetails.paymentData.residenceCharge + ' pour ' + paymentDetails.residenceId.residenceName + " pour l'ID de réservation: " + paymentDetails.bookingId.bookingId + ", après le départ, il sera transféré sur votre compte."
-
-      const newNotification = {
-        message: hostMessage,
-        receiverId: paymentDetails.userId._id,
-        image: paymentDetails.userId.image,
-        linkId: paymentDetails.bookingId._id,
-        role: 'host',
-        type: 'booking'
-      }
-
-      const notification = await addNotification(newNotification)
-      const roomId = paymentDetails.hostId._id.toString()
-      io.to('room' + roomId).emit('host-notification', notification);
-
+    if (paydunyaResponse.data.success) {            
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
     }
     else {
@@ -322,6 +300,11 @@ const payInAmount = async (req, res) => {
   }
 }
 
+const paymentStatus = async (req, res) => {
+  console.log("==========>>>>>>>> Payment Status ==========>>>>>>>>", req.body)
+  logger.info({"payment_status": req.body}, {"method":req.method, "url":req.originalUrl})
+  return res.status(200).json(response({ status: 'Success', statusCode: '200', type: 'payment', message: 'Payment status updated successfully.', data: req.body }));
+}
 const createDisburseToken = async (data) => {
   try {
     const payload =
@@ -512,4 +495,4 @@ const allPayment = async (req, res) => {
 };
 
 
-module.exports = { allPayment, createPayInToken, payInAmount, createDisburseToken, payoutDisburseAmount, takePayment };
+module.exports = { allPayment, createPayInToken, payInAmount, createDisburseToken, payoutDisburseAmount, takePayment, paymentStatus };

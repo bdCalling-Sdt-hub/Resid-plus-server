@@ -31,18 +31,9 @@ const calculateTimeAndPrice = async (req, res) => {
       checkInTime,
       checkOutTime,
       residenceId,
+      requestBy
     } = req.body;
 
-    console.log('-------->', req.body)
-    if (!checkInTime || !checkOutTime || !residenceId) {
-      return res.status(404).json(
-        response({
-          status: 'Error',
-          statusCode: '404',
-          message: req.t('Please fill all the fields'),
-        })
-      );
-    }
     const residence_details = await Residence.findById(residenceId).populate('category');
     if (!residence_details) {
       return res.status(404).json(
@@ -54,9 +45,26 @@ const calculateTimeAndPrice = async (req, res) => {
       );
     }
 
+    if(checkInTime){
+      checkInTime = new Date(checkInTime)
+    }
+
+    if (checkInTime && requestBy === 'half-day' && residence_details.category.key !== 'hotel') {
+      checkOutTime = new Date(checkInTime.getTime() + 12 * 60 * 60 * 1000)
+    }
+
+    console.log('-------->', req.body)
+    if (!checkInTime || !checkOutTime || !residenceId || !requestBy) {
+      return res.status(404).json(
+        response({
+          status: 'Error',
+          statusCode: '404',
+          message: req.t('Please fill all the fields'),
+        })
+      );
+    }
+
     const today = new Date()
-    checkInTime = new Date(checkInTime)
-    checkOutTime = new Date(checkOutTime)
 
     if (checkInTime < today) {
       return res.status(404).json(
@@ -78,10 +86,10 @@ const calculateTimeAndPrice = async (req, res) => {
       );
     }
     const dailyAmount = residence_details.dailyAmount
-    const hourlyAmount = residence_details.hourlyAmount/12
-    const calculatedHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
-    
-    if (calculatedHours < 1 && residence_details.category.name === 'hotel') {
+    const hourlyAmount = residence_details.hourlyAmount
+    calculatedHours = calculateTotalHoursBetween(checkInTime, checkOutTime)
+
+    if (calculatedHours < 1 && residence_details.category.key === 'hotel') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -90,7 +98,7 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
-    if (calculatedHours < 12 && residence_details.category.name !== 'hostel') {
+    if (calculatedHours < 12 && residence_details.category.key !== 'hostel') {
       return res.status(404).json(
         response({
           status: 'Error',
@@ -784,7 +792,7 @@ const updateBooking = async (req, res) => {
           bookingDetails.save()
 
           const adminMessage = bookingDetails.userId.fullName + ' réservée ' + bookingDetails.residenceId.residenceName
-          const userMessage = bookingDetails.hostId.fullName + ' accepté votre demande de réservation pour ' + bookingDetails.residenceId.residenceName + ', et vous devez payer dans les délais ' + exactHours + ' heures et '+ exactMinutes + ' minutes'
+          const userMessage = bookingDetails.hostId.fullName + ' accepté votre demande de réservation pour ' + bookingDetails.residenceId.residenceName + ', et vous devez payer dans les délais ' + exactHours + ' heures et ' + exactMinutes + ' minutes'
 
           const newNotification = [{
             message: adminMessage,
@@ -959,7 +967,7 @@ const updateBooking = async (req, res) => {
             })
           }
           //charge 1% of total amount
-          const incomeAmount = Math.floor(bookingDetails.residenceCharge*0.99)
+          const incomeAmount = Math.floor(bookingDetails.residenceCharge * 0.99)
 
           const residence = await Residence.findById(bookingDetails.residenceId)
           residence.status = 'active'
@@ -967,7 +975,7 @@ const updateBooking = async (req, res) => {
 
           const totalIncome = hostIncome.totalIncome + incomeAmount
           const pendingIncome = hostIncome.pendingAmount + incomeAmount
-          
+
           hostIncome.totalIncome = totalIncome;
           hostIncome.pendingAmount = pendingIncome;
 
@@ -1003,7 +1011,7 @@ const updateBooking = async (req, res) => {
         if (bookingDetails.paymentTypes === 'full-payment' && bookingDetails.status === 'check-in') {
           bookingDetails.status = status
           bookingDetails.save()
-          
+
 
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
