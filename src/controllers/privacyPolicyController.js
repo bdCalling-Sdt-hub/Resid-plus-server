@@ -75,7 +75,7 @@ const getAllForWebSite = async (req, res) => {
     const privacyPolicy = await PrivacyPolicy.findOne();
 
     if (!privacyPolicy) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'privacy-policy', message: req.t('Privacy Policy content not found') }));
+      return res.status(200).json(response({ status: 'Error', statusCode: '200', type: 'privacy-policy', message: req.t('Privacy Policy content not found') }));
     }
 
     //const privacyPolicyContentWithoutTags = privacyPolicy.content.replace(/<\/?[^>]+(>|$)/g, "");

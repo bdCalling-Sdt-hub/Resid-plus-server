@@ -84,7 +84,7 @@ const getAllForWebSite = async (req, res) => {
     const aboutUs = await AboutUs.findOne();
 
     if (!aboutUs) {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'about-us', message: req.t('About us content not found') }));
+      return res.status(200).json(response({ status: 'OK', statusCode: '200', type: 'about-us', message: req.t('About us content not found') }));
     }
 
     //const aboutUsContentWithoutTags = aboutUs.content.replace(/<\/?[^>]+(>|$)/g, "");
