@@ -79,6 +79,9 @@ const createPayInToken = async (req, res) => {
           "booking_id": bookingDetails._id.toString(),
           "user_id": bookingDetails.userId._id.toString(),
           "residence_id": bookingDetails.residenceId._id.toString(),
+        },
+        "actions": {
+          "callback_url": `http://${process.env.API_DNS_NAME}/api/payments/payment-status`
         }
       }
       console.log("payload---------->", payload)
