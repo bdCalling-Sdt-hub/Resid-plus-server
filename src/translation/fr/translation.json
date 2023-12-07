@@ -226,7 +226,7 @@
   "Disburse amount not completed": "Montant de décaissement non complété",
   "Required fields not found": "Champs requis non trouvés",
   "Payment is successfully withdrawn from wallet": "Le paiement a été retiré avec succès du portefeuille",
-  "Payment completed successfully.": "Paiement effectué avec succès.",
+  "Payment completed successfully, waiting for Paydunya confirmation": "Paiement effectué avec succès, en attente de confirmation de Paydunya",
   "You are not authorised to get amenities": "Vous n'êtes pas autorisé à obtenir les aménités",
   "PromoCodes retrieved successfully": "Codes promotionnels récupérés avec succès",
   "Expiry date should be a valid future date": "La date d'expiration doit être une date future valide",

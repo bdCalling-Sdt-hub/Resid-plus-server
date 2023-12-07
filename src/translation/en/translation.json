@@ -226,7 +226,7 @@
   "Disburse amount not completed": "Disburse amount not completed",
   "Required fields not found": "Required fields not found",
   "Payment is successfully withdrawn from wallet": "Payment is successfully withdrawn from wallet",
-  "Payment completed successfully.": "Payment completed successfully.",
+  "Payment completed successfully, waiting for Paydunya confirmation": "Payment completed successfully, waiting for Paydunya confirmation",
   "You are not authorised to get amenities": "You are not authorised to get amenities",
   "PromoCodes retrieved successfully": "PromoCodes retrieved successfully",
   "Expiry date should be a valid future date": "Expiry date should be a valid future date",
