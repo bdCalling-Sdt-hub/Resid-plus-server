@@ -8,7 +8,6 @@ router.post('/get-payment-token', isValidUser,createPayInToken);
 router.post('/make-payment', isValidUser,payInAmount);
 router.post('/withdraw-payment', isValidUser,takePayment);
 router.post('/payment-status',paymentStatus);
-router.get('/payment-status',paymentStatus);
 router.get('/', isValidUser,allPayment);
 
 module.exports = router;

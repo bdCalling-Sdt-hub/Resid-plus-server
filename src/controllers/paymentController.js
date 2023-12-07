@@ -1,5 +1,6 @@
 const response = require("../helpers/response");
 require("dotenv").config();
+const crypto = require('crypto');
 const Payment = require("../models/Payment");
 const Booking = require('../models/Booking')
 const User = require("../models/User");
@@ -47,7 +48,6 @@ const createPayInToken = async (req, res) => {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment status not not appropiate' }));
     }
     const bookingDetails = await Booking.findById(bookingId).populate('residenceId userId');
-    console.log("bookingDetails--------->", bookingDetails, bookingId)
     if (!bookingDetails) {
       return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Booking not found' }));
     };
@@ -76,14 +76,12 @@ const createPayInToken = async (req, res) => {
           "phone": bookingDetails.userId.phoneNumber,
         },
         "custom_data": {
-          "residence_name": bookingDetails.residenceId.residenceName,
-          "booking_id": bookingDetails.bookingId,
-          "total_time": bookingDetails.totalTime
-        },
-        "actions": {
-          "callback_url": `http://www.${process.env.API_SERVER_IP}:3000/api/payments/payment-status`
+          "booking_id": bookingDetails._id.toString(),
+          "user_id": bookingDetails.userId._id.toString(),
+          "residence_id": bookingDetails.residenceId._id.toString(),
         }
       }
+      console.log("payload---------->", payload)
       const paydunyaResponse = await axios.post(payInTokenUrl, payload, { headers });
       if (paydunyaResponse.data.response_code === '00') {
         const newPayment = new Payment({
@@ -91,10 +89,10 @@ const createPayInToken = async (req, res) => {
           userId: req.body.userId,
           hostId: bookingDetails.hostId,
           residenceId: bookingDetails.residenceId._id,
+          token: paydunyaResponse.data.token,
           status: 'pending',
           paymentTypes,
           paymentData: {
-            token: paydunyaResponse.data.token,
             amount: paymentAmount,
             residenceCharge: bookingDetails.residenceCharge
           }
@@ -282,7 +280,7 @@ const payInAmount = async (req, res) => {
     console.log("payload---------->", payload, payInURL)
     const paydunyaResponse = await axios.post(payInURL, payload);
     console.log("paydunyaResponse---------->", paydunyaResponse.data)
-    if (paydunyaResponse.data.success) {            
+    if (paydunyaResponse.data.success) {
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
     }
     else {
@@ -301,10 +299,57 @@ const payInAmount = async (req, res) => {
 }
 
 const paymentStatus = async (req, res) => {
-  console.log("==========>>>>>>>> Payment Status ==========>>>>>>>>", req.body)
-  logger.info({"payment_status": req.body}, {"method":req.method, "url":req.originalUrl})
-  return res.status(200).json(response({ status: 'Success', statusCode: '200', type: 'payment', message: 'Payment status updated successfully.', data: req.body }));
+  try {
+    const data = JSON.parse(req.body.data); // Parse the data string into a JSON object
+    console.log("==========>>>>>>>> Payment Status ==========>>>>>>>>", data);
+    logger.info({ "payment_status": data }, { "method": req.method, "url": req.originalUrl });
+    const token = data?.invoice?.token
+    const bookingId = data?.custom_data?.booking_id
+    const userId = data?.custom_data?.user_id
+    const residenceId = data?.custom_data?.residence_id
+
+    const paymentDetails = await Payment.findOne({ token, bookingId, userId, residenceId });
+    if (paymentDetails && data?.status === 'completed' && data?.mode === 'live') {
+      paymentDetails.status = 'success'
+      paymentDetails.paymentData.receipt_url = data?.receipt_url
+      await paymentDetails.save()
+
+      const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
+      bookingDetails.paymentTypes = paymentDetails.paymentTypes
+      await bookingDetails.save()
+
+      const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.residenceCharge + " pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après l'enregistrement, il sera transféré sur votre compte"
+
+      const newNotification = {
+        message: hostMessage,
+        receiverId: paymentDetails.userId._id,
+        image: paymentDetails.userId.image,
+        linkId: paymentDetails.bookingId._id,
+        role: 'host',
+        type: 'booking'
+      }
+
+      const notification = await addNotification(newNotification)
+      const roomId = paymentDetails.hostId._id.toString()
+      io.to('room' + roomId).emit('host-notification', notification);
+
+      const userMessage = "Le paiement est réussi pour " + bookingDetails.residenceId.residenceName
+      const invoice_url = data.data?.receipt_url
+      io.to('room' + userId).emit('payment-notification', { message: userMessage, invoice_url: invoice_url });
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment status successfully got', data: data }));
+    }
+    // Rest of your code using the parsed JSON object 'data'
+    else {
+      logger.error({ "message": "Payment data not found", "token": data.invoice.token, "payment info": data }, "Payment status error")
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment data not found' }));
+    }
+  }
+  catch (error) {
+    logger.error(error, req.originalUrl)
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
+  }
 }
+
 const createDisburseToken = async (data) => {
   try {
     const payload =
