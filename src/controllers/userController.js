@@ -917,12 +917,14 @@ const deleteAccount = async (req, res) => {
     if (!passwordMatch) {
       return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('Unauthorised') }));
     }
-    const existingBooking = await Booking.findOne({ userId: req.body.userId, status: {$nin:['pending', 'cancelled', ]} })
-    if (existingBooking) {
-      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Your property is currently booked, so you can not deactivate yourself now') }));
+    if (checkUser.role === 'host') {
+      const existingBooking = await Booking.findOne({ userId: req.body.userId, status: { $nin: ['pending', 'cancelled',] } })
+      if (existingBooking) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Your property is currently booked, so you can not deactivate yourself now') }));
+      }
+      await Residence.deleteMany({ hostId: req.body.userId })
+      await Booking.deleteMany({ hostId: req.body.userId })
     }
-    await Residence.deleteMany({ hostId: req.body.userId })
-    await Booking.deleteMany({ hostId: req.body.userId })
     await User.findByIdAndDelete(req.body.userId)
     return res.status(200).json(response({ status: 'OK', statusCode: '200', message: req.t('User deleted successfully') }));
   }
