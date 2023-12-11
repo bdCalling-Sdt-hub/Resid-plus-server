@@ -108,7 +108,7 @@ const calculateTimeAndPrice = async (req, res) => {
         })
       );
     }
-    if (calculatedHours < 12 && residence_details.category.key !== 'hostel') {
+    if (calculatedHours < 12 && residence_details.category.key !== 'hotel') {
       return res.status(404).json(
         response({
           status: 'Error',
