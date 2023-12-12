@@ -28,7 +28,8 @@ const addResidence = async (req, res) => {
       amenities,
       ownerName,
       aboutOwner,
-      category
+      category,
+      country
     } = req.body;
 
     const checkHost = await User.findById(req.body.userId);
@@ -70,7 +71,8 @@ const addResidence = async (req, res) => {
         ownerName,
         aboutOwner,
         hostId: req.body.userId,
-        category
+        category,
+        country
       });
 
       const existingResidence = await Residence.findOne({ residenceName: residenceName, hostId: req.body.userId, capacity: capacity, beds: beds, baths: baths, address: address, city: city, municipality: municipality, quirtier: quirtier, aboutResidence: aboutResidence, hourlyAmount: hourlyAmount, dailyAmount: dailyAmount, amenities: amenities, ownerName: ownerName, aboutOwner: aboutOwner, category: category });
