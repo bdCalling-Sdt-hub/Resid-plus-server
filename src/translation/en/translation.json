@@ -152,22 +152,6 @@
   "Images not found": "Images not found",
   "Error": "Error",
   "Internal Server Error": "Internal Server Error",
-  "amenities": {
-    "bathtub": "Bathtub",
-    "iron": "Iron",
-    "wifi": "WiFi",
-    "game-console": "Game-console",
-    "fans": "Fans",
-    "refrigerator": "Refrigerator",
-    "swimming-pool": "Swimming-pool",
-    "hot-water": "Hot-water",
-    "wardrobe": "Wardrobe",
-    "tv": "TV",
-    "air-conditioner": "Air-conditioner",
-    "kitchen": "Kitchen",
-    "microwave": "Microwave",
-    "spa": "SPA"
-  },
   "Amenities retrieved successfully": "Amenities retrieved successfully",
   "Amenity added successfully": "Amenity added successfully",
   "Amenities added successfully": "Amenities added successfully",
@@ -247,5 +231,7 @@
   "Must provide appropiate data": "Must provide appropiate data",
   "Disburse process failed": "Disburse process failed",
   "Your property is currently booked, so you can not deactivate yourself now" : "Your property is currently booked, so you can not deactivate yourself now",
-  "User deleted successfully": "User deleted successfully"
+  "User deleted successfully": "User deleted successfully",
+  "Required data not found": "Required data not found",
+  "Payment withdraw failed": "Payment withdraw failed"
 }

@@ -152,22 +152,6 @@
   "Images not found": "Images introuvables",
   "Error": "Erreur",
   "Internal Server Error": "Erreur interne du serveur",
-  "amenities": {
-    "bathtub": "Baignoire",
-    "iron": "Fer à Repasser",
-    "wifi": "WiFi",
-    "game-console": "Console de Jeu",
-    "fans": "Ventilateurs",
-    "refrigerator": "Réfrigérateur",
-    "swimming-pool": "Piscine",
-    "hot-water": "Eau Chaude",
-    "wardrobe": "Garde-Robe",
-    "tv": "Télévision",
-    "air-conditioner": "Climatiseur",
-    "kitchen": "Cuisine",
-    "microwave": "Four à Micro-Ondes",
-    "spa": "Spa"
-  },
   "Amenities retrieved successfully": "Amenités récupérées avec succès",
   "Amenity added successfully": "Amenité ajoutée avec succès",
   "Amenities added successfully": "Aménités ajoutées avec succès",
@@ -247,5 +231,7 @@
   "Must provide appropiate data": "Doit fournir des données appropriées",
   "Disburse process failed" : "Le processus de décaissement a échoué",
   "Your property is currently booked, so you can not deactivate yourself now" : "Votre propriété est actuellement réservée, vous ne pouvez donc pas vous désactiver maintenant",
-  "User deleted successfully": "Utilisateur supprimé avec succès"
+  "User deleted successfully": "Utilisateur supprimé avec succès",
+  "Required data not found": "Données requises non trouvées",
+  "Payment withdraw failed": "Le retrait du paiement a échoué"
 }

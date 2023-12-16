@@ -302,62 +302,68 @@ const payInAmount = async (req, res) => {
 }
 
 const paymentStatus = async (req, res) => {
-  // Parse the data string into a JSON object
-  const data = JSON.parse(req.body.data);
   try {
-    console.log("==========>>>>>>>> Payment Status ==========>>>>>>>>", data);
-    logger.info({ "payment_status": data }, { "method": req.method, "url": req.originalUrl });
+    console.log("==========>>>>>>>> Payment Status ==========>>>>>>>>", req.body);
+    logger.info({ "payment_status": req.body }, { "method": req.method, "url": req.originalUrl });
+    const { data } = req.body
     const token = data?.invoice?.token
     const bookingId = data?.custom_data?.booking_id
     const userId = data?.custom_data?.user_id
     const residenceId = data?.custom_data?.residence_id
+    const paymentStatus = data?.status
+    const mode = data?.mode
 
-    const paymentDetails = await Payment.findOne({ token, bookingId, userId, residenceId });
-    if (paymentDetails && data?.status === 'completed' && data?.mode === 'live') {
-      const bookingDetails = await Booking.findById(paymentDetails.bookingId).populate('residenceId userId');
-      if (paymentDetails.status !== 'success') {
-        paymentDetails.status = 'success'
-        paymentDetails.paymentData.receipt_url = data?.receipt_url
-        await paymentDetails.save()
+    console.log("token---------->", token, bookingId, userId, residenceId, paymentStatus, mode, req.body?.data)
 
-        bookingDetails.paymentTypes = paymentDetails.paymentTypes
-        await bookingDetails.save()
-
-        const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.residenceCharge + " pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après l'enregistrement, il sera transféré sur votre compte"
-
-        const newNotification = {
-          message: hostMessage,
-          receiverId: paymentDetails.userId._id,
-          image: paymentDetails.userId.image,
-          linkId: paymentDetails.bookingId._id,
-          role: 'host',
-          type: 'booking'
-        }
-
-        const notification = await addNotification(newNotification)
-        const roomId = paymentDetails.hostId._id.toString()
-        io.to('room' + roomId).emit('host-notification', notification);
-
-        const userMessage = "Le paiement est réussi pour " + bookingDetails.residenceId.residenceName
-        io.to('room' + userId).emit('payment-notification', { status: "Successful", message: userMessage });
-        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment status successfully got', data: data }));
-      }
-      else {
-        const userMessage = "Le paiement est réussi pour " + bookingDetails.residenceId.residenceName
-        io.to('room' + userId).emit('payment-notification', { status: "Successful", message: userMessage });
-        return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment status successfully got', data: data }));
-      }
+    // if (!token || !bookingId || !userId || !residenceId) {
+    //   return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required data not found') }));
+    // }
+    const paymentDetails = await Payment.findOne({ token: token });
+    if (!paymentDetails) {
+     return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment details not found') }));
     }
-    // Rest of your code using the parsed JSON object 'data'
-    else {
-      const userMessage = "Quelque chose s'est mal passé, réessayez avec les informations appropriées"
-      io.to('room' + userId).emit('payment-notification', { status: "Failed", message: userMessage });
-      logger.error({ "message": "Payment data not found or already paid", "token": data.invoice.token, "payment info": data }, "Payment status error")
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment data not found' }));
+    console.log("paymentDetails---------->", paymentDetails)
+     const bookingDetails = await Booking.findById(bookingId).populate('residenceId userId');
+    if (paymentStatus==='completed' && mode==='live') {
+      paymentDetails.status = 'success'
+      paymentDetails.paymentData.receipt_url = data?.receipt_url
+      const paymentUpdated = await paymentDetails.save()
+      console.log("paymentUpdated---------->", paymentUpdated)
+
+      bookingDetails.paymentTypes = paymentDetails.paymentTypes
+      await bookingDetails.save()
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment status successfully got'}));
     }
+    return res.status(201).json(response({ status: 'Error', statusCode: '400', type: 'payment', message: 'Payment status can not change'}));
+
+    //   const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.residenceCharge + " pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après l'enregistrement, il sera transféré sur votre compte"
+
+    //   const newNotification = {
+    //     message: hostMessage,
+    //     receiverId: paymentDetails.userId._id,
+    //     image: paymentDetails.userId.image,
+    //     linkId: paymentDetails.bookingId._id,
+    //     role: 'host',
+    //     type: 'booking'
+    //   }
+
+    //   const notification = await addNotification(newNotification)
+    //   const roomId = paymentDetails.hostId._id.toString()
+    //   io.to('room' + roomId).emit('host-notification', notification);
+
+    //   const userMessage = "Le paiement est réussi pour " + bookingDetails.residenceId.residenceName
+    //   io.to('room' + userId).emit('payment-notification', { status: "Successful", message: userMessage });
+    
+    // }
+    // else {
+    //   const userMessage = "Quelque chose s'est mal passé, réessayez avec les informations appropriées"
+    //   io.to('room' + userId).emit('payment-notification', { status: "Failed", message: userMessage });
+    //   logger.error({ "message": "Payment data not found or already paid", "token": data.invoice.token, "payment info": data }, "Payment status error")
+    //   return res.status(404).json(response({ status: 'Error', statusCode: '404', message: 'Payment data not found' }));
+    // }
   }
   catch (error) {
-    io.to('room' + data?.custom_data?.user_id).emit('payment-notification', { status: "Failed", message: error.message });
+    io.to('room' + req.body?.data?.custom_data?.user_id).emit('payment-notification', { status: "Failed", message: error.message });
     logger.error(error, req.originalUrl)
     return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
   }
@@ -436,16 +442,17 @@ const takePayment = async (req, res) => {
       console.log("Error disburse token not created---------->")
       return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse token not created') }));
     }
-    // const userId = req.body.userId;
-    // const payout = await payoutDisburseAmount({ disburse_token, userId });
-    // console.log("payout---------->", payout)
-    // if (!payout) {
-    //   console.log("Error payout token not created---------->")
-    //   return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Disburse process failed') }));
-    // }
-    // hostIncome.pendingAmount = hostIncome.pendingAmount - amount;
-    // await hostIncome.save();
+    const payload = { "disburse_invoice": disburse_token, "disburse_id": req.body.userId }
+    const payoutResponce = await axios.post(payoutDisburseAmountUrl, payload, { headers });
+    console.log("payoutDisburseAmount---------->", payoutResponce.data)
+    if (payoutResponce?.data?.response_code === '00') {
+      hostIncome.pendingAmount = hostIncome.pendingAmount - amount;
+    await hostIncome.save();
     return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: req.t('Payment is successfully withdwwn from wallet'), data: disburse_token }));
+    }
+    else {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment withdraw failed') }));
+    }
   }
   catch (error) {
     logger.error(error, req.originalUrl)
