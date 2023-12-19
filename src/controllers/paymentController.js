@@ -81,7 +81,7 @@ const createPayInToken = async (req, res) => {
           "residence_id": bookingDetails.residenceId._id.toString(),
         },
         "actions": {
-          "callback_url": `http://${process.env.API_DNS_NAME}/api/payments/payment-status`
+          "callback_url": `${process.env.API_DNS_NAME}/api/payments/payment-status`
         }
       }
       console.log("payload---------->", payload)
@@ -136,6 +136,7 @@ const payInAmount = async (req, res) => {
     }
     var payload;
     var payInURL;
+    var account;
     if (paymentTypes === 'test' && process.env.NODE_ENV === 'development') {
       paymentDetails.status = 'success'
       paymentDetails.paymentMethod = paymentTypes
@@ -195,6 +196,7 @@ const payInAmount = async (req, res) => {
 
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Card details not found') }));
       }
+      account = cardNumber
       console.log('card info------>', req.body)
       payload = {
         "full_name": fullName,
@@ -212,6 +214,7 @@ const payInAmount = async (req, res) => {
       if (!fullName || !email || !phoneNumber || !otp || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Orange Money details not found') }));
       }
+      account = phoneNumber
       payload = {
         "orange_money_ci_customer_fullname": fullName,
         "orange_money_ci_email": email,
@@ -226,6 +229,7 @@ const payInAmount = async (req, res) => {
       if (!fullName || !email || !phoneNumber || !provider || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required MTN details not found') }));
       }
+      account = phoneNumber
       payload = {
         "mtn_ci_customer_fullname": fullName,
         "mtn_ci_email": email,
@@ -241,6 +245,7 @@ const payInAmount = async (req, res) => {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Moov details not found') }));
       }
       console.log("moov-ci---------->", req.body)
+      account = phoneNumber
       payload = {
         "moov_ci_customer_fullname": fullName,
         "moov_ci_email": email,
@@ -255,6 +260,7 @@ const payInAmount = async (req, res) => {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Wave details not found') }));
       }
       console.log("wave-ci---------->", req.body)
+      account = phoneNumber
       payload = {
         "wave_ci_fullName": fullName,
         "wave_ci_email": email,
@@ -268,6 +274,8 @@ const payInAmount = async (req, res) => {
       if (!fullName || !email || !phoneNumber || !password || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Paydunya details not found') }));
       }
+      console.log("paydunya---------->", req.body)
+      account = phoneNumber
       payload = {
         "customer_name": fullName,
         "customer_email": email,
@@ -284,6 +292,9 @@ const payInAmount = async (req, res) => {
     const paydunyaResponse = await axios.post(payInURL, payload);
     console.log("paydunyaResponse---------->", paydunyaResponse.data)
     if (paydunyaResponse.data.success) {
+      paymentDetails.paymentMethod = paymentTypes
+      paymentDetails.accountNo = account
+      await paymentDetails.save()
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully, waiting for Paydunya confirmation', data: paydunyaResponse.data }));
     }
     else {
@@ -320,11 +331,11 @@ const paymentStatus = async (req, res) => {
     // }
     const paymentDetails = await Payment.findOne({ token: token });
     if (!paymentDetails) {
-     return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment details not found') }));
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment details not found') }));
     }
     console.log("paymentDetails---------->", paymentDetails)
-     const bookingDetails = await Booking.findById(bookingId).populate('residenceId userId');
-    if (paymentStatus==='completed' && mode==='live') {
+    const bookingDetails = await Booking.findById(bookingId).populate('residenceId userId');
+    if (paymentStatus === 'completed' && mode === 'live') {
       paymentDetails.status = 'success'
       paymentDetails.paymentData.receipt_url = data?.receipt_url
       const paymentUpdated = await paymentDetails.save()
@@ -332,9 +343,9 @@ const paymentStatus = async (req, res) => {
 
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
-      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment status successfully got'}));
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment status successfully got' }));
     }
-    return res.status(201).json(response({ status: 'Error', statusCode: '400', type: 'payment', message: 'Payment status can not change'}));
+    return res.status(201).json(response({ status: 'Error', statusCode: '400', type: 'payment', message: 'Payment status can not change' }));
 
     //   const hostMessage = paymentDetails.userId.fullName + " a payé " + paymentDetails.paymentData.residenceCharge + " pour " + paymentDetails.residenceId.residenceName + " pour l'ID de réservation : " + paymentDetails.bookingId.bookingId + ", après l'enregistrement, il sera transféré sur votre compte"
 
@@ -353,7 +364,7 @@ const paymentStatus = async (req, res) => {
 
     //   const userMessage = "Le paiement est réussi pour " + bookingDetails.residenceId.residenceName
     //   io.to('room' + userId).emit('payment-notification', { status: "Successful", message: userMessage });
-    
+
     // }
     // else {
     //   const userMessage = "Quelque chose s'est mal passé, réessayez avec les informations appropriées"
@@ -392,19 +403,15 @@ const createDisburseToken = async (data) => {
   }
 }
 
-const payoutDisburseAmount = async (data) => {
+const payoutDisburseAmount = async (disburseInvoice, userId) => {
   try {
-    if (!data.disburse_invoice) {
-      return 'Disburse invoice not found'
+    if (!disburseInvoice || !userId) {
+      return 'Required data not found'
     }
-    const payload = { "disburse_invoice": data.disburse_invoice, "disburse_id": data?.bookingId }
+    const payload = { "disburse_invoice": disburseInvoice, "disburse_id": userId }
     const response = await axios.post(payoutDisburseAmountUrl, payload, { headers });
-    if (response?.data?.response_code === '00') {
-      return true;
-    }
-    else {
-      return false;
-    }
+
+    return response.data;
   }
   catch (error) {
     console.error(error);
@@ -447,8 +454,8 @@ const takePayment = async (req, res) => {
     console.log("payoutDisburseAmount---------->", payoutResponce.data)
     if (payoutResponce?.data?.response_code === '00') {
       hostIncome.pendingAmount = hostIncome.pendingAmount - amount;
-    await hostIncome.save();
-    return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: req.t('Payment is successfully withdwwn from wallet'), data: disburse_token }));
+      await hostIncome.save();
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: req.t('Payment is successfully withdwwn from wallet'), data: disburse_token }));
     }
     else {
       return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Payment withdraw failed') }));

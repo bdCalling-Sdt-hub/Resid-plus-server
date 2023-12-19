@@ -9,6 +9,7 @@ const paymentSchema = new mongoose.Schema({
     paymentTypes: { type: String, enum: ['half-payment', 'full-payment', 'pending'], default: 'pending' },
     token: { type: String, required: true },
     paymentMethod : { type: String, required: false },
+    accountNo : { type: String, required: false },
     status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
 },
     { timestamps: true },

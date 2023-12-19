@@ -262,7 +262,7 @@ const signIn = async (req, res) => {
     }
 
     //Token, set the Cokkie
-    const accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activityId }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '12h' });
+    const accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activityId }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '30d' });
 
     //Success response
     res.status(200).json(response({ statusCode: 200, message: req.t('User logged in successfully'), status: "OK", type: "user", data: user, token: accessToken }));

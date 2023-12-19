@@ -13,6 +13,8 @@ const options = { new: true };
 const logger = require("../helpers/logger");
 const axios = require('axios');
 const sendSMS = require("../helpers/sendMessage");
+const { createDisburseToken, payoutDisburseAmount } = require("./paymentController");
+const e = require("cors");
 require('dotenv').config()
 
 const calculateTimeAndPrice = async (req, res) => {
@@ -512,7 +514,7 @@ const cancelBookingByUser = async (req, res) => {
 
     if (status === "cancelled") {
 
-      if ((bookingDetails.status === 'pending') || (bookingDetails.status === 'reserved') && (bookingDetails.paymentTypes === 'unknown')) {
+      if ((bookingDetails.status === 'pending') || ((bookingDetails.status === 'reserved') && (bookingDetails.paymentTypes === 'unknown'))) {
         bookingDetails.status = status
         bookingDetails.save()
         const hostMessage = bookingDetails.userId.fullName + ' demande de réservation annulée pour ' + bookingDetails.residenceId.residenceName
@@ -528,11 +530,13 @@ const cancelBookingByUser = async (req, res) => {
         const roomId = bookingDetails.hostId._id.toString()
         console.log('room --->', roomId)
         io.to('room' + roomId).emit('host-notification', hostNotification);
-        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking cancelled successfully.'), data: bookingDetails }));
+        return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking request cancelled successfully.'), data: bookingDetails }));
       }
       else if (bookingDetails.status === 'reserved' && bookingDetails.paymentTypes !== 'unknown') {
         const userPayment = await Payment.findOne({ bookingId: bookingDetails._id, userId: checkUser._id, status: "success" }).sort({ createdAt: -1 });
         if (!userPayment || userPayment.paymentTypes === 'pending') {
+          bookingDetails.status = status
+          bookingDetails.save()
           return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'payment', message: req.t('Payment has not done yet') }));
         }
         else {
@@ -548,38 +552,25 @@ const cancelBookingByUser = async (req, res) => {
 
           // Calculate the time that is 40% of the duration from paymentTime
           const fortyPercentTime = new Date(paymentTime.getTime() + fortyPercentInMillis);
+
+          // Calculate the duration representing 60% of the total duration
+          const eightyPercentInMillis = totalDurationInMillis * 0.8;
+
+          // Calculate the time that is 60% of the duration from paymentTime
+          const eightyPercentTime = new Date(paymentTime.getTime() + eightyPercentInMillis);
+
           const stayMoreThanTwoDays = bookingDetails.totalTime.days > 2
+          var paid = false
+          var amount;
+          var message;
 
           if (fortyPercentTime < currentTime) {
-            var income = await Income.findOne({ hostId: checkUser._id })
-            if (!income) {
-              income = new Income({
-                hostId: checkUser._id,
-              })
-            }
-            const amount = Math.ceil(bookingDetails.totalAmount * 0.98)
-            income.pendingAmount += amount
-            income.totalIncome += amount
-            await income.save()
-
-            bookingDetails.status = status
-            bookingDetails.save()
-            residence_details.status = 'active'
-            await residence_details.save()
-            return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('You have been refunded excluding refund charge. Please check your wallet'), data: bookingDetails }));
+            amount = bookingDetails.totalAmount * 0.98
+            message = req.t('You have been refunded excluding refund charge. Please check your mobile account')
           }
           else if (stayMoreThanTwoDays && fortyPercentTime > currentTime) {
-            var income = await Income.findOne({ hostId: checkUser._id })
-            if (!income) {
-              income = new Income({
-                hostId: checkUser._id,
-              })
-            }
-            const amount = Math.ceil(bookingDetails.totalAmount * 0.48)
-            income.pendingAmount += amount
-            income.totalIncome += amount
-            await income.save()
-
+            amount = Math.ceil(bookingDetails.totalAmount * 0.48)
+            message = req.t('You have been refunded excluding 50% charge. Please check your mobile account')
             const hostIncome = await Income.findOne({ hostId: bookingDetails.hostId._id })
             if (!hostIncome) {
               hostIncome = new Income({
@@ -616,48 +607,52 @@ const cancelBookingByUser = async (req, res) => {
             }
             const superAdminNotification = await addNotification(superAdminNotif)
             io.emit('super-admin-notification', superAdminNotification);
-
-            bookingDetails.status = status
-            bookingDetails.save()
-
-            residence_details.status = 'active'
-            await residence_details.save()
-
-            return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('You have been refunded excluding refund charge. Please check your wallet'), data: bookingDetails }));
+          }
+          else if (fortyPercentTime > currentTime && eightyPercentTime < currentTime) {
+            amount = bookingDetails.residenceCharge
+            message = req.t('You have been refunded excluding service charge. Please check your mobile account')
           }
           else {
-            var income = await Income.findOne({ hostId: bookingDetails.hostId._id })
+            bookingDetails.status = status
+            bookingDetails.save()
+            residence_details.status = 'active'
+            await residence_details.save()
+            return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking request cancelled, no refund possible as the reburse payment time is over.'), data: bookingDetails }));
+          }
+          if (amount >= 200) {
+            const data = {
+              account_alias: userPayment?.accountNo,
+              amount: amount,
+              withdraw_mode: userPayment?.paymentMethod
+            }
+            const disburseToken = await createDisburseToken(data)
+            console.log('disburseToken', disburseToken)
+            if (disburseToken) {
+              const paymentStatus = await payoutDisburseAmount(disburseToken, userPayment?.paymentMethod)
+              console.log('paymentStatus', paymentStatus)
+              if (paymentStatus?.response_code === '00') {
+                paid = true
+              }
+            }
+          }
+          if (amount < 200 || !paid) {
+            var income = await Income.findOne({ hostId: checkUser._id })
             if (!income) {
               income = new Income({
-                hostId: bookingDetails.hostId._id,
+                hostId: checkUser._id,
               })
             }
-            const amount = bookingDetails.residenceCharge
             income.pendingAmount += amount
             income.totalIncome += amount
             await income.save()
 
-            const hostMessage = bookingDetails.userId.fullName + ' demande de réservation annulée pour ' + bookingDetails.residenceId.residenceName + ' et tu as été remboursé ' + amount + ' FCFA. Veuillez vérifier votre portefeuille'
-            const newNotification = {
-              message: hostMessage,
-              receiverId: bookingDetails.hostId._id,
-              image: bookingDetails.userId.image,
-              linkId: bookingDetails._id,
-              type: 'booking',
-              role: 'host'
-            }
-            const hostNotification = await addNotification(newNotification)
-            const roomId = bookingDetails.hostId._id.toString()
-            io.to('room' + roomId).emit('host-notification', hostNotification);
-
-            bookingDetails.status = status
-            bookingDetails.save()
-
-            residence_details.status = 'active'
-            await residence_details.save()
-
-            return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking request cancelled but as the time frame specified by the refund policy has expired, so no refund can be processed at this time'), data: bookingDetails }));
           }
+
+          bookingDetails.status = status
+          bookingDetails.save()
+          residence_details.status = 'active'
+          await residence_details.save()
+          return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: message, data: bookingDetails }));
         }
       }
       else {
@@ -681,7 +676,7 @@ const refundPolicy = async (req, res) => {
     const bookingDetails = await Booking.findById(id).populate('residenceId userId hostId');
 
     if ((!bookingDetails || bookingDetails.isDeleted) && bookingDetails.paymentTypes !== 'unknown') {
-      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: req.t('Refund details not available') }));
+      return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'booking', message: req.t('Refund details not available') }))
     }
     const userPayment = await Payment.findOne({ bookingId: bookingDetails._id, userId: req.body.userId, status: "success" }).sort({ createdAt: -1 });
 
