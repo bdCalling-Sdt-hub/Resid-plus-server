@@ -233,5 +233,9 @@
   "Your property is currently booked, so you can not deactivate yourself now" : "Votre propriété est actuellement réservée, vous ne pouvez donc pas vous désactiver maintenant",
   "User deleted successfully": "Utilisateur supprimé avec succès",
   "Required data not found": "Données requises non trouvées",
-  "Payment withdraw failed": "Le retrait du paiement a échoué"
+  "Payment withdraw failed": "Le retrait du paiement a échoué",
+  "Must be 18 years old":"Doit avoir 18 ans",
+  "You have been refunded excluding service charge. Please check your mobile account": "Vous avez été remboursé hors frais de service. Veuillez vérifier votre compte mobile",
+  "You have been refunded excluding 50% charge. Please check your mobile account": "Vous avez été remboursé hors frais de 50%. Veuillez vérifier votre compte mobile",
+  "You have been refunded excluding refund charge. Please check your mobile account": "Vous avez été remboursé hors frais de remboursement. Veuillez vérifier votre compte mobile"
 }

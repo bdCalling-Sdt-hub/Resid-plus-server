@@ -13,10 +13,15 @@ function validatePassword(password) {
   return password.length >= 8 && hasNumber && (hasLetter || hasSpecialChar);
 }
 
-function validateDate(dateString) {
-  var date = new Date(dateString);
-  return !isNaN(date.getTime());
+function validateDateOfBirth(dateString) {
+  const dob = new Date(dateString);
+  const minAge = 18;
+  const now = new Date();
+  const diff = now - dob;
+  const age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25)); // Approximate age
+  return age >= minAge;
 }
+
 
 const validationMiddleware = async (req, res, next) => {
   try {
@@ -24,7 +29,11 @@ const validationMiddleware = async (req, res, next) => {
 
     //let errors = [];
     console.log(req.body);
-    if (!fullName || !validateEmail(email) || !validateDate(dateOfBirth) || !validatePassword(password) || !role || !country) {
+    if(!validateDateOfBirth(dateOfBirth)){
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must be 18 years old" }));
+    }
+
+    if (!fullName || !validateEmail(email) || !validatePassword(password) || !role || !country) {
       return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must provide appropiate data" }));
     }
     // if (!/^\+22[156983]\d{6,10}$/.test(phoneNumber)) {
