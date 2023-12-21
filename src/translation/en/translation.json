@@ -237,5 +237,6 @@
   "Must be 18 years old": "Must be 18 years old",
   "You have been refunded excluding service charge. Please check your mobile account": "You have been refunded excluding service charge. Please check your mobile account",
   "You have been refunded excluding 50% charge. Please check your mobile account": "You have been refunded excluding 50% charge. Please check your mobile account",
-  "You have been refunded excluding refund charge. Please check your mobile account": "You have been refunded excluding refund charge. Please check your mobile account"
+  "You have been refunded excluding refund charge. Please check your mobile account": "You have been refunded excluding refund charge. Please check your mobile account",
+  "PaymentGateway retrieved successfully":"PaymentGateway retrieved successfully"
 }

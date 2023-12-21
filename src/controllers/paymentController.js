@@ -209,6 +209,79 @@ const payInAmount = async (req, res) => {
       }
       payInURL = 'https://app.paydunya.com/api/v1/softpay/card'
     }
+    else if (paymentTypes === 'orange-money-senegal') {
+      const { fullName, email, phoneNumber, otp, token } = req.body
+      if (!fullName || !email || !phoneNumber || !otp || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Orange Money details not found') }));
+      }
+      account = phoneNumber
+      payload = {
+        "customer_name": fullName,
+        "customer_email": email,
+        "phone_number": phoneNumber,
+        "authorization_code": otp,
+        "invoice_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/orange-money-senegal'
+    }
+    else if (paymentTypes === 'free-money-senegal') {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Orange Money details not found') }));
+      }
+      account = phoneNumber
+      payload = {
+        "customer_name": fullName,
+        "customer_email": email,
+        "phone_number": phoneNumber,
+        "invoice_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/free-money-senegal'
+    }
+    else if (paymentTypes === 'expresso-senegal') {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Orange Money details not found') }));
+      }
+      account = phoneNumber
+      payload = {
+        "expresso_sn_fullName": fullName,
+        "expresso_sn_email": email,
+        "expresso_sn_phone": phoneNumber,
+        "payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/expresso-senegal'
+    }
+    else if (paymentTypes === 'wave-senegal') {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Wave details not found') }));
+      }
+      console.log("wave-senegal---------->", req.body)
+      account = phoneNumber
+      payload = {
+        "wave_senegal_fullName": fullName,
+        "wave_senegal_email": email,
+        "wave_senegal_phone": phoneNumber,
+        "wave_senegal_payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/wave-senegal'
+    }
+    else if (paymentTypes === 'wizall-money-senegal') {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Wave details not found') }));
+      }
+      console.log("wizall-money-senegal---------->", req.body)
+      account = phoneNumber
+      payload = {
+        "customer_name": fullName,
+        "customer_email": email,
+        "phone_number": phoneNumber,
+        "invoice_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/wizall-money-senegal'
+    }
     else if (paymentTypes === 'orange-money-ci') {
       const { fullName, email, phoneNumber, otp, token } = req.body
       if (!fullName || !email || !phoneNumber || !otp || !token) {
@@ -268,6 +341,129 @@ const payInAmount = async (req, res) => {
         "wave_ci_payment_token": token
       }
       payInURL = 'https://app.paydunya.com/api/v1/softpay/wave-ci'
+    }
+    else if (paymentTypes === 'orange-money-burkina') {
+      const { fullName, email, phoneNumber, otp, token } = req.body
+      if (!fullName || !email || !phoneNumber || !otp || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Orange Money details not found') }));
+      }
+      account = phoneNumber
+      payload = {
+        "name_bf": fullName,
+        "email_bf": email,
+        "phone_bf": phoneNumber,
+        "otp_code": otp,
+        "payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/orange-money-burkina'
+    }
+    else if (paymentTypes === 'moov-burkina') {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Moov details not found') }));
+      }
+      console.log("moov-burkina---------->", req.body)
+      account = phoneNumber
+      payload = {
+        "moov_burkina_faso_fullName": fullName,
+        "moov_burkina_faso_email": email,
+        "moov_burkina_faso_phone_number": phoneNumber,
+        "moov_burkina_faso_payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/moov-burkina'
+    }
+    else if (paymentTypes === 'moov-benin') {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Moov details not found') }));
+      }
+      console.log("moov-benin---------->", req.body)
+      account = phoneNumber
+      payload = {
+        "moov_benin_customer_fullname": fullName,
+        "moov_benin_email": email,
+        "moov_benin_phone_number": phoneNumber,
+        "payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/moov-benin'
+    }
+    else if (paymentTypes === 'mtn-benin') {
+      const { fullName, email, phoneNumber, provider, token } = req.body
+      if (!fullName || !email || !phoneNumber || !provider || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required MTN details not found') }));
+      }
+      account = phoneNumber
+      payload = {
+        "mtn_benin_customer_fullname": fullName,
+        "mtn_benin_email": email,
+        "mtn_benin_phone_number": phoneNumber,
+        "mtn_benin_wallet_provider": provider,
+        "payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/mtn-benin'
+    }
+    else if (paymentTypes === 't-money-togo') {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Moov details not found') }));
+      }
+      console.log("t-money-togo---------->", req.body)
+      account = phoneNumber
+      payload = {
+        "name_t_money": fullName,
+        "email_t_money": email,
+        "phone_t_money": phoneNumber,
+        "payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/t-money-togo'
+    }
+    else if (paymentTypes === 'moov-togo') {
+      const { fullName, email, phoneNumber, token, address } = req.body
+      if (!fullName || !email || !phoneNumber || !address || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Moov details not found') }));
+      }
+      console.log("moov-togo---------->", req.body)
+      account = phoneNumber
+      payload = {
+        "moov_togo_customer_fullname": fullName,
+        "moov_togo_email": email,
+        "moov_togo_phone_number": phoneNumber,
+        "moov_togo_customer_address": address,
+        "payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/moov-togo'
+    }
+    else if (paymentTypes === 'orange-money-mali') {
+      const { fullName, email, phoneNumber, address,otp, token } = req.body
+      if (!fullName || !email || !phoneNumber || !address || !otp || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Orange Money details not found') }));
+      }
+      account = phoneNumber
+      payload = {
+        "orange_money_mali_customer_fullname": fullName,
+        "orange_money_mali_email": email,
+        "orange_money_mali_phone_number": phoneNumber,
+        "orange_money_mali_customer_address":address,
+        "orange_money_mali_wallet_otp": otp,
+        "ipayment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/orange-money-mali'
+    }
+    else if (paymentTypes === 'moov-mali') {
+      const { fullName, email, phoneNumber, address, token } = req.body
+      if (!fullName || !email || !phoneNumber || !address || !token) {
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Moov details not found') }));
+      }
+      console.log("moov-mali---------->", req.body)
+      account = phoneNumber
+      payload = {
+        "moov_ml_customer_fullname": fullName,
+        "moov_ml_email": email,
+        "moov_ml_phone_number": phoneNumber,
+        "moov_ml_customer_address": address,
+        "payment_token": token
+      }
+      payInURL = 'https://app.paydunya.com/api/v1/softpay/moov-mali'
     }
     else if (paymentTypes === 'paydunya') {
       const { fullName, email, phoneNumber, password, token } = req.body
