@@ -428,11 +428,11 @@ mongoose.connect(process.env.MONGODB_CONNECTION, {
 // Call seeding functions
 const seedDatabase = async () => {
   try {
-    //await dropDatabase(); 
-    //await seedAmenities();
-    //await seedCategories();
-    //await seedCountries();
-    //await seedUsers();
+    await dropDatabase(); 
+    await seedAmenities();
+    await seedCategories();
+    await seedCountries();
+    await seedUsers();
     await seedPaymentGateways();
     console.log('------------> Database seeding completed! <------------');
   } catch (err) {
