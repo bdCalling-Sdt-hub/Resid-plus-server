@@ -9,7 +9,6 @@ const { addNotification, getAllNotification } = require("./notificationControlle
 const logger = require("../helpers/logger");
 const Category = require("../models/Category");
 const Country = require("../models/Country");
-const ObjectId = require('mongoose').Types.ObjectId;
 
 //Add residence
 const addResidence = async (req, res) => {
@@ -188,12 +187,9 @@ const allResidence = async (req, res) => {
       filter.$and.push({ reUpload: true });
     }
 
-    if (country !== 'null') {
-      // Check if the received country value is not the string "null"
-      if (ObjectId.isValid(country)) {
-        filter.$and = filter.$and || [];
-        filter.$and.push({ country: ObjectId(country) });
-      }
+    if (country!==undefined && country!=='') {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ country: country });
     }
 
     let residences = [];

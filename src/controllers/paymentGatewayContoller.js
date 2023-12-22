@@ -31,7 +31,7 @@ const allPaymentGateways = async (req, res) => {
       );
     }
 
-    data = await PaymentGateway.findOne({ country: checkUser.country });
+    data = await PaymentGateway.findOne({ country: checkUser.country }).populate('country', 'countryName');
     return res.status(200).json(
       response({
         status: 'OK',
