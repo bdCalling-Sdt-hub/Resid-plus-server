@@ -119,6 +119,32 @@ const createPayInToken = async (req, res) => {
   }
 }
 
+const confirmPayment = async (req, res) => {
+  try {
+    const { authorization_code, phone_number, transaction_id } = req.body;
+    if (!authorization_code || !phone_number || !transaction_id) {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: 'Required fields not found' }));
+    }
+    const payload = {
+      "transaction_id": transaction_id,
+      "token": authorization_code,
+      "phone_number": phone_number
+    }
+    const paydunyaResponse = await axios.post('https://app.paydunya.com/api/v1/softpay/wizall-money-senegal/confirm', payload, { headers });
+    if (paydunyaResponse.data.success) {
+      return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment completed successfully.', data: paydunyaResponse.data }));
+    }
+    else {
+      return res.status(400).json(response({ status: 'Error', statusCode: '400', message: paydunyaResponse.data }));
+    }
+  }
+  catch (error) {
+    logger.error(error)
+    console.error(error);
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
+  }
+}
+
 const payInAmount = async (req, res) => {
   console.log("payInAmount---------->", req.body, req.query.paymentTypes)
   try {
@@ -298,8 +324,8 @@ const payInAmount = async (req, res) => {
       payInURL = 'https://app.paydunya.com/api/v1/softpay/orange-money-ci'
     }
     else if (paymentTypes === 'mtn-ci') {
-      const { fullName, email, phoneNumber, provider, token } = req.body
-      if (!fullName || !email || !phoneNumber || !provider || !token) {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required MTN details not found') }));
       }
       account = phoneNumber
@@ -307,7 +333,7 @@ const payInAmount = async (req, res) => {
         "mtn_ci_customer_fullname": fullName,
         "mtn_ci_email": email,
         "mtn_ci_phone_number": phoneNumber,
-        "mtn_ci_wallet_provider": provider,
+        "mtn_ci_wallet_provider": "MTNCI",
         "payment_token": token
       }
       payInURL = 'https://app.paydunya.com/api/v1/softpay/mtn-ci'
@@ -388,8 +414,8 @@ const payInAmount = async (req, res) => {
       payInURL = 'https://app.paydunya.com/api/v1/softpay/moov-benin'
     }
     else if (paymentTypes === 'mtn-benin') {
-      const { fullName, email, phoneNumber, provider, token } = req.body
-      if (!fullName || !email || !phoneNumber || !provider || !token) {
+      const { fullName, email, phoneNumber, token } = req.body
+      if (!fullName || !email || !phoneNumber || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required MTN details not found') }));
       }
       account = phoneNumber
@@ -397,7 +423,7 @@ const payInAmount = async (req, res) => {
         "mtn_benin_customer_fullname": fullName,
         "mtn_benin_email": email,
         "mtn_benin_phone_number": phoneNumber,
-        "mtn_benin_wallet_provider": provider,
+        "mtn_benin_wallet_provider": "MTNBENIN",
         "payment_token": token
       }
       payInURL = 'https://app.paydunya.com/api/v1/softpay/mtn-benin'
@@ -434,7 +460,7 @@ const payInAmount = async (req, res) => {
       payInURL = 'https://app.paydunya.com/api/v1/softpay/moov-togo'
     }
     else if (paymentTypes === 'orange-money-mali') {
-      const { fullName, email, phoneNumber, address,otp, token } = req.body
+      const { fullName, email, phoneNumber, address, otp, token } = req.body
       if (!fullName || !email || !phoneNumber || !address || !otp || !token) {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', message: req.t('Required Orange Money details not found') }));
       }
@@ -443,7 +469,7 @@ const payInAmount = async (req, res) => {
         "orange_money_mali_customer_fullname": fullName,
         "orange_money_mali_email": email,
         "orange_money_mali_phone_number": phoneNumber,
-        "orange_money_mali_customer_address":address,
+        "orange_money_mali_customer_address": address,
         "orange_money_mali_wallet_otp": otp,
         "ipayment_token": token
       }
@@ -763,4 +789,4 @@ const allPayment = async (req, res) => {
 };
 
 
-module.exports = { allPayment, createPayInToken, payInAmount, createDisburseToken, payoutDisburseAmount, takePayment, paymentStatus };
+module.exports = { allPayment, createPayInToken, payInAmount, createDisburseToken, payoutDisburseAmount, takePayment, paymentStatus, confirmPayment };

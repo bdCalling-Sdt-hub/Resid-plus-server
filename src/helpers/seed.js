@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Category = require('../models/Category');
 const Amenity = require('../models/Amenity');
 const Country = require('../models/Country');
+const PaymentGateway = require('../models/PaymentGateway');
 
 // Sample data
 const usersData = [
@@ -236,6 +237,124 @@ const categoriesData = [
   }
 ];
 
+const paymentGatewaysData = [
+  {
+      "country":"6569d157077a08fb0acc03c4",
+      "paymentGateways": [
+          {
+              "method": "MOOV",
+              "paymentTypes": "moov-mali",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/MOOV.png`,
+          },
+          {
+              "method": "ORANGE",
+              "paymentTypes": "orange-money-mali",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/Orange.png`,
+          }
+      ]
+  },
+  {
+      "country":"6569d157077a08fb0acc03c3",
+      "paymentGateways": [
+          {
+              "method": "MOOV",
+              "paymentTypes": "moov-togo",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/MOOV.png`,
+          },
+          {
+              "method": "T-MONEY",
+              "paymentTypes": "t-money-togo",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/TMoney.png`,
+          }
+      ]
+  },
+  {
+      "country":"6569d157077a08fb0acc03c2",
+      "paymentGateways": [
+          {
+              "method": "MOOV",
+              "paymentTypes": "moov-benin",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/MOOV.png`,
+          },
+          {
+              "method": "MTN",
+              "paymentTypes": "mtn-benin",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/MTN.png`,
+          }
+      ]
+  },
+  {
+      "country":"6569d157077a08fb0acc03c1",
+      "paymentGateways": [
+          {
+              "method": "ORANGE",
+              "paymentTypes": "orange-money-burkina",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/Orange.png`,
+          },
+          {
+              "method": "MOOV",
+              "paymentTypes": "moov-burkina",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/MOOV.png`,
+          }
+      ]
+  },
+  {
+      "country":"6569d157077a08fb0acc03c0",
+      "paymentGateways": [
+          {
+              "method": "ORANGE",
+              "paymentTypes": "orange-money-ci",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/Orange.png`,
+          },
+          {
+              "method": "MTN",
+              "paymentTypes": "mtn-ci",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/MTN.png`,
+          },
+          {
+              "method": "MOOV",
+              "paymentTypes": "moov-ci",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/MOOV.png`,
+          },
+          {
+              "method": "WAVE",
+              "paymentTypes": "wave-ci",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/Wave.png`,
+          }
+      ]
+  },
+  {
+      "country":"6569d157077a08fb0acc03bf",
+      "paymentGateways": [
+          {
+              "method": "ORANGE",
+              "paymentTypes": "orange-money-senegal",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/Orange.png`,
+          },
+          {
+              "method": "FREE-MONEY",
+              "paymentTypes": "free-money-senegal",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/FreeMoney.png`,
+          },
+          {
+              "method": "EXPRESSO",
+              "paymentTypes": "expresso-senegal",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/Expresso.png`,
+          },
+          {
+              "method": "WIZALL",
+              "paymentTypes": "wizall-money-senegal",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/Wizall.png`,
+          },
+          {
+              "method": "WAVE",
+              "paymentTypes": "wave-senegal",
+              "publicFileUrl": `${process.env.IMAGE_UPLOAD_BACKEND_DOMAIN}/uploads/paymentGateways/Wave.png`,
+          }
+      ]
+  }
+]
+
 // Function to drop the entire database
 const dropDatabase = async () => {
   try {
@@ -290,6 +409,16 @@ const seedCountries = async () => {
   }
 };
 
+const seedPaymentGateways = async () => {
+  try {
+    await PaymentGateway.deleteMany();
+    await PaymentGateway.insertMany(paymentGatewaysData);
+    console.log('Payment Gateways seeded successfully!');
+  } catch (err) {
+    console.error('Error seeding payment gateways:', err);
+  }
+};
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_CONNECTION, {
   useNewUrlParser: true,
@@ -299,11 +428,12 @@ mongoose.connect(process.env.MONGODB_CONNECTION, {
 // Call seeding functions
 const seedDatabase = async () => {
   try {
-    await dropDatabase(); 
-    await seedAmenities();
-    await seedCategories();
-    await seedCountries();
-    await seedUsers();
+    //await dropDatabase(); 
+    //await seedAmenities();
+    //await seedCategories();
+    //await seedCountries();
+    //await seedUsers();
+    await seedPaymentGateways();
     console.log('------------> Database seeding completed! <------------');
   } catch (err) {
     console.error('Error seeding database:', err);

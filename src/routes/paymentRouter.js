@@ -1,5 +1,5 @@
 const express = require('express');
-const {  allPayment, createPayInToken, payInAmount, takePayment, paymentStatus  } = require('../controllers/paymentController');
+const {  allPayment, createPayInToken, payInAmount, takePayment, paymentStatus, confirmPayment  } = require('../controllers/paymentController');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 
@@ -8,6 +8,7 @@ router.post('/get-payment-token', isValidUser,createPayInToken);
 router.post('/make-payment', isValidUser,payInAmount);
 router.post('/withdraw-payment', isValidUser,takePayment);
 router.post('/payment-status',paymentStatus);
+router.post('/confirm-payment/wizall',isValidUser,confirmPayment);
 router.get('/', isValidUser,allPayment);
 
 module.exports = router;

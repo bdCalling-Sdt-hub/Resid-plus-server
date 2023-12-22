@@ -8,7 +8,8 @@ const paymentGateway = new mongoose.Schema({
   },
   paymentGateways: [{
     method: { type: String, required: false, enum:["ORANGE", "MTN","MOOV","WAVE","EXPRESSO","WIZALL","FREE-MONEY","T-MONEY"] },
-    paymentTypes: { type: String, required: false }
+    paymentTypes: { type: String, required: false },
+    publicFileUrl: { type: String, required: false },
   }],
 },
   { timestamps: true },
