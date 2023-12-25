@@ -123,8 +123,14 @@ const calculateTimeAndPrice = async (req, res) => {
     const hoursCalculated = calculatedHours % 24;
     const totalHours = parseFloat(hoursCalculated.toFixed(2));
 
+    var residenceCharge;
     // Calculate total amount for days and remaining hours
-    const residenceCharge = Math.ceil(totalDays * dailyAmount + totalHours * hourlyAmount);
+    if(requestBy === 'half-day'){
+      residenceCharge = Math.ceil(hourlyAmount)
+    }
+    else{
+      residenceCharge = Math.ceil(totalDays * dailyAmount + totalHours * hourlyAmount);
+    }
     const serviceCharge = Math.ceil(0.06 * residenceCharge);
 
     // Calculate total amount
