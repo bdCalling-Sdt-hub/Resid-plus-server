@@ -626,6 +626,10 @@ const cancelBookingByUser = async (req, res) => {
             await residence_details.save()
             return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking request cancelled, no refund possible as the reburse payment time is over.'), data: bookingDetails }));
           }
+          var income = await Income.findOne({ hostId: checkUser._id })
+          if(income){
+            amount = amount + income.pendingAmount
+          }
           if (amount >= 200) {
             const data = {
               account_alias: userPayment?.accountNo,
@@ -639,6 +643,10 @@ const cancelBookingByUser = async (req, res) => {
               console.log('paymentStatus', paymentStatus)
               if (paymentStatus?.response_code === '00') {
                 paid = true
+                if(income){
+                  income.pendingAmount = 0
+                  await income.save()
+                }
               }
             }
           }
@@ -652,7 +660,6 @@ const cancelBookingByUser = async (req, res) => {
             income.pendingAmount += amount
             income.totalIncome += amount
             await income.save()
-
           }
 
           bookingDetails.status = status
