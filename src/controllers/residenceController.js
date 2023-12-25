@@ -203,7 +203,8 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit)
           .populate('amenities', 'translation')
           .populate('category', 'translation')
-          .populate('country', 'countryName');
+          .populate('country', 'countryName')
+          .sort({ createdAt: -1 });
 
         count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
       }
@@ -241,7 +242,8 @@ const allResidence = async (req, res) => {
           .skip((page - 1) * limit)
           .populate('amenities', 'translation')
           .populate('category', 'translation')
-          .populate('country', 'countryName');
+          .populate('country', 'countryName')
+          .sort({ createdAt: -1 });
         count = await Residence.countDocuments({ hostId: checkUser._id, isDeleted: false, ...filter });
       }
       else if (requestType === 'new') {
@@ -818,8 +820,9 @@ const residenceDashboard = async (req, res) => {
         .limit(limit)
         .skip((page - 1) * limit)
         .populate('amenities', 'translation')
-        .populate('category', 'translation');
-      count = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false });
+        .populate('category', 'translation')
+        .sort({ createdAt: -1 });
+      var count = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false });
 
       const active = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false, status: 'active' });
       const reserved = await Residence.countDocuments({ acceptanceStatus: acceptanceStatus, isDeleted: false, status: 'reserved' });
