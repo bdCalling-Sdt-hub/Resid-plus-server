@@ -548,10 +548,11 @@ const cancelBookingByUser = async (req, res) => {
         else {
           const residence_details = await Residence.findById(bookingDetails.residenceId._id)
           const paymentTime = new Date(userPayment.createdAt);
+          const checkInTime = new Date(bookingDetails.checkInTime)
           const currentTime = new Date();
 
           // Calculate the total duration in milliseconds between paymentTime and currentTime
-          const totalDurationInMillis = currentTime.getTime() - paymentTime.getTime();
+          const totalDurationInMillis = checkInTime.getTime() - paymentTime.getTime();
 
           // Calculate the duration representing 40% of the total duration
           const fortyPercentInMillis = totalDurationInMillis * 0.4;
