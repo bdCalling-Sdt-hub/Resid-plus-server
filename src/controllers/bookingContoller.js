@@ -380,7 +380,8 @@ const allBooking = async (req, res) => {
       data.bookings = await Booking.find({ isDeleted: false, ...filter })
         .limit(limit)
         .skip((page - 1) * limit)
-        .populate('userId hostId residenceId');
+        .populate('userId hostId residenceId')
+        .sort({ createdAt: -1 });
       count = await Booking.countDocuments({ isDeleted: false, ...filter });
 
       bookings = data
