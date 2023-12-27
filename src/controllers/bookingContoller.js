@@ -1020,7 +1020,7 @@ const updateBooking = async (req, res) => {
           const receiverNumber = bookingDetails.hostId.phoneNumber
           const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
 
-          //await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
+          await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
