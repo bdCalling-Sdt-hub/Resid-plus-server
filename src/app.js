@@ -106,24 +106,6 @@ app.use('/api/incomes', incomeRouter);
 app.use('/api/countries', countryRouter);
 app.use('/api/payment-gateways', paymentGatewayRouter);
 
-app.post('/send-sms', async (req, res) => {
-  const hostMessage = `Bonjour/Bonsoir\nCher propriétaire, vous venez de recevoir une offre de réservation sur RESDI+PRO merci de bien vouloir répondre dans les 10 prochaines minutes.\nAPP Link: https://play.google.com/store/apps/details?id=com.residco.residpro&pcampaignid=web_share. \nAssistance Résid+`
-  const accessToken = process.env.ORANGE_ACCESS_KEY
-
-  const receiverAddress = process.env.RECEIVER_ADDRESS
-
-  const senderAddress = process.env.ORANGE_SENDER_NUMBER_IVORY_COAST
-
-  const url = 'YOUR_SMS_API_ENDPOINT'; // Replace this with your SMS API endpoint
-
-  try {
-    await sendSMS(url, senderAddress, receiverAddress, hostMessage, accessToken);
-    res.status(200).json({ message: 'SMS sent successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to send SMS' });
-  }
-});
-
 //testing API is alive
 app.get('/test', (req, res) => {
   res.send(req.t('Back-end is responding!!'))

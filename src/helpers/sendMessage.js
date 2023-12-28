@@ -3,21 +3,17 @@ const logger = require('./logger');
 
 async function getAccessToken(authorizationHeader) {
   try {
-    const requestBody = new URLSearchParams();
-    requestBody.append('grant_type', 'client_credentials');
-
     const config = {
       headers: {
-        Authorization: authorizationHeader,
+        Authorization: "Basic "+authorizationHeader,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     };
 
-    const response = await axios.post('https://api.orange.com/oauth/v3/token', requestBody, config);
+    const response = await axios.post('https://api.orange.com/oauth/v3/token', {'grant_type':'client_credentials'}, config);
 
     if (response.status === 200) {
       const accessToken = response.data.access_token;
-      
       return accessToken;
     } else {
       logger.error(response, '-SMS sending error');
@@ -26,7 +22,7 @@ async function getAccessToken(authorizationHeader) {
     }
   } catch (error) {
     logger.error(error, '-SMS sending error');
-    console.error('Error fetching access token:', error.message);
+    console.error('Error fetching access token:', error);
     return null;
   }
 }
@@ -34,32 +30,36 @@ async function getAccessToken(authorizationHeader) {
 // Function to send SMS
 async function sendSMS(url,senderAddress, receiverAddress, message, basicToken) {
   try {
-    console.log('Sending SMS...', url,senderAddress, receiverAddress, message, accessToken);
+    console.log('Sending SMS...', url,senderAddress, receiverAddress, message);
     const accessToken = await getAccessToken(basicToken);
-    const response = await axios.post(
-      url,
-      {
-        outboundSMSMessageRequest: {
-          address: receiverAddress,
-          outboundSMSTextMessage: {
-            message: message,
+    if(accessToken){
+      console.log('Sending SMS...', accessToken)
+      const response = await axios.post(
+        url,
+        {
+          outboundSMSMessageRequest: {
+            address: receiverAddress,
+            outboundSMSTextMessage: {
+              message: message,
+            },
+            senderAddress: senderAddress,
           },
-          senderAddress: senderAddress,
         },
-      },
-      {
-        headers: {
-          'authorization': `Bearer ${accessToken}`, // Replace with your access token
-          'Content-Type': 'application/json',
-        },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`, // Replace with your access token
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      console.log('SMS response:', response);
+  
+      if (response.status === 201) {
+        console.log('SMS sent successfully');
+      } else {
+        logger.error(response, '-SMS sending error');
+        console.error('Failed to send SMS:', response);
       }
-    );
-
-    if (response.status === 201) {
-      console.log('SMS sent successfully');
-    } else {
-      logger.error(response, '-SMS sending error');
-      console.error('Failed to send SMS:', response);
     }
   } catch (error) {
     logger.error(error, '-SMS sending error');
