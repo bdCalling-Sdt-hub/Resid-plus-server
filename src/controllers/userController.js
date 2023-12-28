@@ -64,9 +64,9 @@ const signUp = async (req, res) => {
         country,
         oneTimeCode
       });
-      if(dateOfBirth!==null || dateOfBirth!==undefined){
+      if(dateOfBirth){
         if(!validateDateOfBirth(dateOfBirth)){
-          return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must be 18 years old" }));
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must be 18 years old 22" }));
         }
         else{
           user.dateOfBirth = dateOfBirth
@@ -75,6 +75,7 @@ const signUp = async (req, res) => {
       if(address){
         user.address = address
       }
+      console.log("---------------->",dateOfBirth)
       await user.save();
     }
 

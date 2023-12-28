@@ -17,6 +17,7 @@ async function getAccessToken(authorizationHeader) {
 
     if (response.status === 200) {
       const accessToken = response.data.access_token;
+      
       return accessToken;
     } else {
       logger.error(response, '-SMS sending error');

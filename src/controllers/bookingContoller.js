@@ -324,6 +324,38 @@ const addBooking = async (req, res) => {
       console.log('room --->', roomId)
       io.to('room' + roomId).emit('host-notification', notification);
 
+      const accessToken = process.env.ORANGE_ACCESS_KEY
+
+      const hostMessage = `Bonjour/Bonsoir\nCher propriétaire, vous venez de recevoir une offre de réservation sur RESDI+PRO merci de bien vouloir répondre dans les 10 prochaines minutes.\nAPP Link: https://play.google.com/store/apps/details?id=com.residco.residpro&pcampaignid=web_share. \nAssistance Résid+`
+
+      const hostInfo = await User.findById(residence_details.hostId._id).populate('country', 'countryCode').select('country')
+      var senderNumber;
+      if (hostInfo.country.countryCode === '+221') {
+        senderNumber = process.env.ORANGE_SENDER_NUMBER_SENEGAL || ''
+      }
+      else if (hostInfo.country.countryCode === '+225') {
+        senderNumber = process.env.ORANGE_SENDER_NUMBER_IVORY_COAST || ''
+      }
+      else if (hostInfo.country.countryCode === '+226') {
+        senderNumber = process.env.ORANGE_SENDER_NUMBER_BURKINA || ''
+      }
+      else if (hostInfo.country.countryCode === '+228') {
+        senderNumber = process.env.ORANGE_SENDER_NUMBER_TOGO || ''
+      }
+      else if (hostInfo.country.countryCode === '+229') {
+        senderNumber = process.env.ORANGE_SENDER_NUMBER_BENIN || ''
+      }
+      else if (hostInfo.country.countryCode === '+223') {
+        senderNumber = process.env.ORANGE_SENDER_NUMBER_MALI || ''
+      }
+
+      const receiverNumber = bookingDetails.hostId.phoneNumber
+      const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
+
+      if (senderNumber !== '') {
+        await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
+      }
+
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: req.t('Booking added successfully.'), data: booking }));
     }
     else {
@@ -1001,8 +1033,7 @@ const updateBooking = async (req, res) => {
 
           await hostIncome.save();
 
-          // const hostMessage = bookingDetails.userId.fullName + ' enregistré et en attente de la clé pour ' + bookingDetails.residenceId.residenceName + '. Les frais de séjour ont également été transférés sur votre portefeuille.'+
-          const hostMessage = `Bonjour/Bonsoir\nCher propriétaire, vous venez de recevoir une offre d'enregistrement d'un utilisateur sur RESDI+PRO, veuillez répondre dans les 10 prochaines minutes.\n{RESID+Link PRO}\nResid+Assistance`
+          const hostMessage = bookingDetails.userId.fullName + ' enregistré et en attente de la clé pour ' + bookingDetails.residenceId.residenceName + '. Les frais de séjour ont également été transférés sur votre portefeuille.'
 
           const newNotification = {
             message: hostMessage,
@@ -1016,36 +1047,6 @@ const updateBooking = async (req, res) => {
           const roomId = bookingDetails.hostId._id.toString()
           io.to('room' + roomId).emit('host-notification', hostNotification);
 
-          const accessToken = process.env.ORANGE_ACCESS_KEY
-
-          const hostInfo = await User.findById(bookingDetails.hostId._id).populate('country', 'countryCode').select('country')
-          var senderNumber;
-          process.env.ORANGE_SENDER_NUMBER
-          if (hostInfo.country.countryCode === '+221') {
-            senderNumber = process.env.ORANGE_SENDER_NUMBER_SENEGAL || ''
-          }
-          else if (hostInfo.country.countryCode === '+225') {
-            senderNumber = process.env.ORANGE_SENDER_NUMBER_IVORY_COAST || ''
-          }
-          else if (hostInfo.country.countryCode === '+226') {
-            senderNumber = process.env.ORANGE_SENDER_NUMBER_BURKINA || ''
-          }
-          else if (hostInfo.country.countryCode === '+228') {
-            senderNumber = process.env.ORANGE_SENDER_NUMBER_TOGO || ''
-          }
-          else if (hostInfo.country.countryCode === '+229') {
-            senderNumber = process.env.ORANGE_SENDER_NUMBER_BENIN || ''
-          }
-          else if (hostInfo.country.countryCode === '+223') {
-            senderNumber = process.env.ORANGE_SENDER_NUMBER_MALI || ''
-          }
-
-          const receiverNumber = bookingDetails.hostId.phoneNumber
-          const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
-
-          if (senderNumber !== '') {
-            await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
-          }
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {
