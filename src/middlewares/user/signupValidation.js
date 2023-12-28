@@ -29,8 +29,10 @@ const validationMiddleware = async (req, res, next) => {
 
     //let errors = [];
     console.log(req.body);
-    if(!validateDateOfBirth(dateOfBirth)){
-      return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must be 18 years old" }));
+    if(dateOfBirth!==null || dateOfBirth!==undefined){
+      if(!validateDateOfBirth(dateOfBirth)){
+        return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must be 18 years old" }));
+      }
     }
 
     if (!fullName || !validateEmail(email) || !validatePassword(password) || !role || !country) {

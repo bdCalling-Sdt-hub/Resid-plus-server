@@ -125,10 +125,10 @@ const calculateTimeAndPrice = async (req, res) => {
 
     var residenceCharge;
     // Calculate total amount for days and remaining hours
-    if(requestBy === 'half-day'){
+    if (requestBy === 'half-day') {
       residenceCharge = Math.ceil(hourlyAmount)
     }
-    else{
+    else {
       residenceCharge = Math.ceil(totalDays * dailyAmount + totalHours * hourlyAmount);
     }
     const serviceCharge = Math.ceil(0.06 * residenceCharge);
@@ -628,7 +628,7 @@ const cancelBookingByUser = async (req, res) => {
             return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking request cancelled, no refund possible as the reburse payment time is over.'), data: bookingDetails }));
           }
           var income = await Income.findOne({ hostId: checkUser._id })
-          if(income){
+          if (income) {
             amount = amount + income.pendingAmount
           }
           if (amount >= 200) {
@@ -644,7 +644,7 @@ const cancelBookingByUser = async (req, res) => {
               console.log('paymentStatus', paymentStatus)
               if (paymentStatus?.response_code === '00') {
                 paid = true
-                if(income){
+                if (income) {
                   income.pendingAmount = 0
                   await income.save()
                 }
@@ -1001,7 +1001,8 @@ const updateBooking = async (req, res) => {
 
           await hostIncome.save();
 
-          const hostMessage = bookingDetails.userId.fullName + ' enregistré et en attente de la clé pour ' + bookingDetails.residenceId.residenceName + '. Les frais de séjour ont également été transférés sur votre portefeuille.'
+          // const hostMessage = bookingDetails.userId.fullName + ' enregistré et en attente de la clé pour ' + bookingDetails.residenceId.residenceName + '. Les frais de séjour ont également été transférés sur votre portefeuille.'+
+          const hostMessage = `Bonjour/Bonsoir\nCher propriétaire, vous venez de recevoir une offre d'enregistrement d'un utilisateur sur RESDI+PRO, veuillez répondre dans les 10 prochaines minutes.\n{RESID+Link PRO}\nResid+Assistance`
 
           const newNotification = {
             message: hostMessage,
@@ -1016,11 +1017,35 @@ const updateBooking = async (req, res) => {
           io.to('room' + roomId).emit('host-notification', hostNotification);
 
           const accessToken = process.env.ORANGE_ACCESS_KEY
-          const senderNumber = process.env.ORANGE_SENDER_NUMBER
+
+          const hostInfo = await User.findById(bookingDetails.hostId._id).populate('country', 'countryCode').select('country')
+          var senderNumber;
+          process.env.ORANGE_SENDER_NUMBER
+          if (hostInfo.country.countryCode === '+221') {
+            senderNumber = process.env.ORANGE_SENDER_NUMBER_SENEGAL || ''
+          }
+          else if (hostInfo.country.countryCode === '+225') {
+            senderNumber = process.env.ORANGE_SENDER_NUMBER_IVORY_COAST || ''
+          }
+          else if (hostInfo.country.countryCode === '+226') {
+            senderNumber = process.env.ORANGE_SENDER_NUMBER_BURKINA || ''
+          }
+          else if (hostInfo.country.countryCode === '+228') {
+            senderNumber = process.env.ORANGE_SENDER_NUMBER_TOGO || ''
+          }
+          else if (hostInfo.country.countryCode === '+229') {
+            senderNumber = process.env.ORANGE_SENDER_NUMBER_BENIN || ''
+          }
+          else if (hostInfo.country.countryCode === '+223') {
+            senderNumber = process.env.ORANGE_SENDER_NUMBER_MALI || ''
+          }
+
           const receiverNumber = bookingDetails.hostId.phoneNumber
           const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
 
-          await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
+          if (senderNumber !== '') {
+            await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
+          }
           return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking edited successfully.'), data: bookingDetails }));
         }
         else {

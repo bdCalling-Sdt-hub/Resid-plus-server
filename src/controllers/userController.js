@@ -22,6 +22,15 @@ function validatePassword(password) {
   return password.length >= 8 && hasNumber && (hasLetter || hasSpecialChar);
 }
 
+function validateDateOfBirth(dateString) {
+  const dob = new Date(dateString);
+  const minAge = 18;
+  const now = new Date();
+  const diff = now - dob;
+  const age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25)); // Approximate age
+  return age >= minAge;
+}
+
 //Sign up
 const signUp = async (req, res) => {
   console.log(req.body)
@@ -42,27 +51,31 @@ const signUp = async (req, res) => {
         return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "User already exists" }));
       }
     }
-
-    //role as admin is not allowed to be signed-up
-    // if(role==='super-admin'){
-    //   return res.status(409).json(response({ statusCode: 200, message:req.t('You are not authorized to sign-up'), status: "OK" }));
-    // }
     else {
-      var dateOfBirth = new Date(dateOfBirth);
       oneTimeCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
       // Create the user in the database
-      user = await User.create({
+      user = new User({
         fullName,
         email,
         phoneNumber,
-        address,
-        dateOfBirth,
-        oneTimeCode,
         password,
         role,
-        country
+        country,
+        oneTimeCode
       });
+      if(dateOfBirth!==null || dateOfBirth!==undefined){
+        if(!validateDateOfBirth(dateOfBirth)){
+          return res.status(400).json(response({ status: 'Error', statusCode: '400', type: "sign-up", message: "Must be 18 years old" }));
+        }
+        else{
+          user.dateOfBirth = dateOfBirth
+        }
+      }
+      if(address){
+        user.address = address
+      }
+      await user.save();
     }
 
     if (user && (user.role === 'user' || user.role === 'host')) {
@@ -478,12 +491,11 @@ const updateProfile = async (req, res) => {
   try {
     let { fullName, phoneNumber, address, dateOfBirth } = req.body;
     if (dateOfBirth) {
-      dateOfBirth = new Date(dateOfBirth)
-      if (isNaN(dateOfBirth.getTime())) {
+      if (!validateDateOfBirth(dateOfBirth)) {
         if (req.file) {
           unlinkImages(req.file.path)
         }
-        return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message: req.t('Invalid date of birth') }));
+        return res.status(403).json(response({ status: 'Error', statusCode: '403', type: 'user', message: req.t('Must be 18 years old') }));
       }
     }
 
