@@ -328,7 +328,7 @@ const allResidenceForUser = async (req, res) => {
     const category = req.query.category || ''
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
     const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
-    const country = req.query.country || 'all'
+    const country = !req.query.country?'all':req.query.country
 
     //minPrice must be greater or equal 1
     const minPrice = Number(req.query.minPrice) || '';
@@ -365,11 +365,6 @@ const allResidenceForUser = async (req, res) => {
       filter.$and.push({ acceptanceStatus: acceptanceStatus });
     }
 
-    if (reUploaded === 'yes') {
-      filter.$and = filter.$and || [];
-      filter.$and.push({ reUpload: true });
-    }
-
     if (country !== 'all') {
       filter.$and = filter.$and || [];
       filter.$and.push({ country: country });
@@ -386,8 +381,7 @@ const allResidenceForUser = async (req, res) => {
       .populate('country', 'countryName')
       .sort({ createdAt: -1 });
 
-    count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
-
+    count = await Residence.countDocuments({ isDeleted: false, ...filter });
 
     return res.status(200).json(
       response({
@@ -422,58 +416,43 @@ const allResidenceForUser = async (req, res) => {
 
 const searchCredentials = async (req, res) => {
   try {
-    const checkUser = await User.findById(req.body.userId);
-    if (!checkUser || checkUser.status !== 'accepted') {
-      return res.status(404).json(
-        response({
-          status: 'Error',
-          statusCode: '404',
-          message: req.t('User not found'),
-        })
-      );
-    }
-    if (checkUser.role === 'user') {
-      const noOfUniqueBeds = await Residence.distinct('beds');
-      const minPriceResidence = await Residence.find().sort({ dailyAmount: 1 }).populate('dailyAmount').limit(1);
-      const maxPriceResidence = await Residence.find().sort({ dailyAmount: -1 }).populate('dailyAmount').limit(1);
-      const minPrice = minPriceResidence[0].dailyAmount;
-      const maxPrice = maxPriceResidence[0].dailyAmount;
-      const range = maxPrice - minPrice;
-      const priceRange = Math.ceil(range / 5);
-      let priceArray = [];
+    const noOfUniqueBeds = await Residence.distinct('beds');
+    const minPriceResidence = await Residence.find().sort({ dailyAmount: 1 }).populate('dailyAmount').limit(1);
+    const maxPriceResidence = await Residence.find().sort({ dailyAmount: -1 }).populate('dailyAmount').limit(1);
+    const minPrice = minPriceResidence[0].dailyAmount;
+    const maxPrice = maxPriceResidence[0].dailyAmount;
+    const range = maxPrice - minPrice;
+    const priceRange = Math.ceil(range / 5);
+    let priceArray = [];
 
-      if (priceRange === 0) {
-        priceArray = [{ min: minPrice, max: maxPrice }];
-      }
-      else {
-        for (let i = 0; i < 5; i++) {
-          const minRange = minPrice + priceRange * i;
-          const maxRange = minRange + priceRange;
-          priceArray.push({ min: minRange, max: maxRange });
-        }
-      }
-      const countries = await Country.find().select('countryName');
-      const categories = await Category.find().select('translation');
-
-      const data = {
-        noOfUniqueBeds,
-        priceArray,
-        countries,
-        categories
-      }
-      return res.status(200).json(
-        response({
-          status: 'OK',
-          statusCode: '200',
-          type: 'residence',
-          message: req.t('Search credentials retrieved successfully'),
-          data: data,
-        })
-      );
+    if (priceRange === 0) {
+      priceArray = [{ min: minPrice, max: maxPrice }];
     }
     else {
-      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to get all search credentials') }));
+      for (let i = 0; i < 5; i++) {
+        const minRange = minPrice + priceRange * i;
+        const maxRange = minRange + priceRange;
+        priceArray.push({ min: minRange, max: maxRange });
+      }
     }
+    const countries = await Country.find().select('countryName');
+    const categories = await Category.find().select('translation');
+
+    const data = {
+      noOfUniqueBeds,
+      priceArray,
+      countries,
+      categories
+    }
+    return res.status(200).json(
+      response({
+        status: 'OK',
+        statusCode: '200',
+        type: 'residence',
+        message: req.t('Search credentials retrieved successfully'),
+        data: data,
+      })
+    );
   }
   catch (error) {
     logger.error(error, req.originalUrl)

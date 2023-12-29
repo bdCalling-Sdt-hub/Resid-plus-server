@@ -339,9 +339,11 @@ const addBooking = async (req, res) => {
         senderNumber = process.env.ORANGE_SENDER_NUMBER_MALI || ''
       }
 
-      const receiverNumber = bookingDetails.hostId.phoneNumber
+      const receiverNumber = bookingDetails?.hostId?.phoneNumber
       const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
 
+      console.log('senderNumber----------->', senderNumber, receiverNumber, hostMessage)
+      
       if (senderNumber !== '') {
         await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
       }

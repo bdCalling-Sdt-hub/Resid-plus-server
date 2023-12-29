@@ -17,7 +17,7 @@ router.get('/', isValidUser, allResidence);
 router.put('/:id', [uploadUsers.array("photo", 5)], isValidUser, updateResidence);
 router.put('/:id/re-uploaded', [uploadUsers.array("photo", 5)], isValidUser, blockedResidenceUpdate);
 router.delete('/:id', isValidUser, deleteResidence);
-router.get('/search-credentials', isValidUser, searchCredentials);
+router.get('/search-credentials', searchCredentials);
 router.get('/:id', residenceDetails);
 router.get('/dashboard/status', isValidUser, residenceDashboard);
 
