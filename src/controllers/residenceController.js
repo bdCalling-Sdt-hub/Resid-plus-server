@@ -867,6 +867,7 @@ const blockedResidenceUpdate = async (req, res) => {
 //residences details
 const residenceDetails = async (req, res) => {
   try {
+    const id = req.params.id
     const residences = await Residence.findById(id).populate('amenities', 'translation').populate('category', 'translation').populate('hostId', 'fullName image phoneNumber email address');
 
     return res.status(200).json(
