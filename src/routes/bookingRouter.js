@@ -6,7 +6,7 @@ const router = express.Router();
 
 //Add booking
 router.post('/',isValidUser, addBooking);
-router.post('/calculate-time-and-amount', isValidUser, calculateTimeAndPrice)
+router.post('/calculate-time-and-amount', calculateTimeAndPrice)
 router.get('/:id', isValidUser, bookingDetails);
 router.get('/refund-policy/:id', isValidUser, refundPolicy);
 router.get('/', isValidUser, allBooking);

@@ -144,7 +144,7 @@ const allResidence = async (req, res) => {
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
     const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
     const reUploaded = req.query.reUpload || 'no'
-    const country = req.query.country || ''
+    const country = req.query.country || 'all'
 
     //minPrice must be greater or equal 1
     const minPrice = Number(req.query.minPrice) || '';
@@ -187,7 +187,7 @@ const allResidence = async (req, res) => {
       filter.$and.push({ reUpload: true });
     }
 
-    if (country!==undefined && country!=='') {
+    if (country !== 'all') {
       filter.$and = filter.$and || [];
       filter.$and.push({ country: country });
     }
@@ -288,6 +288,106 @@ const allResidence = async (req, res) => {
         }
       }
     }
+
+    return res.status(200).json(
+      response({
+        status: 'OK',
+        statusCode: '200',
+        type: 'residence',
+        message: req.t('Residences retrieved successfully'),
+        data: {
+          residences,
+          pagination: {
+            totalDocuments: count,
+            totalPage: Math.ceil(count / limit),
+            currentPage: page,
+            previousPage: page > 1 ? page - 1 : null,
+            nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
+          },
+        },
+      })
+    );
+  } catch (error) {
+    logger.error(error, req.originalUrl)
+    console.log(error);
+    return res.status(500).json(
+      response({
+        status: 'Error',
+        statusCode: '500',
+        message: req.t('Error getting residences'),
+      })
+    );
+  }
+};
+
+const allResidenceForUser = async (req, res) => {
+  try {
+    const search = req.query.search || '';
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const category = req.query.category || ''
+    const numberOfBeds = Number(req.query.numberOfBeds) || ''
+    const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
+    const country = req.query.country || 'all'
+
+    //minPrice must be greater or equal 1
+    const minPrice = Number(req.query.minPrice) || '';
+    const maxPrice = Number(req.query.maxPrice) || '';
+    const searchRegExp = new RegExp('.*' + search + '.*', 'i');
+    const filter = {
+      $or: [
+        { residenceName: { $regex: searchRegExp } },
+        { address: { $regex: searchRegExp } },
+        { city: { $regex: searchRegExp } },
+        { municipality: { $regex: searchRegExp } },
+      ],
+    };
+    if (minPrice && maxPrice) {
+      //console.log('------enterend price------')
+      filter.$and = filter.$and || [];
+      filter.$and.push({ dailyAmount: { $gte: minPrice, $lte: maxPrice } })
+    }
+    if (category) {
+      //console.log('------enterend category------')
+      filter.$and = filter.$and || [];
+      filter.$and.push({ category: category });
+    }
+
+    if (numberOfBeds) {
+      //console.log('------enterend no..beds------')
+      filter.$and = filter.$and || [];
+      filter.$and.push({ beds: numberOfBeds });
+    }
+
+    if (acceptanceStatus !== 'all') {
+      //console.log('Acceptance Status------>', acceptanceStatus)
+      filter.$and = filter.$and || [];
+      filter.$and.push({ acceptanceStatus: acceptanceStatus });
+    }
+
+    if (reUploaded === 'yes') {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ reUpload: true });
+    }
+
+    if (country !== 'all') {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ country: country });
+    }
+
+    let residences = [];
+    let count = 0;
+
+    residences = await Residence.find({ isDeleted: false, ...filter })
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .populate('amenities', 'translation')
+      .populate('category', 'translation')
+      .populate('country', 'countryName')
+      .sort({ createdAt: -1 });
+
+    count = await Residence.countDocuments({ status: 'active', isDeleted: false, ...filter });
+
 
     return res.status(200).json(
       response({
@@ -767,18 +867,6 @@ const blockedResidenceUpdate = async (req, res) => {
 //residences details
 const residenceDetails = async (req, res) => {
   try {
-    const checkUser = await User.findById(req.body.userId);
-    const id = req.params.id
-    if (!checkUser || checkUser.status !== 'accepted') {
-      return res.status(404).json(
-        response({
-          status: 'Error',
-          statusCode: '404',
-          message: req.t('User not found'),
-        })
-      );
-    }
-
     const residences = await Residence.findById(id).populate('amenities', 'translation').populate('category', 'translation').populate('hostId', 'fullName image phoneNumber email address');
 
     return res.status(200).json(
@@ -863,4 +951,4 @@ const residenceDashboard = async (req, res) => {
   }
 }
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials, blockedResidenceUpdate };
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials, blockedResidenceUpdate, allResidenceForUser };

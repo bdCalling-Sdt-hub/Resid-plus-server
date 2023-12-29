@@ -19,16 +19,6 @@ require('dotenv').config()
 
 const calculateTimeAndPrice = async (req, res) => {
   try {
-    const checkUser = await User.findById(req.body.userId);
-    if (!checkUser || checkUser.status !== 'accepted') {
-      return res.status(404).json(
-        response({
-          status: 'Error',
-          statusCode: '404',
-          message: req.t('User not found'),
-        })
-      );
-    }
     let {
       checkInTime,
       checkOutTime,
