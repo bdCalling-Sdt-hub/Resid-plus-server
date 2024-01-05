@@ -7,6 +7,7 @@ const UPLOADS_FOLDER_USERS = "./public/uploads/users";
 const uploadUsers = userFileUploadMiddleware(UPLOADS_FOLDER_USERS);
 const { isValidUser } = require('../middlewares/auth')
 const  validationMiddleware = require('../middlewares/user/signupValidation');
+const convertHeicToPng = require('../middlewares/converter'); // Updated import statement for the converter middleware
 
 //Sign-up user
 router.post('/signup',  validationMiddleware, signUp);
@@ -18,7 +19,7 @@ router.post('/reset/password', updatePassword);
 router.post('/add-user', isValidUser,createUser)
 router.patch('/', isValidUser, changePassword);
 router.patch('/update-status/:id', isValidUser, updateUserStatus);
-router.put('/', [uploadUsers.single("image")], isValidUser, updateProfile);
+router.put('/', [uploadUsers.single("image")], convertHeicToPng(UPLOADS_FOLDER_USERS),isValidUser, updateProfile);
 router.get('/:id', isValidUser, userDetails);
 router.get('/', isValidUser, allUser);
 router.delete('/', isValidUser, deleteAccount);

@@ -24,13 +24,15 @@ module.exports = function (UPLOADS_FOLDER) {
   const upload = multer({
     storage: storage,
     limits: {
-      fileSize: 2000000, // 2MB
+      fileSize: 20000000, // 20MB
     },
     fileFilter: (req, file, cb) => {
       if (
         file.mimetype == "image/jpg" ||
         file.mimetype == "image/png" ||
-        file.mimetype == "image/jpeg"
+        file.mimetype == "image/jpeg" ||
+        file.mimetype == "image/heic" ||
+        file.mimetype == "image/heif"
       ) {
         cb(null, true);
 
