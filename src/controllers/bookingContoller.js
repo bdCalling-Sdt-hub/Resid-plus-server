@@ -314,7 +314,7 @@ const addBooking = async (req, res) => {
 
       const accessToken = process.env.ORANGE_ACCESS_KEY
 
-      const hostMessage = `Bonjour/Bonsoir\nCher propriétaire, vous venez de recevoir une offre de réservation sur RESDI+PRO merci de bien vouloir répondre dans les 10 prochaines minutes.\nAPP Link: https://apps.apple.com/sa/app/resid-pro/id6473144135. \nAssistance Résid+`
+      const hostMessage = `Bonjour/Bonsoir\nCher propriétaire, vous venez de recevoir une offre de réservation sur RESDI+PRO merci de bien vouloir répondre dans les 10 prochaines minutes.\nAPP Store Link: https://apps.apple.com/sa/app/resid-pro/id6473144135. \nPlay Store Link: https://play.google.com/store/apps/details?id=com.residco.residpro. \nAssistance Résid+`
 
       const hostInfo = await User.findById(residence_details.hostId._id).populate('country', 'countryCode').select('country')
       var senderNumber;
