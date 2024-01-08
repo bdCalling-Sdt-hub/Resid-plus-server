@@ -565,6 +565,8 @@ const paymentStatus = async (req, res) => {
 
       bookingDetails.paymentTypes = paymentDetails.paymentTypes
       await bookingDetails.save()
+      const userMessage = "Le paiement est réussi pour " + bookingDetails.residenceId.residenceName
+      io.to('room' + userId).emit('payment-notification', { status: "Successful", message: userMessage });
       return res.status(201).json(response({ status: 'Success', statusCode: '201', type: 'payment', message: 'Payment status successfully got' }));
     }
     return res.status(201).json(response({ status: 'Error', statusCode: '400', type: 'payment', message: 'Payment status can not change' }));
@@ -584,8 +586,7 @@ const paymentStatus = async (req, res) => {
     //   const roomId = paymentDetails.hostId._id.toString()
     //   io.to('room' + roomId).emit('host-notification', notification);
 
-    //   const userMessage = "Le paiement est réussi pour " + bookingDetails.residenceId.residenceName
-    //   io.to('room' + userId).emit('payment-notification', { status: "Successful", message: userMessage });
+
 
     // }
     // else {

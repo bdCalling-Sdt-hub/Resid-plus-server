@@ -11,10 +11,8 @@ const User = require("../models/User");
 const { addNotification, addManyNotifications, getAllNotification } = require("./notificationController");
 const options = { new: true };
 const logger = require("../helpers/logger");
-const axios = require('axios');
 const sendSMS = require("../helpers/sendMessage");
 const { createDisburseToken, payoutDisburseAmount } = require("./paymentController");
-const e = require("cors");
 require('dotenv').config()
 
 const calculateTimeAndPrice = async (req, res) => {
@@ -339,13 +337,12 @@ const addBooking = async (req, res) => {
         senderNumber = process.env.ORANGE_SENDER_NUMBER_MALI || ''
       }
 
-      const receiverNumber = bookingDetails?.hostId?.phoneNumber
-      const url = `https://api.orange.com/smsmessaging/v1/outbound/${senderNumber}/requests`
+      const receiverNumber = residence_details.hostId.phoneNumber
 
       console.log('senderNumber----------->', senderNumber, receiverNumber, hostMessage)
-      
+      const url = `https://api.orange.com/smsmessaging/v1/outbound/tel:${senderNumber}/requests`
       if (senderNumber !== '') {
-        await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
+        await sendSMS(url,senderNumber, receiverNumber, hostMessage, accessToken)
       }
 
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: req.t('Booking added successfully.'), data: booking }));
