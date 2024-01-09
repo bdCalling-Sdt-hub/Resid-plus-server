@@ -671,7 +671,7 @@ const cancelBookingByUser = async (req, res) => {
             if (disburseToken) {
               const payload = { "disburse_invoice": disburseToken, "disburse_id": req.body.userId }
               const paymentStatus = await axios.post('https://app.paydunya.com/api/v1/disburse/submit-invoice', payload, { headers });
-              if (paymentStatus?.response_code === '00') {
+              if (paymentStatus?.data?.response_code === '00') {
                 paid = true
                 if (income) {
                   income.pendingAmount = 0
