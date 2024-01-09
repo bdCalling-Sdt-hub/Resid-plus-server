@@ -1,5 +1,6 @@
 const response = require("../helpers/response");
 require('dotenv').config()
+const axios = require('axios')
 const Booking = require("../models/Booking");
 const Residence = require("../models/Residence");
 const Payment = require("../models/Payment");
@@ -14,6 +15,16 @@ const logger = require("../helpers/logger");
 const sendSMS = require("../helpers/sendMessage");
 const { createDisburseToken, payoutDisburseAmount } = require("./paymentController");
 require('dotenv').config()
+
+const privateKey = process.env.NODE_ENV === 'production' ? process.env.PAYDUNYA_PRIVATE_KEY : process.env.PAYDUNYA_PRIVATE_TEST_KEY
+const token = process.env.NODE_ENV === 'production' ? process.env.PAYDUNYA_TOKEN : process.env.PAYDUNYA_TEST_TOKEN
+
+const headers = {
+  'Content-Type': 'application/json',
+  'PAYDUNYA-MASTER-KEY': process.env.PAYDUNYA_MASTER_KEY,
+  'PAYDUNYA-PRIVATE-KEY': privateKey,
+  'PAYDUNYA-TOKEN': token,
+}
 
 const calculateTimeAndPrice = async (req, res) => {
   try {
@@ -342,7 +353,7 @@ const addBooking = async (req, res) => {
       console.log('senderNumber----------->', senderNumber, receiverNumber, hostMessage)
       const url = `https://api.orange.com/smsmessaging/v1/outbound/tel:${senderNumber}/requests`
       if (senderNumber !== '') {
-        await sendSMS(url,senderNumber, receiverNumber, hostMessage, accessToken)
+        await sendSMS(url, senderNumber, receiverNumber, hostMessage, accessToken)
       }
 
       return res.status(201).json(response({ status: 'Created', statusCode: '201', type: 'booking', message: req.t('Booking added successfully.'), data: booking }));
@@ -565,7 +576,9 @@ const cancelBookingByUser = async (req, res) => {
         if (!userPayment || userPayment.paymentTypes === 'pending') {
           bookingDetails.status = status
           bookingDetails.save()
+          console.log('------->Payment has not done yet')
           return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'payment', message: req.t('Payment has not done yet') }));
+          
         }
         else {
           const residence_details = await Residence.findById(bookingDetails.residenceId._id)
@@ -577,28 +590,26 @@ const cancelBookingByUser = async (req, res) => {
           const totalDurationInMillis = checkInTime.getTime() - paymentTime.getTime();
 
           // Calculate the duration representing 40% of the total duration
-          const fortyPercentInMillis = totalDurationInMillis * 0.4;
+          const fiftyPercentInMillis = totalDurationInMillis * 0.5;
 
           // Calculate the time that is 40% of the duration from paymentTime
-          const fortyPercentTime = new Date(paymentTime.getTime() + fortyPercentInMillis);
-
-          // Calculate the duration representing 60% of the total duration
-          const eightyPercentInMillis = totalDurationInMillis * 0.8;
-
-          // Calculate the time that is 60% of the duration from paymentTime
-          const eightyPercentTime = new Date(paymentTime.getTime() + eightyPercentInMillis);
+          const fiftyPercentTime = new Date(paymentTime.getTime() + fiftyPercentInMillis);
 
           const stayMoreThanTwoDays = bookingDetails.totalTime.days > 2
           var paid = false
           var amount;
           var message;
 
-          if (fortyPercentTime < currentTime) {
-            amount = bookingDetails.totalAmount * 0.98
+          console.log('fiftyPercentTime--->', fiftyPercentTime, 'currentTime--->', currentTime, 'stayMoreThanTwoDays--->', stayMoreThanTwoDays)
+
+          if (fiftyPercentTime > currentTime) {
+            amount = Math.ceil(bookingDetails.totalAmount * 0.98)
             message = req.t('You have been refunded excluding refund charge. Please check your mobile account')
+            console.log('>>>>>>>>---->>>Refund without 2% charge entered--->', amount)
           }
-          else if (stayMoreThanTwoDays && fortyPercentTime > currentTime) {
+          else if (stayMoreThanTwoDays && fiftyPercentTime < currentTime && checkInTime > currentTime) {
             amount = Math.ceil(bookingDetails.totalAmount * 0.48)
+            console.log('*****______----->>>>Refund without ---50%--- charge--->', amount)
             message = req.t('You have been refunded excluding 50% charge. Please check your mobile account')
             const hostIncome = await Income.findOne({ hostId: bookingDetails.hostId._id })
             if (!hostIncome) {
@@ -637,19 +648,16 @@ const cancelBookingByUser = async (req, res) => {
             const superAdminNotification = await addNotification(superAdminNotif)
             io.emit('super-admin-notification', superAdminNotification);
           }
-          else if (fortyPercentTime > currentTime && eightyPercentTime < currentTime) {
-            amount = bookingDetails.residenceCharge
-            message = req.t('You have been refunded excluding service charge. Please check your mobile account')
-          }
           else {
             bookingDetails.status = status
             bookingDetails.save()
             residence_details.status = 'active'
             await residence_details.save()
+            console.log('#####--->>> No refund possible as the reburse payment time is over.')
             return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking request cancelled, no refund possible as the reburse payment time is over.'), data: bookingDetails }));
           }
           var income = await Income.findOne({ hostId: checkUser._id })
-          if (income) {
+          if (income && income?.pendingAmount!==null) {
             amount = amount + income.pendingAmount
           }
           if (amount >= 200) {
@@ -659,10 +667,10 @@ const cancelBookingByUser = async (req, res) => {
               withdraw_mode: userPayment?.paymentMethod
             }
             const disburseToken = await createDisburseToken(data)
-            console.log('disburseToken', disburseToken)
+            console.log('disburseToken------>', disburseToken)
             if (disburseToken) {
-              const paymentStatus = await payoutDisburseAmount(disburseToken, userPayment?.paymentMethod)
-              console.log('paymentStatus', paymentStatus)
+              const payload = { "disburse_invoice": disburseToken, "disburse_id": req.body.userId }
+              const paymentStatus = await axios.post('https://app.paydunya.com/api/v1/disburse/submit-invoice', payload, { headers });
               if (paymentStatus?.response_code === '00') {
                 paid = true
                 if (income) {
@@ -682,6 +690,7 @@ const cancelBookingByUser = async (req, res) => {
             income.pendingAmount += amount
             income.totalIncome += amount
             await income.save()
+            console.log('--------->income---------->', income)
           }
 
           bookingDetails.status = status
@@ -728,14 +737,14 @@ const refundPolicy = async (req, res) => {
     const totalDurationInMillis = currentTime.getTime() - paymentTime.getTime();
 
     // Calculate the duration representing 40% of the total duration
-    const fortyPercentInMillis = totalDurationInMillis * 0.4;
+    const fiftyPercentInMillis = totalDurationInMillis * 0.4;
 
     // Calculate the time that is 40% of the duration from paymentTime
-    const fortyPercentTime = new Date(paymentTime.getTime() + fortyPercentInMillis);
+    const fiftyPercentTime = new Date(paymentTime.getTime() + fiftyPercentInMillis);
 
     const stayMoreThanTwoDays = bookingDetails.totalTime.days > 2;
 
-    var message = `You are eligible for a refund until ${fortyPercentTime.toISOString()} (40% of time elapsed since payment).`
+    var message = `You are eligible for a refund until ${fiftyPercentTime.toISOString()} (40% of time elapsed since payment).`
 
     var minimumRefund = `You can get ${stayMoreThanTwoDays ? '50%' : '0%'} refund by cancelling before check-in time.`
 
