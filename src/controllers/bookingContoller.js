@@ -492,8 +492,6 @@ const allBooking = async (req, res) => {
         ...filter
       });
     }
-
-    console.log(bookings)
     return res.status(200).json(
       response({
         status: 'OK',
@@ -526,6 +524,8 @@ const allBooking = async (req, res) => {
 };
 
 const cancelBookingByUser = async (req, res) => {
+  console.log("req.body----->", req.body)
+  // res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: "" }));
   try {
     const checkUser = await User.findById(req.body.userId);
     const id = req.params.id
@@ -578,7 +578,7 @@ const cancelBookingByUser = async (req, res) => {
           bookingDetails.save()
           console.log('------->Payment has not done yet')
           return res.status(404).json(response({ status: 'Error', statusCode: '404', type: 'payment', message: req.t('Payment has not done yet') }));
-          
+
         }
         else {
           const residence_details = await Residence.findById(bookingDetails.residenceId._id)
@@ -657,8 +657,11 @@ const cancelBookingByUser = async (req, res) => {
             return res.status(201).json(response({ status: 'Edited', statusCode: '201', type: 'booking', message: req.t('Booking request cancelled, no refund possible as the reburse payment time is over.'), data: bookingDetails }));
           }
           var income = await Income.findOne({ hostId: checkUser._id })
-          if (income && income?.pendingAmount!==null) {
-            amount = amount + income.pendingAmount
+          if (income) {
+            if(income?.pendingAmount !== null){
+              const pendingAmount = income?.pendingAmount
+              amount = amount + pendingAmount
+            }
           }
           if (amount >= 200) {
             const data = {
@@ -670,8 +673,17 @@ const cancelBookingByUser = async (req, res) => {
             console.log('disburseToken------>', disburseToken)
             if (disburseToken) {
               const payload = { "disburse_invoice": disburseToken, "disburse_id": req.body.userId }
-              const paymentStatus = await axios.post('https://app.paydunya.com/api/v1/disburse/submit-invoice', payload, { headers });
+              var paymentStatus
+              try {
+                paymentStatus = await axios.post('https://app.paydunya.com/api/v1/disburse/submit-invoice', payload, { headers });
+              }
+              catch (error) {
+                logger.error(error, req.originalUrl)
+                console.log(error)
+                return res.status(500).json(response({ status: 'Error', statusCode: '500', message: error.message }));
+              }
               if (paymentStatus?.data?.response_code === '00') {
+                logger.info(paymentStatus?.data, "payment back")
                 paid = true
                 if (income) {
                   income.pendingAmount = 0
@@ -680,15 +692,17 @@ const cancelBookingByUser = async (req, res) => {
               }
             }
           }
-          if (amount < 200 || !paid) {
+          if (!paid) {
             var income = await Income.findOne({ hostId: checkUser._id })
             if (!income) {
               income = new Income({
                 hostId: checkUser._id,
+                pendingAmount : 0,
               })
             }
-            income.pendingAmount += amount
-            income.totalIncome += amount
+            message=req.t('Your getting payment is less than 200 FCFA, it will be backed with your next cancel amount')
+            const pendingAmount = income.pendingAmount+amount
+            income.pendingAmount = pendingAmount
             await income.save()
             console.log('--------->income---------->', income)
           }
