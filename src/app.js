@@ -19,6 +19,8 @@ const promoCodeRouter = require('./routes/promoCodeRouter')
 const incomeRouter = require('./routes/incomeRouter');
 const countryRouter = require('./routes/countryRouter');
 const paymentGatewayRouter = require('./routes/paymentGatewayRouter');
+const commentRouter = require('./routes/commentRouter');
+const likeRouter = require('./routes/likeRouter');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -26,10 +28,7 @@ require('dotenv').config();
 const app = express();
 
 // Connect to the MongoDB database
-mongoose.connect(process.env.MONGODB_CONNECTION, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_CONNECTION);
 
 //making public folder static for publicly access
 app.use(express.static('public'));
@@ -105,6 +104,8 @@ app.use('/api/promo-codes', promoCodeRouter)
 app.use('/api/incomes', incomeRouter);
 app.use('/api/countries', countryRouter);
 app.use('/api/payment-gateways', paymentGatewayRouter);
+app.use('/api/comments', commentRouter);
+app.use('/api/likes', likeRouter);
 
 //testing API is alive
 app.get('/test', (req, res) => {

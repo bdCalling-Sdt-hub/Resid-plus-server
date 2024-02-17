@@ -31,6 +31,7 @@ const isValidUser = async (req, res, next) => {
             return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: req.t('Unauthorised') }));
         }
         req.body.userId = decodedData._id;
+        req.body.userRole = decodedData.role;
         next();
     } catch (error) {
         console.log("Middleware Error", error.message)

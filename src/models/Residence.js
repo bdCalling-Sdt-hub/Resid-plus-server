@@ -13,6 +13,9 @@ const residenceSchema = new mongoose.Schema({
   aboutResidence: { type: String, reqiured: false },
   hourlyAmount: { type: Number, reqiured: true },
   popularity: { type: Number, default: 0 },
+  views: { type: Number, default: 0 },
+  likes: { type: Number, default: 0 },
+  comments: { type: Number, default: 0 },
   ratings: { type: Number, default: 0 },
   dailyAmount: { type: Number, reqiured: false },
   amenities: [{

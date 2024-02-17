@@ -612,6 +612,8 @@ const createDisburseToken = async (data) => {
       withdraw_mode: data?.withdraw_mode
     }
     const response = await axios.post(payoutdisburseTokenUrl, payload, { headers });
+    console.log(response.data)
+    logger.info(response.data, "--->Disburse token info")
     if (response?.data?.response_code === '00') {
       return response.data.disburse_token;
     }
@@ -789,5 +791,9 @@ const allPayment = async (req, res) => {
   }
 };
 
-
-module.exports = { allPayment, createPayInToken, payInAmount, createDisburseToken, payoutDisburseAmount, takePayment, paymentStatus, confirmPayment };
+const getAllPayments = async (req, res) => {
+  const data = await Payment.find();
+  const totalResults = data.length;
+  return res.status(200).json({ data, totalResults });
+}
+module.exports = { allPayment, createPayInToken, payInAmount, createDisburseToken, payoutDisburseAmount, takePayment, paymentStatus, confirmPayment, getAllPayments };

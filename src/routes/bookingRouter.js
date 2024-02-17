@@ -8,7 +8,6 @@ const router = express.Router();
 router.post('/',isValidUser, addBooking);
 router.post('/calculate-time-and-amount', calculateTimeAndPrice)
 router.get('/:id', isValidUser, bookingDetails);
-router.get('/refund-policy/:id', isValidUser, refundPolicy);
 router.get('/', isValidUser, allBooking);
 router.put('/:id/cancel-booking-by-user',isValidUser, cancelBookingByUser);
 router.put('/:id',isValidUser, updateBooking);

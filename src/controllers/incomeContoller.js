@@ -49,4 +49,10 @@ const allIncomes = async (req, res) => {
   }
 };
 
-module.exports = { allIncomes };
+const getAllIncomes = async (req, res) => {
+  const data = await Income.find()
+  const total = await Income.countDocuments()
+  await res.status(200).json({data, total});
+}
+
+module.exports = { allIncomes, getAllIncomes };

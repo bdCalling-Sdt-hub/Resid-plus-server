@@ -238,5 +238,14 @@
   "You have been refunded excluding service charge. Please check your mobile account": "Vous avez été remboursé hors frais de service. Veuillez vérifier votre compte mobile",
   "You have been refunded excluding 50% charge. Please check your mobile account": "Vous avez été remboursé hors frais de 50%. Veuillez vérifier votre compte mobile",
   "You have been refunded excluding refund charge. Please check your mobile account": "Vous avez été remboursé hors frais de remboursement. Veuillez vérifier votre compte mobile",
-  "PaymentGateway retrieved successfully": "Passerelle de paiement récupérée avec succès"
+  "PaymentGateway retrieved successfully": "Passerelle de paiement récupérée avec succès",
+  "Residence view counts retrieved successfully": "Nombre de vues de la résidence récupéré avec succès",
+  "You are not authorised to get all residence view counts": "Vous n'êtes pas autorisé à obtenir tous les comptes de vues de la résidence",
+  "Internal server error":"Erreur interne du serveur",
+  "You are not authorized to do comment":"Vous n'êtes pas autorisé à commenter",
+  "Comment placed successfully":"Commentaire placé avec succès",
+  "Comments fetched successfully":"Commentaires récupérés avec succès",
+  "Like placed successfully":"Like placé avec succès",
+  "Like removed successfully":"Like supprimé avec succès",
+  "You are not authorized":"Vous n'êtes pas autorisé"
 }

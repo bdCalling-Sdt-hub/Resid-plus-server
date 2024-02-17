@@ -38,7 +38,6 @@ async function sendSMS(url,senderAddress, receiverAddress, message, basicToken) 
     return smsResponse.data;
   } catch (error) {
     console.error(error);
-    logger.error(error, "-sendSMS");
   }
 };
 

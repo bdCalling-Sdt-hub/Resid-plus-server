@@ -20,31 +20,42 @@ const convertHeicToPngMiddleware = (UPLOADS_FOLDER) => {
 
       await Promise.all(
         heicFiles.map(async (file) => {
-          const heicBuffer = await fs.readFile(file.path);
-          const pngBuffer = await convert({
-            buffer: heicBuffer,
-            format: 'PNG'
-          });
+          try {
+            const heicBuffer = await fs.readFile(file.path);
+            
+            // Log buffer content for analysis
+            console.log('Received buffer content:', heicBuffer);
 
-          const pngFileName = `${path.basename(
-            file.originalname,
-            path.extname(file.originalname)
-          )}.png`;
-          const pngFilePath = path.join(UPLOADS_FOLDER, pngFileName);
+            const pngBuffer = await convert({
+              buffer: heicBuffer,
+              format: 'PNG'
+            });
 
-          await fs.writeFile(pngFilePath, pngBuffer);
+            const pngFileName = `${path.basename(
+              file.originalname,
+              path.extname(file.originalname)
+            )}.png`;
+            const pngFilePath = path.join(UPLOADS_FOLDER, pngFileName);
 
-          // Remove the original HEIC file
-          await fs.unlink(file.path);
+            await fs.writeFile(pngFilePath, pngBuffer);
 
-          file.path = pngFilePath;
-          file.filename = pngFileName;
-          file.mimetype = 'image/png';
+            // Remove the original HEIC file
+            await fs.unlink(file.path);
+
+            file.path = pngFilePath;
+            file.filename = pngFileName;
+            file.mimetype = 'image/png';
+          } catch (error) {
+            // Log specific error details for analysis
+            console.error('Conversion error:', error);
+            // Pass the error to the next middleware or handle as needed
+            // For example: return next(error); if you want to pass it to an error handling middleware
+          }
         })
       );
     }
     next();
-  }
+  };
 };
 
 module.exports = convertHeicToPngMiddleware;

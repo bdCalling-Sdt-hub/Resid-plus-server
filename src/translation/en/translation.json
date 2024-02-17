@@ -238,5 +238,14 @@
   "You have been refunded excluding service charge. Please check your mobile account": "You have been refunded excluding service charge. Please check your mobile account",
   "You have been refunded excluding 50% charge. Please check your mobile account": "You have been refunded excluding 50% charge. Please check your mobile account",
   "You have been refunded excluding refund charge. Please check your mobile account": "You have been refunded excluding refund charge. Please check your mobile account",
-  "PaymentGateway retrieved successfully":"PaymentGateway retrieved successfully"
+  "PaymentGateway retrieved successfully":"PaymentGateway retrieved successfully",
+  "Residence view counts retrieved successfully":"Residence view counts retrieved successfully",
+  "You are not authorised to get all residence view counts":"You are not authorised to get all residence view counts",
+  "Internal server error":"Internal server error",
+  "You are not authorized to do comment":"You are not authorized to do comment",
+  "Comment placed successfully":"Comment placed successfully",
+  "Comments fetched successfully":"Comments fetched successfully",
+  "Like placed successfully":"Like placed successfully",
+  "Like removed successfully":"Like removed successfully",
+  "You are not authorized":"You are not authorized"
 }

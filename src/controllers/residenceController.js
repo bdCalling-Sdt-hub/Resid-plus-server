@@ -848,6 +848,9 @@ const residenceDetails = async (req, res) => {
   try {
     const id = req.params.id
     const residences = await Residence.findById(id).populate('amenities', 'translation').populate('category', 'translation').populate('hostId', 'fullName image phoneNumber email address');
+    
+    residences.views += 1;
+    await residences.save();
 
     return res.status(200).json(
       response({
@@ -931,4 +934,19 @@ const residenceDashboard = async (req, res) => {
   }
 }
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials, blockedResidenceUpdate, allResidenceForUser };
+const residenceCounts = async (req, res) => {
+  if(req.body.userRole !== 'host'){
+    return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to get all residence view counts') }));
+  }
+  try{
+    const residences = await Residence.find({hostId: req.body.userId, isDeleted: false}).select('views residenceName');
+    return res.status(200).json(response({ status: 'OK', statusCode: '200', message: req.t('Residence view counts retrieved successfully'), data: residences }));
+  }
+  catch (error) {
+    logger.error(error, req.originalUrl)
+    console.log(error)
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Server not responding') }));
+  }
+}
+
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials, blockedResidenceUpdate, allResidenceForUser, residenceCounts };
