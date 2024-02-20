@@ -21,6 +21,8 @@ const countryRouter = require('./routes/countryRouter');
 const paymentGatewayRouter = require('./routes/paymentGatewayRouter');
 const commentRouter = require('./routes/commentRouter');
 const likeRouter = require('./routes/likeRouter');
+const eventRouter = require('./routes/eventRouter');
+
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -106,6 +108,7 @@ app.use('/api/countries', countryRouter);
 app.use('/api/payment-gateways', paymentGatewayRouter);
 app.use('/api/comments', commentRouter);
 app.use('/api/likes', likeRouter);
+app.use('/api/events', eventRouter);
 
 //testing API is alive
 app.get('/test', (req, res) => {

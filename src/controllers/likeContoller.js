@@ -11,7 +11,7 @@ const upgradeLike = async (req, res) => {
         response({
           status: 'Error',
           statusCode: '403',
-          message: req.t('You are not authorized to do comment'),
+          message: req.t('You are not authorized to like'),
         })
       );
     }

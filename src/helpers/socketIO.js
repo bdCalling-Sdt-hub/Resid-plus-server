@@ -23,12 +23,14 @@ const socketIO = (io) => {
       //console.log("add-new chat--->", chat, data.uid)
       io.to('room' + data.uid).emit('new-chat', chat)
     })
+
     socket.on("join-chat", async (data) => {
       socket.join('room' + data.uid)
       //console.log("join-chat info---->", data)
       const allChats = await getMessageByChatId(data.uid)
       io.to("room" + data.uid).emit('all-messages', allChats)
     })
+
     socket.on('add-new-message', async (data) => {
       //console.log("message info------->", data)
       var message
@@ -43,6 +45,7 @@ const socketIO = (io) => {
       //console.log('all messages list----> ', allMessages)
       io.to('room' + message?.chat).emit('all-messages', allMessages)
     })
+
     socket.on('get-all-chats', async (data) => {
       const allChats = await getChatByParticipantId(data.uid)
       ////console.log('hitting from socket -------->', allChats)
@@ -54,6 +57,11 @@ const socketIO = (io) => {
       if (data?.uid) {
         socket.leave('room' + data.uid);
       }
+    });
+
+    socket.on('content-access', async(data, callback) => {
+      console.log('content access info---->', data)
+      callback('content access granted')
     });
 
     socket.on('disconnect', () => {

@@ -328,7 +328,8 @@ const allResidenceForUser = async (req, res) => {
     const category = req.query.category || ''
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
     const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
-    const country = !req.query.country?'all':req.query.country
+    const country = !req.query.country ? 'all' : req.query.country
+    const userId = req.query.userId
 
     //minPrice must be greater or equal 1
     const minPrice = Number(req.query.minPrice) || '';
@@ -373,15 +374,147 @@ const allResidenceForUser = async (req, res) => {
     let residences = [];
     let count = 0;
 
-    residences = await Residence.find({ isDeleted: false, ...filter })
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .populate('amenities', 'translation')
-      .populate('category', 'translation')
-      .populate('country', 'countryName')
-      .sort({ createdAt: -1 });
+    if (userId) {
+      const user = new mongoose.Types.ObjectId(userId);
+      residences = await Residence.aggregate([
+        {
+          $match: { isDeleted: false, ...filter }
+        },
+        {
+          $lookup: {
+            from: "likes",
+            let: { residenceId: "$_id", userId: user },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$residenceId", "$$residenceId"] },
+                      { $eq: ["$userId", "$$userId"] }
+                    ]
+                  }
+                }
+              }
+            ],
+            as: "likeInfo"
+          }
+        },
+        {
+          $addFields: {
+            isLiked: { $cond: { if: { $gt: [{ $size: "$likeInfo" }, 0] }, then: true, else: false } }
+          }
+        },
+        {
+          $limit: limit
+        },
+        {
+          $skip: (page - 1) * limit
+        },
+        {
+          $lookup: {
+            from: "amenities",
+            localField: "amenities",
+            foreignField: "_id",
+            as: "amenities"
+          }
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "category"
+          }
+        },
+        {
+          $lookup: {
+            from: "countries",
+            localField: "country",
+            foreignField: "_id",
+            as: "country"
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            residenceName: 1,
+            photo: 1,
+            capacity: 1,
+            beds: 1,
+            baths: 1,
+            address: 1,
+            city: 1,
+            municipality: 1,
+            quirtier: 1,
+            aboutResidence: 1,
+            hourlyAmount: 1,
+            popularity: 1,
+            ratings: 1,
+            dailyAmount: 1,
+            amenities: {
+              $map: {
+                input: "$amenities",
+                as: "amenity",
+                in: {
+                  _id: "$$amenity._id",
+                  translation: "$$amenity.translation",
+                }
+              }
+            },
+            ownerName: 1,
+            hostId: 1,
+            aboutOwner: 1,
+            status: 1,
+            category: {
+              $let: {
+                vars: { category: { $arrayElemAt: ["$category", 0] } },
+                in: {
+                  _id: "$$category._id",
+                  translation: "$$category.translation"
+                }
+              }
+            },
+            country: {
+              $let: {
+                vars: { country: { $arrayElemAt: ["$country", 0] } },
+                in: {
+                  _id: "$$country._id",
+                  countryName: "$$country.countryName"
+                }
+              }
+            },
+            isDeleted: 1,
+            acceptanceStatus: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            feedBack: 1,
+            reUpload: 1,
+            views: 1,
+            comments: 1,
+            likes: 1,
+            isLiked: 1
+          }
+        },
+        {
+          $sort: { createdAt: -1 }
+        }
+      ]);
 
-    count = await Residence.countDocuments({ isDeleted: false, ...filter });
+      // Count documents
+      count = await Residence.countDocuments({ hostId: userId, isDeleted: false, ...filter });
+
+    }
+    else {
+      residences = await Residence.find({ isDeleted: false, ...filter })
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .populate('amenities', 'translation')
+        .populate('category', 'translation')
+        .populate('country', 'countryName')
+        .sort({ createdAt: -1 });
+
+      count = await Residence.countDocuments({ isDeleted: false, ...filter });
+    }
 
     return res.status(200).json(
       response({
@@ -848,7 +981,7 @@ const residenceDetails = async (req, res) => {
   try {
     const id = req.params.id
     const residences = await Residence.findById(id).populate('amenities', 'translation').populate('category', 'translation').populate('hostId', 'fullName image phoneNumber email address');
-    
+
     residences.views += 1;
     await residences.save();
 
@@ -935,11 +1068,11 @@ const residenceDashboard = async (req, res) => {
 }
 
 const residenceCounts = async (req, res) => {
-  if(req.body.userRole !== 'host'){
+  if (req.body.userRole !== 'host') {
     return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to get all residence view counts') }));
   }
-  try{
-    const residences = await Residence.find({hostId: req.body.userId, isDeleted: false}).select('views residenceName');
+  try {
+    const residences = await Residence.find({ hostId: req.body.userId, isDeleted: false }).select('views residenceName');
     return res.status(200).json(response({ status: 'OK', statusCode: '200', message: req.t('Residence view counts retrieved successfully'), data: residences }));
   }
   catch (error) {
@@ -949,4 +1082,20 @@ const residenceCounts = async (req, res) => {
   }
 }
 
-module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials, blockedResidenceUpdate, allResidenceForUser, residenceCounts };
+const residenceView = async (req, res) => {
+  try {
+    if (req.body.userRole !== 'host') {
+      return res.status(401).json(response({ status: 'Error', statusCode: '401', message: req.t('You are not authorised to get all residence view counts') }));
+    }
+    const residences = await Residence.findById({ hostId: req.body.userId }).select('views residenceName');
+    return res.status(200).json(response({ status: 'OK', statusCode: '200', message: req.t('Residence view counts retrieved successfully'), data: residences }));
+  }
+  catch (error) {
+    logger.error(error, req.originalUrl)
+    console.log(error)
+    return res.status(500).json(response({ status: 'Error', statusCode: '500', message: req.t('Server not responding') }));
+  }
+
+}
+
+module.exports = { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials, blockedResidenceUpdate, allResidenceForUser, residenceCounts, residenceView };
