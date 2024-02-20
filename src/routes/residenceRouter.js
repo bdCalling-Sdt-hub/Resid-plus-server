@@ -1,6 +1,6 @@
 const express = require('express');
 const { addResidence, allResidence, deleteResidence, updateResidence, residenceDetails, residenceDashboard, searchCredentials, blockedResidenceUpdate, allResidenceForUser, residenceCounts, residenceView } = require('../controllers/residenceController');
-const { isValidUser } = require('../middlewares/auth');
+const { isValidUser, tokenCheck } = require('../middlewares/auth');
 const router = express.Router();
 const userFileUploadMiddleware = require("../middlewares/fileUpload");
 const convertHeicToPng = require('../middlewares/converter');
@@ -13,7 +13,7 @@ const uploadUsers = userFileUploadMiddleware(UPLOADS_FOLDER_USERS);
 
 //Add residence
 router.post('/',[uploadUsers.array("photo", 5)], convertHeicToPng(UPLOADS_FOLDER_USERS), imageVerification, validateResidenceMiddleware,isValidUser, addResidence);
-router.get('/user', allResidenceForUser);
+router.get('/user', tokenCheck, allResidenceForUser);
 router.get('/views', isValidUser,residenceView);
 router.get('/', isValidUser, allResidence);
 router.put('/:id', [uploadUsers.array("photo", 5)], convertHeicToPng(UPLOADS_FOLDER_USERS), isValidUser, updateResidence);

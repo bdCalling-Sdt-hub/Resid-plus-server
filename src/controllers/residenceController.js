@@ -329,7 +329,6 @@ const allResidenceForUser = async (req, res) => {
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
     const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
     const country = !req.query.country ? 'all' : req.query.country
-    const userId = req.query.userId
 
     //minPrice must be greater or equal 1
     const minPrice = Number(req.query.minPrice) || '';
@@ -374,8 +373,8 @@ const allResidenceForUser = async (req, res) => {
     let residences = [];
     let count = 0;
 
-    if (userId) {
-      const user = new mongoose.Types.ObjectId(userId);
+    if (req.body.userId) {
+      const user = new mongoose.Types.ObjectId(req.body.userId);
       residences = await Residence.aggregate([
         {
           $match: { isDeleted: false, ...filter }
@@ -501,7 +500,7 @@ const allResidenceForUser = async (req, res) => {
       ]);
 
       // Count documents
-      count = await Residence.countDocuments({ hostId: userId, isDeleted: false, ...filter });
+      count = await Residence.countDocuments({ hostId: req.body.userId, isDeleted: false, ...filter });
 
     }
     else {

@@ -1,12 +1,10 @@
 const jwt = require('jsonwebtoken');
-const Activity = require('../models/Activity')
 const response = require("../helpers/response");
 const logger = require('../helpers/logger');
 
 
 const isValidUser = async (req, res, next) => {
     try {
-        console.log(req.body)
         const { authorization } = req.headers;
         console.log(authorization);
         let token;
@@ -40,5 +38,24 @@ const isValidUser = async (req, res, next) => {
     }
 };
 
+const tokenCheck = async (req, res, next) => {
+    try {
+        const { authorization } = req.headers;
+        console.log(authorization);
+        
+        if (authorization && authorization.startsWith("Bearer")) {
+            const token = authorization.split(" ")[1];
+            const decodedData = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
+            req.body.userId = decodedData._id;
+        }
 
-module.exports = { isValidUser };
+        next();
+    } catch (error) {
+        console.log("Middleware Error", error.message);
+        logger.error(error, req.originalUrl);
+        return res.status(401).json(response({ status: 'Unauthorised', statusCode: '401', type: 'auth', message: req.t('Error authorization') }));
+    }
+};
+
+
+module.exports = { isValidUser, tokenCheck };

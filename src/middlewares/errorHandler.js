@@ -9,6 +9,6 @@ function notFoundHandler(req, res, next){
 function errorHandler(err, req, res, next){
   console.error('Error Handler--------->', err);
   logger.error(err,req.originalUrl);
-  res.status(500).json(response({ status: 'Error', statusCode: '500', type: err.name, message: err.message, data: null }));
+  return res.status(500).json(response({ status: 'Error', statusCode: '500', type: err.name, message: err.message, data: null }));
 }
 module.exports = {notFoundHandler, errorHandler}

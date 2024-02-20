@@ -279,11 +279,11 @@ const signIn = async (req, res) => {
     const accessToken = jwt.sign({ _id: user._id, email: user.email, role: user.role, activityId: activityId }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '30d' });
 
     //Success response
-    res.status(200).json(response({ statusCode: 200, message: req.t('User logged in successfully'), status: "OK", type: "user", data: user, token: accessToken }));
+    return res.status(200).json(response({ statusCode: 200, message: req.t('User logged in successfully'), status: "OK", type: "user", data: user, token: accessToken }));
   } catch (error) {
     console.error(error);
     logger.error(error, req.originalUrl)
-    res.status(500).json(response({ statusCode: 200, message: req.t('Error logging in user'), status: "OK", error }));
+    return res.status(500).json(response({ statusCode: 200, message: req.t('Error logging in user'), status: "OK", error }));
   }
 };
 
@@ -335,10 +335,10 @@ const processForgetPassword = async (req, res) => {
       }
     }, 180000); // 3 minute in milliseconds
 
-    res.status(201).json(response({ message: req.t('resetpassword'), status: "OK", statusCode: 200 }));
+    return res.status(201).json(response({ message: req.t('resetpassword'), status: "OK", statusCode: 200 }));
   } catch (error) {
     logger.error(error, req.originalUrl);
-    res.status(500).json(response({ message: req.t('Error processing forget password'), statusCode: 200, status: "OK" }));
+    return res.status(500).json(response({ message: req.t('Error processing forget password'), statusCode: 200, status: "OK" }));
   }
 };
 
@@ -386,10 +386,10 @@ const resendOneTimeCode = async (req, res) => {
       }
     }, 180000); // 3 minute in milliseconds
 
-    res.status(201).json(response({ message: req.t(`${topic}`), status: "OK", statusCode: 200 }));
+    return res.status(201).json(response({ message: req.t(`${topic}`), status: "OK", statusCode: 200 }));
   } catch (error) {
     logger.error(error, req.originalUrl);
-    res.status(500).json(response({ message: req.t(`${topic}error`), statusCode: 200, status: "OK" }));
+    return res.status(500).json(response({ message: req.t(`${topic}error`), statusCode: 200, status: "OK" }));
   }
 }
 
@@ -412,7 +412,7 @@ const verifyOneTimeCode = async (req, res) => {
       if (requestType === 'resetPassword') {
         user.oneTimeCode = 'verified';
         await user.save();
-        res.status(200).json(response({ message: req.t('One Time Code verified successfully'), type: "reset-forget password", status: "OK", statusCode: 200, data: user }));
+        return res.status(200).json(response({ message: req.t('One Time Code verified successfully'), type: "reset-forget password", status: "OK", statusCode: 200, data: user }));
       }
       else if (requestType === 'verifyEmail' && user.oneTimeCode !== null && user.emailVerified === false) {
         //console.log('email verify---------------->', user)
@@ -432,10 +432,10 @@ const verifyOneTimeCode = async (req, res) => {
         const notification = await getAllNotification('super-admin', 10, 1)
         io.emit('super-admin-notification', notification);
         console.log('email verify---------------->', user)
-        res.status(200).json(response({ message: req.t('Email verified successfully'), status: "OK", type: "email verification", statusCode: 200, data: user }));
+        return res.status(200).json(response({ message: req.t('Email verified successfully'), status: "OK", type: "email verification", statusCode: 200, data: user }));
       }
       else {
-        res.status(409).json(response({ message: req.t('Request type not defined properly'), status: "Error", statusCode: 409 }));
+        return res.status(409).json(response({ message: req.t('Request type not defined properly'), status: "Error", statusCode: 409 }));
       }
     }
     // else if(user.oneTimeCode !== oneTimeCode){
@@ -444,14 +444,14 @@ const verifyOneTimeCode = async (req, res) => {
     //   res.status(400).json(response({ message:req.t( 'Invalid OTC', status: "OK", statusCode: 400 }));
     // }
     else if (user.oneTimeCode === null) {
-      res.status(408).json(response({ message: req.t('One Time Code has expired'), status: "OK", statusCode: 408 }));
+      return res.status(408).json(response({ message: req.t('One Time Code has expired'), status: "OK", statusCode: 408 }));
     }
     else {
-      res.status(406).json(response({ message: req.t('Requirements not fulfilled in verifying OTC'), status: "Error", statusCode: 406 }));
+      return res.status(406).json(response({ message: req.t('Requirements not fulfilled in verifying OTC'), status: "Error", statusCode: 406 }));
     }
   } catch (error) {
     logger.error(error, req.originalUrl);
-    res.status(500).json(response({ message: req.t('Error verifying OTC'), status: "OK", statusCode: 500 }));
+    return res.status(500).json(response({ message: req.t('Error verifying OTC'), status: "OK", statusCode: 500 }));
   }
 };
 
@@ -477,14 +477,14 @@ const updatePassword = async (req, res) => {
       user.password = password;
       user.oneTimeCode = null;
       await user.save();
-      res.status(200).json(response({ message: req.t('Password updated successfully'), status: "OK", statusCode: 200 }));
+      return res.status(200).json(response({ message: req.t('Password updated successfully'), status: "OK", statusCode: 200 }));
     }
     else {
-      res.status(200).json(response({ message: req.t('Something went wrong, try forget password again'), status: "OK", statusCode: 200 }));
+      return res.status(200).json(response({ message: req.t('Something went wrong, try forget password again'), status: "OK", statusCode: 200 }));
     }
   } catch (error) {
     logger.error(error, req.originalUrl);
-    res.status(500).json(response({ message: req.t('Error updating password'), status: "OK", statusCode: 200 }));
+    return res.status(500).json(response({ message: req.t('Error updating password'), status: "OK", statusCode: 200 }));
   }
 };
 

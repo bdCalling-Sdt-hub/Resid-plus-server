@@ -6,7 +6,7 @@ const imageVerification = (req, res, next) => {
 
   if (files.length === 0) {
     logger.error('Images not found', 'image verification middleware');
-    res.status(403).json(response({
+    return res.status(403).json(response({
       status: 'Error',
       statusCode: '403',
       message: req.t('Images not found')
