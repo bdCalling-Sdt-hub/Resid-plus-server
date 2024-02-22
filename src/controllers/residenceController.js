@@ -2,6 +2,7 @@ const response = require("../helpers/response");
 const Residence = require("../models/Residence");
 const Booking = require('../models/Booking')
 const User = require("../models/User");
+const Like = require("../models/Like");
 const mongoose = require('mongoose');
 //defining unlinking image function 
 const unlinkImages = require('../common/image/unlinkImage');
@@ -373,148 +374,40 @@ const allResidenceForUser = async (req, res) => {
     let residences = [];
     let count = 0;
 
+    residences = await Residence.find({ isDeleted: false, ...filter })
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .populate('amenities', 'translation')
+      .populate('category', 'translation')
+      .populate('country', 'countryName')
+      .sort({ createdAt: -1 });
+
+    count = await Residence.countDocuments({ isDeleted: false, ...filter });
+
     if (req.body.userId) {
-      const user = new mongoose.Types.ObjectId(req.body.userId);
-      residences = await Residence.aggregate([
-        {
-          $match: { isDeleted: false, ...filter }
-        },
-        {
-          $lookup: {
-            from: "likes",
-            let: { residenceId: "$_id", userId: user },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ["$residenceId", "$$residenceId"] },
-                      { $eq: ["$userId", "$$userId"] }
-                    ]
-                  }
-                }
-              }
-            ],
-            as: "likeInfo"
-          }
-        },
-        {
-          $addFields: {
-            isLiked: { $cond: { if: { $gt: [{ $size: "$likeInfo" }, 0] }, then: true, else: false } }
-          }
-        },
-        {
-          $limit: limit
-        },
-        {
-          $skip: (page - 1) * limit
-        },
-        {
-          $lookup: {
-            from: "amenities",
-            localField: "amenities",
-            foreignField: "_id",
-            as: "amenities"
-          }
-        },
-        {
-          $lookup: {
-            from: "categories",
-            localField: "category",
-            foreignField: "_id",
-            as: "category"
-          }
-        },
-        {
-          $lookup: {
-            from: "countries",
-            localField: "country",
-            foreignField: "_id",
-            as: "country"
-          }
-        },
-        {
-          $project: {
-            _id: 1,
-            residenceName: 1,
-            photo: 1,
-            capacity: 1,
-            beds: 1,
-            baths: 1,
-            address: 1,
-            city: 1,
-            municipality: 1,
-            quirtier: 1,
-            aboutResidence: 1,
-            hourlyAmount: 1,
-            popularity: 1,
-            ratings: 1,
-            dailyAmount: 1,
-            amenities: {
-              $map: {
-                input: "$amenities",
-                as: "amenity",
-                in: {
-                  _id: "$$amenity._id",
-                  translation: "$$amenity.translation",
-                }
-              }
-            },
-            ownerName: 1,
-            hostId: 1,
-            aboutOwner: 1,
-            status: 1,
-            category: {
-              $let: {
-                vars: { category: { $arrayElemAt: ["$category", 0] } },
-                in: {
-                  _id: "$$category._id",
-                  translation: "$$category.translation"
-                }
-              }
-            },
-            country: {
-              $let: {
-                vars: { country: { $arrayElemAt: ["$country", 0] } },
-                in: {
-                  _id: "$$country._id",
-                  countryName: "$$country.countryName"
-                }
-              }
-            },
-            isDeleted: 1,
-            acceptanceStatus: 1,
-            createdAt: 1,
-            updatedAt: 1,
-            feedBack: 1,
-            reUpload: 1,
-            views: 1,
-            comments: 1,
-            likes: 1,
-            isLiked: 1
-          }
-        },
-        {
-          $sort: { createdAt: -1 }
+      // Iterate over residences using a for...of loop
+      for (let i = 0; i < residences.length; i++) {
+        try {
+          // Find if the user has liked the residence
+          const liked = await Like.findOne({ residenceId: residences[i]._id, userId: req.body.userId });
+          console.log("Liked status:", liked); // Log the result of Like.findOne()
+          
+          // Add the isLiked property directly within the residence object
+          if(liked){
+            residences[i] = {
+              ...residences[i]._doc,
+              isLiked: true
+            }
+          }; // Convert liked to boolean
+    
+        } catch (error) {
+          console.error("Error occurred while checking liked status:", error);
+          // Set isLiked to false in case of error
+          residences[i].isLiked = false;
         }
-      ]);
-
-      // Count documents
-      count = await Residence.countDocuments({ hostId: req.body.userId, isDeleted: false, ...filter });
-
+      }
     }
-    else {
-      residences = await Residence.find({ isDeleted: false, ...filter })
-        .limit(limit)
-        .skip((page - 1) * limit)
-        .populate('amenities', 'translation')
-        .populate('category', 'translation')
-        .populate('country', 'countryName')
-        .sort({ createdAt: -1 });
-
-      count = await Residence.countDocuments({ isDeleted: false, ...filter });
-    }
-
+    
     return res.status(200).json(
       response({
         status: 'OK',
