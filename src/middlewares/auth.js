@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const response = require("../helpers/response");
 const logger = require('../helpers/logger');
+const Activity = require('../models/Activity');
 
 
 const isValidUser = async (req, res, next) => {
