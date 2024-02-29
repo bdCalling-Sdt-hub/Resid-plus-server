@@ -5,6 +5,6 @@ const router = express.Router();
 
 //Add residence
 router.post('/',isValidUser, addComment);
-router.get('/:id', isValidUser, getComments);
+router.get('/:id', getComments);
 
 module.exports = router;

@@ -1,5 +1,5 @@
 const express = require('express');
-const { addEvent, getEvents } = require('../controllers/eventController');
+const { addEvent, getEvents, deleteEvent } = require('../controllers/eventController');
 const { isValidUser } = require('../middlewares/auth');
 const router = express.Router();
 const userFileUploadMiddleware = require("../middlewares/fileUpload");
@@ -25,5 +25,6 @@ if (!fs.existsSync(UPLOADS_FOLDER_USERS)) {
 //Add residence
 router.post('/', [uploadUsers.single("image")], convertHeicToPng(UPLOADS_FOLDER_USERS), isValidUser,addEvent);
 router.get('/', isValidUser, getEvents);
+router.delete('/:id', isValidUser, deleteEvent);
 
 module.exports = router;

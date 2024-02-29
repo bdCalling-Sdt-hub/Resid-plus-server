@@ -143,9 +143,9 @@ const allResidence = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const category = req.query.category || ''
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
-    const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
+    const acceptanceStatus = req.query.acceptanceStatus
     const reUploaded = req.query.reUpload || 'no'
-    const country = req.query.country || 'all'
+    const country = req.query.country
 
     //minPrice must be greater or equal 1
     const minPrice = Number(req.query.minPrice) || '';
@@ -177,10 +177,12 @@ const allResidence = async (req, res) => {
       filter.$and.push({ beds: numberOfBeds });
     }
 
-    if (acceptanceStatus !== 'all') {
-      console.log('Acceptance Status------>', acceptanceStatus)
-      filter.$and = filter.$and || [];
-      filter.$and.push({ acceptanceStatus: acceptanceStatus });
+  
+    if (acceptanceStatus!=='all') {
+      if(acceptanceStatus){
+        filter.$and = filter.$and || [];
+        filter.$and.push({ acceptanceStatus: acceptanceStatus });
+      }
     }
 
     if (reUploaded === 'yes') {
@@ -189,8 +191,10 @@ const allResidence = async (req, res) => {
     }
 
     if (country !== 'all') {
-      filter.$and = filter.$and || [];
-      filter.$and.push({ country: country });
+      if(country){
+        filter.$and = filter.$and || [];
+        filter.$and.push({ country: country });
+      }
     }
 
     let residences = [];
@@ -269,14 +273,14 @@ const allResidence = async (req, res) => {
       }
     }
     //-> placed to residence dashboard API
-    else if (checkUser.role === 'admin') {
-      const data = await Residence.find({ ...filter })
+    else if (checkUser.role === 'super-admin') {
+      const data = await Residence.find({ ...filter, acceptanceStatus: 'accepted' })
         .limit(limit)
         .skip((page - 1) * limit)
         .select('photo residenceName acceptanceStatus')
         .sort({ createdAt: -1 })
         .populate('country', 'countryName')
-      count = await Residence.countDocuments({ ...filter });
+      count = await Residence.countDocuments({ ...filter, acceptanceStatus: acceptanceStatus });
       const accepted = await Residence.countDocuments({ acceptanceStatus: 'accepted' });
       const pending = await Residence.countDocuments({ acceptanceStatus: 'pending' });
       const blocked = await Residence.countDocuments({ acceptanceStatus: 'blocked' });
@@ -288,6 +292,33 @@ const allResidence = async (req, res) => {
           blocked
         }
       }
+      count = await Residence.countDocuments({ ...filter, acceptanceStatus: acceptanceStatus });
+    }
+    else{
+      const filter = {
+        $or: [
+          { residenceName: { $regex: searchRegExp } },
+          { address: { $regex: searchRegExp } },
+          { city: { $regex: searchRegExp } },
+          { municipality: { $regex: searchRegExp } },
+        ]
+      }
+      if(acceptanceStatus && acceptanceStatus !== 'all'){
+        filter.acceptanceStatus = acceptanceStatus
+      }
+      const data = await Residence.find(filter)
+      const accepted = await Residence.countDocuments({ acceptanceStatus: 'accepted' });
+      const pending = await Residence.countDocuments({ acceptanceStatus: 'pending' });
+      const blocked = await Residence.countDocuments({ acceptanceStatus: 'blocked' });
+      residences = {
+        data,
+        count: {
+          accepted,
+          pending,
+          blocked
+        }
+      }
+      count = await Residence.countDocuments({ ...filter, acceptanceStatus: acceptanceStatus });
     }
 
     return res.status(200).json(
@@ -328,9 +359,9 @@ const allResidenceForUser = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const category = req.query.category || ''
     const numberOfBeds = Number(req.query.numberOfBeds) || ''
-    const acceptanceStatus = req.query.acceptanceStatus || 'accepted'
-    const country = !req.query.country ? 'all' : req.query.country
+    const country = req.query.country
 
+    console.log('Query:-------------->', req.query);
     //minPrice must be greater or equal 1
     const minPrice = Number(req.query.minPrice) || '';
     const maxPrice = Number(req.query.maxPrice) || '';
@@ -360,19 +391,20 @@ const allResidenceForUser = async (req, res) => {
       filter.$and.push({ beds: numberOfBeds });
     }
 
-    if (acceptanceStatus !== 'all') {
-      //console.log('Acceptance Status------>', acceptanceStatus)
-      filter.$and = filter.$and || [];
-      filter.$and.push({ acceptanceStatus: acceptanceStatus });
-    }
+    // if (acceptanceStatus !== 'all') {
+    //   //console.log('Acceptance Status------>', acceptanceStatus)
+    //   filter.$and = filter.$and || [];
+    //   filter.$and.push({ acceptanceStatus: acceptanceStatus });
+    // }
 
-    if (country !== 'all') {
+    if (country) {
       filter.$and = filter.$and || [];
       filter.$and.push({ country: country });
     }
 
     let residences = [];
     let count = 0;
+    console.log('Filter:-------------->', filter);
 
     residences = await Residence.find({ isDeleted: false, ...filter })
       .limit(limit)
@@ -391,15 +423,15 @@ const allResidenceForUser = async (req, res) => {
           // Find if the user has liked the residence
           const liked = await Like.findOne({ residenceId: residences[i]._id, userId: req.body.userId });
           console.log("Liked status:", liked); // Log the result of Like.findOne()
-          
+
           // Add the isLiked property directly within the residence object
-          if(liked){
+          if (liked) {
             residences[i] = {
               ...residences[i]._doc,
               isLiked: true
             }
           }; // Convert liked to boolean
-    
+
         } catch (error) {
           console.error("Error occurred while checking liked status:", error);
           // Set isLiked to false in case of error
@@ -407,7 +439,9 @@ const allResidenceForUser = async (req, res) => {
         }
       }
     }
-    
+
+    console.log(residences.length, count);
+
     return res.status(200).json(
       response({
         status: 'OK',
